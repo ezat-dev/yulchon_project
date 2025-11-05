@@ -7,7 +7,7 @@
     
     
     
-    <wb-module deploy-name="tkheat">
+    <wb-module deploy-name="ezPublic">
         <wb-resource deploy-path="/WEB-INF/web.xml" source-path="/webapp/WEB-INF/web.xml"/>
                                                                         
         
@@ -62,14 +62,7 @@
         
         
         <property name="java-output-path" value="target/classes"/>
-                                                                
-        
-        
-        
-        
-        
-        
-        <property name="context-root" value="tkheat"/>
+        <property name="context-root" value="ezPublic"/>
                                                                 	
     
     

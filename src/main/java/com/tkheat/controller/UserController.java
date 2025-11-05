@@ -210,7 +210,7 @@ public class UserController {
 	 @ResponseBody
 	 public Map<String, Object> userInsertInsert(@ModelAttribute Users users) {
 		 Map<String, Object> rtnMap = new HashMap<>();
-		 System.out.println("userinert 컨트롤러");
+		 //System.out.println("userinert 컨트롤러");
 
 		 //아이디 입력했는지		 
 		 if("".equals(users.getUser_id())){
@@ -241,19 +241,16 @@ public class UserController {
 		 userService.userInsertInsert(users);
 		 
 		 rtnMap.put("status", "OK");
-		 rtnMap.put("message", "사용자 정보가 성공적으로 저장되었습니다.\n031-349-6695로 문의해주시기 바랍니다.");
+		 rtnMap.put("message", "사용자 정보가 성공적으로 저장되었습니다.\nezat@ezat.co.kr로 문의해주시기 바랍니다.");
 		 return rtnMap; 
 	 }
 	 
 	    @RequestMapping(value = "/user/selectList", method = RequestMethod.POST)
 	    @ResponseBody
 	    public List<Users> selectuserList(Users users) {
-	    	System.out.println("조회 컨트롤러");
-	    	List<Users> datas = userService.selectUserList(users);
-	    	for(Users v: datas) {
-	    		System.out.println("v.getUserGroups()" + v.getUserGroups());
-	    		System.out.println("v.getUser_groups(): " + v.getUser_groups());
-	    	}
+	    	//System.out.println("조회 컨트롤러");
+	    	//System.out.println("users.getSt_day()"+users.getSt_day());
+	    	//System.out.println("users.getUser_name()"+users.getUser_name());
 	        return userService.selectUserList(users);
 	    }
 	    
@@ -261,7 +258,7 @@ public class UserController {
 		 @RequestMapping(value = "/user/insertWorkTime", method = RequestMethod.POST)
 		 @ResponseBody
 		 public boolean insertWorkTime(@RequestBody List<Users> usersList) {
-			 System.out.println("받은 사용자 수: " + usersList.size());
+			 //System.out.println("받은 사용자 수: " + usersList.size());
 			 boolean result = true;
 			 for(Users users: usersList) {
 			        boolean currentResult = userService.insertWorkTime(users);
@@ -308,7 +305,7 @@ public class UserController {
 			    @RequestMapping(value = "/user/selectModalList", method = RequestMethod.POST)
 			    @ResponseBody
 			    public List<Users> selectuserModalList(Users users) {
-			    	System.out.println("모달 조회 컨트롤러");
+			    	//System.out.println("모달 조회 컨트롤러");
 			        return userService.selectUserModalList(users);
 			    }
 			 
@@ -317,8 +314,8 @@ public class UserController {
 				@ResponseBody
 				public boolean androidLogin(@RequestBody Users users) {
 					System.out.println("안드로이드 로그인 컨트롤러 도착");
-					System.out.println("users.getUser_id()" + users.getUser_id());
-					System.out.println("users.getUser_pw()" + users.getUser_pw());
+					//System.out.println("users.getUser_id()" + users.getUser_id());
+					//System.out.println("users.getUser_pw()" + users.getUser_pw());
 					 
 					
 					 if("".equals(users.getUser_id()) || users.getUser_id() == null){
@@ -344,8 +341,8 @@ public class UserController {
 				@RequestMapping(value="/user/android/deviceTokenUpdate", method=RequestMethod.POST)
 				@ResponseBody
 				public boolean deviceTokenUpdate(@RequestBody Users users) {
-					System.out.println("안드로이드 토큰 업데이트 도착");
-					System.out.println("users.getDevice_token()" + users.getDevice_token());
+					//System.out.println("안드로이드 토큰 업데이트 도착");
+					//System.out.println("users.getDevice_token()" + users.getDevice_token());
 					return userService.deviceTokenUpdate(users);
 
 				}
@@ -357,7 +354,7 @@ public class UserController {
 			    	try {
 			    	Alarm alarm = new Alarm();
 			    	Users users = new Users();
-			    	System.out.println("푸시알림 컨트롤러 도착");
+			    	//System.out.println("푸시알림 컨트롤러 도착");
 			    	String title="";
 			    	String content="";
 			    	String send="";
@@ -436,7 +433,7 @@ public class UserController {
 			    	
 			    	for(String v: sendedAlarm) {
 			    		users.setRegtime(v);
-			    		System.out.println("보낸 알람: " + v);
+			    		//System.out.println("보낸 알람: " + v);
 			    		userService.updateAlarmSend(users);
 			    	}
 
@@ -455,7 +452,7 @@ public class UserController {
 			    }
 			    
 				public void send_FCM(List<String> tokenList, String title, String content, String send){
-					System.out.println("send_FCM 컨트롤러 도착");
+					//System.out.println("send_FCM 컨트롤러 도착");
 					try{
 						FileInputStream refreshToken = new FileInputStream("D:/fireBase_key/mibo-test-firebase-adminsdk-fbsvc-6c2a67fbc1.json");
 
@@ -491,7 +488,7 @@ public class UserController {
 								.build();
 						//BatchResponse response = FirebaseMessaging.getInstance().sendMulticast(message);
 						BatchResponse response = FirebaseMessaging.getInstance().sendEachForMulticast(message);
-						System.out.println(response.getSuccessCount() + " messages were sent successfully");
+						//System.out.println(response.getSuccessCount() + " messages were sent successfully");
 
 						
 						//안드로이드 토큰 입력
@@ -555,8 +552,8 @@ public class UserController {
 				@RequestMapping(value="/user/getGroupUser", method=RequestMethod.POST)
 				@ResponseBody
 				public List<Users> getGroupUser(@RequestBody Users users) {
-				    System.out.println("그룹별 조회 컨트롤러");
-				    System.out.println("users.getGroup_id()" + users.getGroup_id());
+					//System.out.println("그룹별 조회 컨트롤러");
+					//System.out.println("users.getGroup_id()" + users.getGroup_id());
 					return userService.getGroupUser(users); 
 				}
 				//그룹 스케줄 조회
@@ -576,6 +573,46 @@ public class UserController {
 				@ResponseBody
 				public boolean updateRecieveAlarm(@RequestBody Users users) {
 					return userService.updateRecieveAlarm(users); 
+				}
+				//스케줄 삭제
+				@RequestMapping(value="/user/deleteSchedule", method=RequestMethod.POST)
+				@ResponseBody
+				public boolean deleteSchedule(@RequestBody Users users) {
+					return userService.deleteSchedule(users); 
+				}
+				//회원정보 업데이트
+				@RequestMapping(value="/user/updateUser", method=RequestMethod.POST)
+				@ResponseBody
+				public boolean updateUser(@RequestBody Users users) {
+					 Users duplicateUser = userService.userDuplicateCheck(users);
+					 if(duplicateUser != null) {
+						 return false;			 
+					 }
+					return userService.updateUser(users);
+				}
+				//회원 삭제
+				@RequestMapping(value="/user/deleteUser", method=RequestMethod.POST)
+				@ResponseBody
+				public boolean deleteUser(@RequestBody Users users) {
+					return userService.deleteUser(users);
+				}
+				//스케줄 업데이트
+				@RequestMapping(value="/user/updateGroupSchedule", method=RequestMethod.POST)
+				@ResponseBody
+				public boolean updateGroupSchedule(@RequestBody Users users) {
+					return userService.updateGroupSchedule(users);
+				}
+				//사람 그룹 이름 조회
+				@RequestMapping(value="/user/getGroupName", method=RequestMethod.POST)
+				@ResponseBody
+				public List<Users> getGroupName(Users users) {
+					return userService.getGroupName(users);
+				}
+				//그룹 이름 업데이트
+				@RequestMapping(value="/user/updateGroupName", method=RequestMethod.POST)
+				@ResponseBody
+				public boolean updateGroupName(@RequestBody Users users) {
+					return userService.updateGroupName(users);
 				}
 }
 

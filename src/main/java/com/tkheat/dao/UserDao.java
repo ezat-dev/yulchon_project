@@ -48,4 +48,10 @@ public interface UserDao {
 	List<Users> getGroupList(Users users);
 	List<Users> sendAlarmList(Users users);
 	boolean updateAlarmSend(Users users);
+	boolean deleteSchedule(Users users);
+	boolean updateUser(Users users);
+	boolean deleteUser(Users users);
+	boolean updateGroupSchedule(Users users);
+	List<Users> getGroupName(Users users);
+	boolean updateGroupName(Users users);
 }

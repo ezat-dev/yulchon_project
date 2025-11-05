@@ -23,7 +23,7 @@ public class CommProcessor {
     @Scheduled(fixedRate = 10000) // 10000 밀리초 = 10초
     public void sendWorkTime() {
     	//UserController userController = new UserController();
-        System.out.println("10초 스케줄러 실행: UserController.send() 요청");
+    	//System.out.println("10초 스케줄러 실행: UserController.send() 요청");
         
         // 💡 UserController의 send() 함수를 호출합니다.
         // (단, UserController.send() 함수가 public이고 인스턴스 메서드여야 합니다.)

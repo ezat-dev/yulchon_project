@@ -10,6 +10,7 @@
 		FROM tb_user
 		WHERE user_id = #{user_id} AND user_pw
 		= #{user_pw}
+		AND user_role = '1'
 	</select>
 
 
@@ -356,8 +357,8 @@
 		resultType="users">
 		SELECT *
 		FROM tb_user
-		WHERE user_id =
-		#{user_id}
+		WHERE user_id = #{user_id}
+		AND user_code != #{user_code}
 	</select>
 	<select id="selectUserList" parameterType="users"
 		resultType="users">
@@ -370,6 +371,13 @@ LEFT JOIN
     tb_user_group M ON U.user_code = M.user_code
 LEFT JOIN
     tb_group G ON M.group_id = G.group_id
+    WHERE 1 = 1
+    <if test="st_day != null and st_day != ''">
+        AND U.st_day LIKE CONCAT('%', #{st_day}, '%')
+    </if>
+    <if test="user_name != null and user_name != ''">
+        AND U.user_name LIKE CONCAT('%', #{user_name}, '%')
+    </if>
 GROUP BY
     U.user_code
 ORDER BY
@@ -490,17 +498,10 @@ LEFT JOIN
     tb_group G ON M.group_id = G.group_id
 GROUP BY
     U.user_code
-            <if test="group_id != null and group_id != ''">
-        HAVING
-        user_groups LIKE 
-        <choose>
-            <when test="group_id == 1"> '%A%' </when>
-            <when test="group_id == 2"> '%B%' </when>
-            <when test="group_id == 3"> '%C%' </when>
-            <when test="group_id == 4"> '%D%' </when>
-            <when test="group_id == 5"> '%E%' </when>
-            <otherwise> '%%' </otherwise> </choose>
-    </if>
+<if test="group_name != null and group_name != ''">
+    HAVING
+    user_groups LIKE CONCAT('%', #{group_name}, '%')
+</if>
     ORDER BY
         U.user_code
 </select>
@@ -544,54 +545,54 @@ SELECT * FROM tb_group
 <select id="sendAlarmList" parameterType="users"
 		resultType="users">
 <![CDATA[
-SELECT a.*, b.is_send,
+SELECT al.alarm_address, al.comment, agm.alarm_group_id, g.group_name AS 사람그룹, 
+g.group_id, ug.user_code, u.device_token, u.user_id, al.regtime,
     CASE
-        WHEN a.alarm_address LIKE '%BCF1%' THEN 'BCF1호기'
-        WHEN a.alarm_address LIKE '%BCF2%' THEN 'BCF2호기'
-        WHEN a.alarm_address LIKE '%BCF3%' THEN 'BCF3호기'
-        WHEN a.alarm_address LIKE '%BCF4%' THEN 'BCF4호기'
-        WHEN a.alarm_address LIKE '%CM.%' THEN '공통1호기'
-        WHEN a.alarm_address LIKE '%CM2.%' THEN '공통2호기'
-        ELSE a.alarm_address 
-    END AS a_hogi, b.regtime,
-    g.*, ug.user_code, u.device_token
- FROM tb_alarm AS a
-INNER JOIN tb_alarmlist AS b
-ON a.alarm_address = b.alarm_address
-INNER JOIN tb_group AS g
+        WHEN al.alarm_address LIKE '%BCF1%' THEN 'BCF1'
+        WHEN al.alarm_address LIKE '%BCF2%' THEN 'BCF2'
+        WHEN al.alarm_address LIKE '%BCF3%' THEN 'BCF3'
+        WHEN al.alarm_address LIKE '%BCF4%' THEN 'BCF4'
+        WHEN al.alarm_address LIKE '%CM.%' THEN '공통1'
+        WHEN al.alarm_address LIKE '%CM2.%' THEN '공통2'
+        ELSE al.alarm_address 
+        END AS a_hogi
+        FROM tb_alarmlist al
+        INNER JOIN tb_alarm_group_mapping AS agm
+        ON al.alarm_address = agm.alarm_address
+			INNER JOIN tb_group AS g
     ON (
-        (a.group_a = '1' AND g.recieve_a = '1') OR
-        (a.group_b = '1' AND g.recieve_b = '1') OR
-        (a.group_c = '1' AND g.recieve_c = '1') OR
-        (a.group_d = '1' AND g.recieve_d = '1') OR
-        (a.group_e = '1' AND g.recieve_e = '1') OR
-        (a.group_f = '1' AND g.recieve_f = '1') OR
-        (a.group_g = '1' AND g.recieve_g = '1') OR
-        (a.group_h = '1' AND g.recieve_h = '1') OR
-        (a.group_i = '1' AND g.recieve_i = '1') OR
-        (a.group_j = '1' AND g.recieve_j = '1')
+        (agm.alarm_group_id = 1 AND g.recieve_a = '1') OR
+        (agm.alarm_group_id = 2 AND g.recieve_b = '1') OR
+        (agm.alarm_group_id = 3 AND g.recieve_c = '1') OR
+        (agm.alarm_group_id = 4 AND g.recieve_d = '1') OR
+        (agm.alarm_group_id = 5 AND g.recieve_e = '1') OR
+        (agm.alarm_group_id = 6 AND g.recieve_f = '1') OR
+        (agm.alarm_group_id = 7 AND g.recieve_g = '1') OR
+        (agm.alarm_group_id = 8 AND g.recieve_h = '1') OR
+        (agm.alarm_group_id = 9 AND g.recieve_i = '1') OR
+        (agm.alarm_group_id = 10 AND g.recieve_j = '1')
     )
-    INNER JOIN tb_group_schedule AS s
-    ON g.group_id = s.group_id
     INNER JOIN tb_user_group AS ug
-    ON g.group_id = ug.group_id
+    ON ug.group_id = g.group_id
+    INNER JOIN tb_group_schedule AS gs
+    ON gs.group_id = g.group_id
     INNER JOIN tb_user AS u
     ON ug.user_code = u.user_code
-WHERE b.is_send = '0'
-   AND b.a_value = 1
-    AND CURDATE() BETWEEN s.start_date AND s.end_date
+        WHERE al.is_send = '0'
+        AND al.a_value = '1'
+            AND CURDATE() BETWEEN gs.start_date AND gs.end_date
     
     AND (
-        (s.start_time <= s.end_time 
-            AND CURTIME() BETWEEN s.start_time AND s.end_time)
+        (gs.start_time <= gs.end_time 
+            AND CURTIME() BETWEEN gs.start_time AND gs.end_time)
             
         OR
         
-        (s.start_time > s.end_time 
+        (gs.start_time > gs.end_time 
             AND (
-                (CURDATE() = s.start_date AND CURTIME() >= s.start_time)
-                OR (CURDATE() = s.end_date AND CURTIME() <= s.end_time)
-                OR (CURDATE() > s.start_date AND CURDATE() < s.end_date)
+                (CURDATE() = gs.start_date AND CURTIME() >= gs.start_time)
+                OR (CURDATE() = gs.end_date AND CURTIME() <= gs.end_time)
+                OR (CURDATE() > gs.start_date AND CURDATE() < gs.end_date)
             )
         )
     )
@@ -603,5 +604,50 @@ WHERE b.is_send = '0'
 		UPDATE tb_alarmlist
 		SET is_send = '1'
 		WHERE regtime = #{regtime}
+	</update>
+	<!-- 스케줄 삭제 -->
+	<delete id="deleteSchedule" parameterType="users">
+	DELETE FROM
+	 tb_group_schedule
+	 WHERE 
+	 schedule_id = #{schedule_id}
+	</delete>
+	<!-- 회원정보 업데이트 -->
+	<update id="updateUser" parameterType="users">
+	UPDATE tb_user SET
+	user_id = #{user_id},
+	user_pw = #{user_pw},
+	user_name = #{user_name},
+	st_day = #{st_day},
+	user_phone = #{user_phone},
+	user_busu = #{user_busu},
+	user_jick = #{user_jick}
+	WHERE user_code = #{user_code}
+	</update>
+	<!-- 회원 삭제 -->
+	<delete id="deleteUser" parameterType="users">
+	DELETE FROM tb_user
+	WHERE user_code = #{user_code}
+	</delete>
+	<!-- 스케줄 업데이트 -->
+	<update id="updateGroupSchedule" parameterType="users">
+	UPDATE tb_group_schedule SET
+	group_id = #{group_id},
+	start_date = #{start_date},
+	end_date = #{end_date},
+	start_time = #{start_time},
+	end_time = #{end_time}
+	WHERE schedule_id = #{schedule_id}
+	</update>
+	<!-- 사람 그룹 이름 조회 -->
+<select id="getGroupName" parameterType="users"
+		resultType="users">
+SELECT * FROM tb_group;
+</select>
+	<!-- 그룹 이름 업데이트 -->
+	<update id="updateGroupName" parameterType="users">
+	UPDATE tb_group SET
+	group_name = #{group_name}
+	WHERE group_id = #{group_id}
 	</update>
 </mapper>

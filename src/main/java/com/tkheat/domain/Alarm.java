@@ -1,5 +1,7 @@
 package com.tkheat.domain;
 
+import java.util.List;
+
 public class Alarm {
 	private String regtime;
 	private String a_stime;
@@ -42,8 +44,57 @@ public class Alarm {
 	private String recieve_j;
 	private String alarm_address;
 	private String comment;
+	private String alarm_group_id;
+	private String alarm_group_name;
+	private String alarm_groups;
+	private List<String> alarmAddresses;
+	private String hogi;
+	private String startTime;
+	private String endTime;
 	
 	
+	public String getStartTime() {
+		return startTime;
+	}
+	public void setStartTime(String startTime) {
+		this.startTime = startTime;
+	}
+	public String getEndTime() {
+		return endTime;
+	}
+	public void setEndTime(String endTime) {
+		this.endTime = endTime;
+	}
+	public String getHogi() {
+		return hogi;
+	}
+	public void setHogi(String hogi) {
+		this.hogi = hogi;
+	}
+	public List<String> getAlarmAddresses() {
+		return alarmAddresses;
+	}
+	public void setAlarmAddresses(List<String> alarmAddresses) {
+		this.alarmAddresses = alarmAddresses;
+	}
+	public String getAlarm_groups() {
+		return alarm_groups;
+	}
+	public void setAlarm_groups(String alarm_groups) {
+		this.alarm_groups = alarm_groups;
+	}
+	public String getAlarm_group_id() {
+		return alarm_group_id;
+	}
+	public void setAlarm_group_id(String alarm_group_id) {
+		this.alarm_group_id = alarm_group_id;
+	}
+	public String getAlarm_group_name() {
+		return alarm_group_name;
+	}
+	public void setAlarm_group_name(String alarm_group_name) {
+		this.alarm_group_name = alarm_group_name;
+	}
 	public String getGroup_f() {
 		return group_f;
 	}

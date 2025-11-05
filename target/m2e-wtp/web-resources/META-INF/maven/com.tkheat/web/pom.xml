@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.tkheat</groupId>
 	<artifactId>web</artifactId>
-	<name>TKHEAT</name>
+	<name>ezPublic</name>
 	<packaging>war</packaging>
 	<version>1.0.0-BUILD-SNAPSHOT</version>
 	<properties>
@@ -14,7 +14,7 @@
 	</properties>
 	
   <build>
-  	<finalName>tkheat</finalName><!-- 나중에 war파일의 이름 -->
+  	<finalName>ezPublic</finalName><!-- 나중에 war파일의 이름 -->
   	<plugins>
   		<plugin>
   			<artifactId>maven-compiler-plugin</artifactId>
@@ -507,6 +507,22 @@
     <artifactId>google-auth-library-oauth2-http</artifactId>
     <version>1.26.0</version>
 </dependency>
-	    
+	    <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-core</artifactId>
+        <version>${spring.version}</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-web</artifactId>
+        <version>${spring.version}</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-config</artifactId>
+        <version>${spring.version}</version>
+    </dependency>
   </dependencies>
 </project>

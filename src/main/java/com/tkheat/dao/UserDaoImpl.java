@@ -212,5 +212,48 @@ public class UserDaoImpl implements UserDao{
 		}
 		return true;
 	}
-
+	@Override
+	public boolean deleteSchedule(Users users) {
+		int result = sqlSession.delete("users.deleteSchedule", users);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	@Override
+	public boolean updateUser(Users users) {
+		int result = sqlSession.update("users.updateUser", users);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	@Override
+	public boolean deleteUser(Users users) {
+		int result = sqlSession.delete("users.deleteUser", users);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	@Override
+	public boolean updateGroupSchedule(Users users) {
+		int result = sqlSession.update("users.updateGroupSchedule", users);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	@Override
+	public List<Users> getGroupName(Users users) {
+		return sqlSession.selectList("users.getGroupName",users);
+	}
+	@Override
+	public boolean updateGroupName(Users users) {
+		int result = sqlSession.update("users.updateGroupName", users);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
 }

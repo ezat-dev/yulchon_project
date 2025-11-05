@@ -179,4 +179,28 @@ public class UserServiceImpl implements UserService{
 	public boolean updateAlarmSend(Users users) {
 		return userDao.updateAlarmSend(users);
 	}
+	@Override
+	public boolean deleteSchedule(Users users) {
+		return userDao.deleteSchedule(users);
+	}
+	@Override
+	public boolean updateUser(Users users) {
+		return userDao.updateUser(users);
+	}
+	@Override
+	public boolean deleteUser(Users users) {
+		return userDao.deleteUser(users);
+	}
+	@Override
+	public boolean updateGroupSchedule(Users users) {
+		return userDao.updateGroupSchedule(users);
+	}
+	@Override
+	public List<Users> getGroupName(Users users) {
+		return userDao.getGroupName(users);
+	}
+	@Override
+	public boolean updateGroupName(Users users) {
+		return userDao.updateGroupName(users);
+	}
 }

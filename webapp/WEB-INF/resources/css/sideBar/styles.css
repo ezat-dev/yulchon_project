@@ -197,11 +197,13 @@ a {
     justify-content: center; 
     padding: 0.5rem; 
     transition: background-color 0.3s;
+    border-radius: 10px;
 }
 
 .collapse__sublink:hover {
     color: var(--white-color);
     background-color: var(--first-color); 
+    border-radius: 10px;
 }
 
 /* Show collapse */

@@ -1,0 +1,652 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="users">
+
+	<select id="getLoginUser" parameterType="users"
+		resultType="users">
+		SELECT *
+		FROM tb_user
+		WHERE user_id = #{user_id} AND user_pw
+		= #{user_pw}
+	</select>
+
+
+	<!-- 전체 사용자 목록 조회 -->
+	<select id="getUserList" parameterType="users"
+		resultType="users">
+		SELECT *
+		FROM USERT
+		WHERE 1=1
+		<if test="user_buso != null and user_buso != ''">
+			AND user_buso = #{user_buso}
+		</if>
+		<if test="user_jick != null and user_jick != ''">
+			AND user_jick = #{user_jick}
+		</if>
+		<if test="user_name != null and user_name != ''">
+			AND user_name LIKE CONCAT('%', #{user_name}, '%')
+		</if>
+		<if test="user_ret != null and user_ret != ''">
+			AND user_ret = #{user_ret}
+		</if>
+	</select>
+
+
+	<!-- tb_pageq 빅 -->
+	<select id="getBigPageList" parameterType="users"
+		resultType="users">
+		SELECT page_big,
+		MIN(page_code) AS page_code,
+		MIN(page_sml)
+		AS page_sml,
+		MIN(page_big_name) AS page_big_name,
+		MIN(page_sml_name) AS
+		page_sml_name,
+		MIN(page_yn) AS page_yn
+		FROM tb_page
+		GROUP BY page_big;
+
+	</select>
+	<!-- tb_pageq 스몰 -->
+
+	<select id="getSmallPageList" parameterType="String"
+		resultType="users">
+		SELECT page_big, page_code, page_sml, page_big_name,
+		page_sml_name, page_yn
+		FROM tb_page
+		WHERE page_big = #{page_big}
+
+	</select>
+
+	<!-- 작업자등록 -->
+	<insert id="insertUser" parameterType="users">
+		INSERT
+		INTO USERT
+		(
+		USER_CODE,
+		USER_NAME,
+		USER_NO,
+		USER_BUSO,
+		USER_JICK,
+		USER_JDATE,
+		USER_ODATE,
+		USER_ID,
+		USER_PWD,
+		USER_ADD,
+		USER_BIGO,
+		USER_RET,
+		USER_PHONE
+		)
+		VALUES
+		(
+		(SELECT ISNULL(MAX(USER_CODE), 0)+1
+		FROM USERT
+		),
+		#{user_name},
+		#{user_no},
+		#{user_buso},
+		#{user_jick},
+		#{user_jdate},
+		#{user_odate},
+		#{user_id},
+		#{user_pwd},
+		#{user_add},
+		#{user_bigo},
+		#{user_ret},
+		#{user_phone}
+		)
+	</insert>
+
+	<!-- 선택한 사용자 권한조회 -->
+	<select id="authorityUserSelect" parameterType="permission"
+		resultType="permission">
+		SELECT *
+		FROM PERMISSION
+		WHERE USER_CODE = #{user_code}
+	</select>
+
+	<!-- 선택한 사용자 권한수정 -->
+	<update id="authorityUserSelectSave" parameterType="permission">
+		UPDATE
+		PERMISSION SET
+		A01 = #{a01},
+		A02 = #{a02},
+		A03 = #{a03},
+		A04 = #{a04},
+		A05
+		= #{a05},
+		A06 = #{a06},
+		A07 = #{a07},
+		A08 = #{a08},
+		A09 = #{a09},
+		A10 =
+		#{a10},
+		B01 = #{b01},
+		B02 = #{b02},
+		B03 = #{b03},
+		B04 = #{b04},
+		B05 =
+		#{b05},
+		C01 = #{c01},
+		C02 = #{c02},
+		C03 = #{c03},
+		C04 = #{c04},
+		C05 =
+		#{c05},
+		C06 = #{c06},
+		C07 = #{c07},
+		C08 = #{c08},
+		C09 = #{c09},
+		C10 =
+		#{c10},
+		C11 = #{c11},
+		C12 = #{c12},
+		D01 = #{d01},
+		D02 = #{d02},
+		D03 =
+		#{d03},
+		E01 = #{e01},
+		E02 = #{e02},
+		E03 = #{e03},
+		E04 = #{e04},
+		E05 =
+		#{e05},
+		E06 = #{e06},
+		E07 = #{e07},
+		E08 = #{e08},
+		E09 = #{e09},
+		F01 =
+		#{f01},
+		F02 = #{f02},
+		F03 = #{f03},
+		F04 = #{f04},
+		F05 = #{f05},
+		F06 =
+		#{f06},
+		F07 = #{f07},
+		F08 = #{f08},
+		F09 = #{f09},
+		G01 = #{g01},
+		G02 =
+		#{g02},
+		G03 = #{g03},
+		G04 = #{g04},
+		G05 = #{g05},
+		G06 = #{g06},
+		G07 =
+		#{g07},
+		G13 = #{g13},
+		G14 = #{g14},
+		G15 = #{g15},
+		G16 = #{g16},
+		G17 =
+		#{g17},
+		G19 = #{g19},
+		H01 = #{h01},
+		H02 = #{h02},
+		H03 = #{h03},
+		H04 =
+		#{h04},
+		H05 = #{h05},
+		H06 = #{h06},
+		H07 = #{h07},
+		H08 = #{h08},
+		H09 =
+		#{h09},
+		H10 = #{h10},
+		H11 = #{h11},
+		H12 = #{h12},
+		H13 = #{h13}
+		WHERE
+		USER_CODE = #{user_code}
+	</update>
+
+	<select id="userLoginPermission" parameterType="users"
+		resultType="permission">
+		SELECT *
+		FROM tb_permission
+		WHERE user_code = #{user_code}
+	</select>
+
+	<!-- 유저메뉴 (카운트 수가 10개 미만인지) -->
+	<select id="userMenuCount" parameterType="userMenu"
+		resultType="int">
+		SELECT COUNT(*) AS ccnt
+		FROM tb_usermenu
+		WHERE 1=1
+		AND menu_yn
+		= 'Y'
+		AND user_code = #{user_code}
+	</select>
+
+	<!-- 유저메뉴 (이미 추가되어 있는 메뉴인지) -->
+	<select id="userMenuCheck" parameterType="userMenu"
+		resultType="string">
+		SELECT menu_yn
+		FROM tb_usermenu
+		WHERE 1=1
+		AND user_code =
+		#{user_code}
+		AND menu_url = #{menu_url}
+	</select>
+
+	<!-- 유저메뉴 (추가되어 있지 않다면 INSERT) -->
+	<insert id="userLoginMenuSave" parameterType="userMenu">
+		INSERT INTO
+		tb_usermenu (menu_code,user_code, menu_url, menu_name,
+		insert_date,update_date, menu_yn)
+		VALUES
+		((SELECT ISNULL(MAX(menu_code),
+		0)+1
+		FROM tb_usermenu
+		), #{user_code}, #{menu_url}, #{menu_name},
+		CONVERT(vaRchar(20),
+		GETDATE(),120), CONVERT(vaRchar(20),
+		GETDATE(),120), 'Y')
+	</insert>
+
+	<update id="userLoginMenuUpdate" parameterType="userMenu">
+		UPDATE
+		tb_usermenu SET menu_yn = 'Y', update_date = CONVERT(vaRchar(20),
+		GETDATE(),120)
+		WHERE 1=1
+		AND user_code = #{user_code}
+		AND menu_url =
+		#{menu_url}
+	</update>
+
+	<select id="userMenuList" parameterType="userMenu"
+		resultType="userMenu">
+		SELECT *
+		FROM tb_usermenu
+		WHERE 1=1
+		AND user_code =
+		#{user_code}
+		AND menu_yn = 'Y'
+		ORDER BY update_date DESC
+	</select>
+
+
+	<update id="userLoginMenuRemove" parameterType="userMenu">
+		UPDATE
+		tb_usermenu SET menu_yn = 'N'
+		WHERE 1=1
+		AND user_code = #{user_code}
+		AND
+		menu_url = #{menu_url}
+	</update>
+
+	<insert id="userLoginHisSave" parameterType="users">
+		INSERT INTO LOGINHIS
+		VALUES (
+		(SELECT ISNULL(MAX(LOGIN_CODE), 0)+1
+		FROM LOGINHIS
+		),#{user_code}, #{user_ip}, CONVERT(vaRchar(20), GETDATE(),120)
+		)
+
+	</insert>
+
+	<!-- 공지사항 조회 -->
+	<select id="getNoticeList" parameterType="users"
+		resultType="users">
+		SELECT *
+		FROM NOTICE
+	</select>
+
+	<!-- 작업자등록 -->
+	<insert id="userInsertInsert" parameterType="users">
+		INSERT INTO tb_user
+		(user_code,
+		user_id,
+		user_pw,
+		user_name,
+		user_level,
+		user_busu,
+		user_jick,
+		user_phone,
+		st_day,
+		user_yn,
+		message_yn,
+		message_yn2,
+		user_role,
+		user_company)
+		VALUES
+		(#{user_code, jdbcType=INTEGER},
+		#{user_id,
+		jdbcType=VARCHAR},
+		#{user_pw, jdbcType=VARCHAR},
+		#{user_name,
+		jdbcType=VARCHAR},
+		#{user_level,jdbcType=INTEGER},
+		#{user_busu,
+		jdbcType=VARCHAR},
+		#{user_jick, jdbcType=VARCHAR},
+		#{user_phone,jdbcType=VARCHAR},
+		#{st_day, jdbcType=VARCHAR},
+		#{user_yn,
+		jdbcType=VARCHAR},
+		#{message_yn, jdbcType=VARCHAR},
+		#{message_yn2,
+		jdbcType=VARCHAR},
+		#{user_role, jdbcType=VARCHAR},
+		#{user_company,
+		jdbcType=VARCHAR})
+		ON DUPLICATE KEY UPDATE
+		user_id = VALUES(user_id),
+		user_pw = VALUES(user_pw),
+		user_name = VALUES(user_name),
+		user_level =
+		VALUES(user_level),
+		user_busu = VALUES(user_busu),
+		user_jick =
+		VALUES(user_jick),
+		user_phone = VALUES(user_phone),
+		st_day =
+		VALUES(st_day),
+		user_yn = VALUES(user_yn),
+		message_yn =
+		VALUES(message_yn),
+		message_yn2 = VALUES(message_yn2)
+	</insert>
+
+	<!-- 중복된 사용자인지 확인 -->
+	<select id="userDuplicateCheck" parameterType="users"
+		resultType="users">
+		SELECT *
+		FROM tb_user
+		WHERE user_id = #{user_id}
+		AND user_code != #{user_code}
+	</select>
+	<select id="selectUserList" parameterType="users"
+		resultType="users">
+SELECT
+    U.*,
+    GROUP_CONCAT(G.group_name ORDER BY G.group_name ASC SEPARATOR ', ') AS user_groups
+FROM
+    tb_user U
+LEFT JOIN
+    tb_user_group M ON U.user_code = M.user_code
+LEFT JOIN
+    tb_group G ON M.group_id = G.group_id
+    WHERE 1 = 1
+    <if test="st_day != null and st_day != ''">
+        AND U.st_day LIKE CONCAT('%', #{st_day}, '%')
+    </if>
+    <if test="user_name != null and user_name != ''">
+        AND U.user_name LIKE CONCAT('%', #{user_name}, '%')
+    </if>
+GROUP BY
+    U.user_code
+ORDER BY
+    U.user_code;
+	</select>
+
+	<!-- 작업 날짜, 알림 여부 추가 -->
+	<insert id="insertWorkTime" parameterType="users">
+		INSERT INTO
+		tb_user_worktime
+		(user_code,
+		work_day,
+		work_time)
+		VALUES
+		(#{user_code,
+		jdbcType=VARCHAR},
+		#{work_day, jdbcType=VARCHAR},
+		#{work_time,
+		jdbcType=VARCHAR})
+		ON DUPLICATE KEY UPDATE
+		work_day = VALUES(work_day),
+		work_time = VALUES(work_time)
+	</insert>
+
+	<update id="updateMessage" parameterType="users">
+		UPDATE tb_user
+		SET
+		message_yn = #{message_yn},
+		message_yn2 = #{message_yn2}
+		WHERE
+		user_code
+		= #{user_code}
+	</update>
+
+	<delete id="deleteWorkTime" parameterType="users">
+		DELETE FROM
+		tb_user_worktime
+		WHERE
+		user_code = #{user_code, jdbcType=VARCHAR}
+		AND
+		work_day = #{work_day, jdbcType=VARCHAR}
+	</delete>
+
+	<update id="deviceTokenUpdate" parameterType="users">
+		UPDATE tb_user
+		SET
+		device_token = #{device_token}
+		WHERE
+		user_id = #{user_id}
+		AND
+		user_pw =
+		#{user_pw}
+	</update>
+
+	<select id="selectUserModalList" parameterType="users"
+		resultType="users">
+		SELECT *
+		FROM tb_user AS a
+		LEFT JOIN tb_user_worktime AS b
+		ON a.user_code = b.user_code
+		AND (b.work_day = CURDATE() OR b.work_day IS NULL OR b.work_day = '')
+	</select>
+	<select id="getAlarmUser1" parameterType="users"
+		resultType="users">
+		SELECT *
+		FROM tb_user AS a
+		LEFT JOIN tb_user_worktime AS b
+		ON a.user_code = b.user_code
+		AND (b.work_day = CURDATE() OR b.work_day IS NULL OR b.work_day = '')
+		WHERE b.work_day = CURDATE() AND a.message_yn = 'Y';
+	</select>
+	<select id="getAlarmUser2" parameterType="users"
+		resultType="users">
+		SELECT *
+		FROM tb_user AS a
+		LEFT JOIN tb_user_worktime AS b
+		ON a.user_code = b.user_code
+		AND (b.work_day = CURDATE() OR b.work_day IS NULL OR b.work_day = '')
+		WHERE b.work_day = CURDATE() AND a.message_yn2 = 'Y';
+	</select>
+	<insert id="insertGroup" parameterType="map">
+    INSERT INTO tb_user_group (
+        user_code,
+        group_id
+    ) VALUES (
+        #{user_code},
+        #{group_id}
+    )
+</insert>
+<delete id="deleteGroup" parameterType="map">
+    DELETE FROM tb_user_group
+    WHERE 
+        user_code = #{user_code}
+    AND 
+        group_id = #{group_id}
+</delete>
+<update id="updateGroupTime" parameterType="users">
+    UPDATE tb_group
+    SET
+        start_date = #{start_date},
+        end_date = #{end_date},
+        start_time = #{start_time},
+        end_time = #{end_time}
+    WHERE
+        group_id = #{group_id}
+</update>
+<!-- 그룹별 조회 -->
+<select id="getGroupUser" parameterType="users"
+		resultType="users">
+SELECT
+    U.*,
+    GROUP_CONCAT(G.group_name ORDER BY G.group_name ASC SEPARATOR ', ') AS user_groups
+FROM
+    tb_user U
+LEFT JOIN
+    tb_user_group M ON U.user_code = M.user_code
+LEFT JOIN
+    tb_group G ON M.group_id = G.group_id
+GROUP BY
+    U.user_code
+<if test="group_name != null and group_name != ''">
+    HAVING
+    user_groups LIKE CONCAT('%', #{group_name}, '%')
+</if>
+    ORDER BY
+        U.user_code
+</select>
+<!-- 그룹 스케줄 추가 -->
+<insert id="insertGroupSchedule" parameterType="users">
+    INSERT INTO tb_group_schedule (
+        group_id,
+        start_date,
+        end_date,
+        start_time,
+        end_time
+    )
+    VALUES (
+        #{group_id},
+        #{start_date},
+        #{end_date},
+        #{start_time},
+        #{end_time}
+    )
+</insert>
+<!-- 그룹 스케줄 조회 -->
+<select id="getGroupScheduleList" parameterType="users"
+		resultType="users">
+SELECT * FROM tb_group_schedule
+</select>
+<!-- 그룹 리스트 조회 -->
+<select id="getGroupList" parameterType="users"
+		resultType="users">
+SELECT * FROM tb_group
+</select>
+	<!-- 그룹별 수신 알람 업데이트 -->
+<update id="updateRecieveAlarm" parameterType="users">
+    UPDATE tb_group
+    SET 
+        ${fieldName} = #{newValue}
+    WHERE
+        group_id = #{group_id}
+</update>
+
+<!-- 알람 내용, 보낼 사람 조회 -->
+<select id="sendAlarmList" parameterType="users"
+		resultType="users">
+<![CDATA[
+SELECT al.alarm_address, al.comment, agm.alarm_group_id, g.group_name AS 사람그룹, 
+g.group_id, ug.user_code, u.device_token, u.user_id, al.regtime,
+    CASE
+        WHEN al.alarm_address LIKE '%BCF1%' THEN 'BCF1'
+        WHEN al.alarm_address LIKE '%BCF2%' THEN 'BCF2'
+        WHEN al.alarm_address LIKE '%BCF3%' THEN 'BCF3'
+        WHEN al.alarm_address LIKE '%BCF4%' THEN 'BCF4'
+        WHEN al.alarm_address LIKE '%CM.%' THEN '공통1'
+        WHEN al.alarm_address LIKE '%CM2.%' THEN '공통2'
+        ELSE al.alarm_address 
+        END AS a_hogi
+        FROM tb_alarmlist al
+        INNER JOIN tb_alarm_group_mapping AS agm
+        ON al.alarm_address = agm.alarm_address
+			INNER JOIN tb_group AS g
+    ON (
+        (agm.alarm_group_id = 1 AND g.recieve_a = '1') OR
+        (agm.alarm_group_id = 2 AND g.recieve_b = '1') OR
+        (agm.alarm_group_id = 3 AND g.recieve_c = '1') OR
+        (agm.alarm_group_id = 4 AND g.recieve_d = '1') OR
+        (agm.alarm_group_id = 5 AND g.recieve_e = '1') OR
+        (agm.alarm_group_id = 6 AND g.recieve_f = '1') OR
+        (agm.alarm_group_id = 7 AND g.recieve_g = '1') OR
+        (agm.alarm_group_id = 8 AND g.recieve_h = '1') OR
+        (agm.alarm_group_id = 9 AND g.recieve_i = '1') OR
+        (agm.alarm_group_id = 10 AND g.recieve_j = '1')
+    )
+    INNER JOIN tb_user_group AS ug
+    ON ug.group_id = g.group_id
+    INNER JOIN tb_group_schedule AS gs
+    ON gs.group_id = g.group_id
+    INNER JOIN tb_user AS u
+    ON ug.user_code = u.user_code
+        WHERE al.is_send = '0'
+        AND al.a_value = '1'
+            AND CURDATE() BETWEEN gs.start_date AND gs.end_date
+    
+    AND (
+        (gs.start_time <= gs.end_time 
+            AND CURTIME() BETWEEN gs.start_time AND gs.end_time)
+            
+        OR
+        
+        (gs.start_time > gs.end_time 
+            AND (
+                (CURDATE() = gs.start_date AND CURTIME() >= gs.start_time)
+                OR (CURDATE() = gs.end_date AND CURTIME() <= gs.end_time)
+                OR (CURDATE() > gs.start_date AND CURDATE() < gs.end_date)
+            )
+        )
+    )
+]]>
+</select>
+
+<!-- 알람 전송됨으로 업데이트 -->
+	<update id="updateAlarmSend" parameterType="users">
+		UPDATE tb_alarmlist
+		SET is_send = '1'
+		WHERE regtime = #{regtime}
+	</update>
+	<!-- 스케줄 삭제 -->
+	<delete id="deleteSchedule" parameterType="users">
+	DELETE FROM
+	 tb_group_schedule
+	 WHERE 
+	 schedule_id = #{schedule_id}
+	</delete>
+	<!-- 회원정보 업데이트 -->
+	<update id="updateUser" parameterType="users">
+	UPDATE tb_user SET
+	user_id = #{user_id},
+	user_pw = #{user_pw},
+	user_name = #{user_name},
+	st_day = #{st_day},
+	user_phone = #{user_phone},
+	user_busu = #{user_busu},
+	user_jick = #{user_jick}
+	WHERE user_code = #{user_code}
+	</update>
+	<!-- 회원 삭제 -->
+	<delete id="deleteUser" parameterType="users">
+	DELETE FROM tb_user
+	WHERE user_code = #{user_code}
+	</delete>
+	<!-- 스케줄 업데이트 -->
+	<update id="updateGroupSchedule" parameterType="users">
+	UPDATE tb_group_schedule SET
+	group_id = #{group_id},
+	start_date = #{start_date},
+	end_date = #{end_date},
+	start_time = #{start_time},
+	end_time = #{end_time}
+	WHERE schedule_id = #{schedule_id}
+	</update>
+	<!-- 사람 그룹 이름 조회 -->
+<select id="getGroupName" parameterType="users"
+		resultType="users">
+SELECT * FROM tb_group;
+</select>
+	<!-- 그룹 이름 업데이트 -->
+	<update id="updateGroupName" parameterType="users">
+	UPDATE tb_group SET
+	group_name = #{group_name}
+	WHERE group_id = #{group_id}
+	</update>
+</mapper>

@@ -64,6 +64,7 @@ public class Users {
 	private String comment;
 	private String a_hogi;
 	private String regtime;
+	private String schedule_id;
 	
 	
 	//공지사항
@@ -81,6 +82,12 @@ public class Users {
 	
 	
 	
+	public String getSchedule_id() {
+		return schedule_id;
+	}
+	public void setSchedule_id(String schedule_id) {
+		this.schedule_id = schedule_id;
+	}
 	public String getRegtime() {
 		return regtime;
 	}

@@ -38,5 +38,58 @@ public class AlarmController {
 	public boolean updateAllAlarmGroup(@RequestBody Alarm alarm) {
 		return alarmService.updateAllAlarmGroup(alarm); 
 	}
-	
+	//알람 그룹 이름 조회
+	@RequestMapping(value="/alarm/getAlarmGroupName", method=RequestMethod.POST)
+	@ResponseBody
+	public List<Alarm> getAlarmGroupName(Alarm alarm) {
+		return alarmService.getAlarmGroupName(alarm);
+	}
+	//알람 조회(속한 그룹까지)
+	@RequestMapping(value="/alarm/selectAlarmList", method=RequestMethod.POST)
+	@ResponseBody
+	public List<Alarm> selectAlarmList(Alarm alarm) {
+		return alarmService.selectAlarmList(alarm);
+	}
+	//그룹에 알람 추가
+	@RequestMapping(value="/alarm/insertAlarmGroup", method=RequestMethod.POST)
+	@ResponseBody
+	public boolean insertAlarmGroup(@RequestBody Alarm alarm) {
+		return alarmService.insertAlarmGroup(alarm);
+
+	}
+	//그룹에 알람 삭제
+	@RequestMapping(value="/alarm/deleteAlarmGroup", method=RequestMethod.POST)
+	@ResponseBody
+	public boolean deleteAlarmGroup(@RequestBody Alarm alarm) {
+		return alarmService.deleteAlarmGroup(alarm);
+
+	}
+	//알람 일괄 선택
+	@RequestMapping(value="/alarm/insertAllAlarmGroup", method=RequestMethod.POST)
+	@ResponseBody
+	public boolean insertAllAlarmGroup(@RequestBody Alarm alarm) {
+		return alarmService.insertAllAlarmGroup(alarm);
+
+	}
+	//알람 일괄 선택
+	@RequestMapping(value="/alarm/deleteAllAlarmGroup", method=RequestMethod.POST)
+	@ResponseBody
+	public boolean deleteAllAlarmGroup(@RequestBody Alarm alarm) {
+		return alarmService.deleteAllAlarmGroup(alarm);
+
+	}
+	//알람 그룹 이릅 업데이트
+	@RequestMapping(value="/alarm/updateAlarmGroupName", method=RequestMethod.POST)
+	@ResponseBody
+	public boolean updateAlarmGroupName(@RequestBody Alarm alarm) {
+		return alarmService.updateAlarmGroupName(alarm);
+
+	}
+	//발생 알람 조회
+	@RequestMapping(value="/alarm/android/selectCreateAlarmList", method=RequestMethod.POST)
+	@ResponseBody
+	public List<Alarm> selectCreateAlarmList(@RequestBody Alarm alarm) {
+		return alarmService.selectCreateAlarmList(alarm);
+
+	}
 }

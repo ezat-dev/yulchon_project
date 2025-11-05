@@ -2,30 +2,30 @@
     pageEncoding="UTF-8"%>
 
 <!-- 제이쿼리홈페이지 js -->
-<script type="text/javascript" src="/tkheat/js/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="/ezPublic/js/jquery-3.7.1.min.js"></script>
 
 <!-- Tabulator 테이블 -->
-<script type="text/javascript" src="/tkheat/js/tabulator/tabulator.js"></script>
-<link rel="stylesheet" href="/tkheat/css/tabulator/tabulator_simple.css">
+<script type="text/javascript" src="/ezPublic/js/tabulator/tabulator.js"></script>
+<link rel="stylesheet" href="/ezPublic/css/tabulator/tabulator_simple.css">
 
 <!-- moment -->
-<script type="text/javascript" src="/tkheat/js/moment/moment.min.js"></script>
+<script type="text/javascript" src="/ezPublic/js/moment/moment.min.js"></script>
 
 <!-- 화면캡쳐용 -->
-<script type="text/javascript" src="/tkheat/js/html2canvas.js"></script>
+<script type="text/javascript" src="/ezPublic/js/html2canvas.js"></script>
 
 
 <!-- 하이차트 -->
-<script type="text/javascript" src="/tkheat/js/highchart/highcharts.js"></script>
-<script type="text/javascript" src="/tkheat/js/highchart/exporting.js"></script>
-<script type="text/javascript" src="/tkheat/js/highchart/export-data.js"></script>
-<script type="text/javascript" src="/tkheat/js/highchart/data.js"></script>
+<script type="text/javascript" src="/ezPublic/js/highchart/highcharts.js"></script>
+<script type="text/javascript" src="/ezPublic/js/highchart/exporting.js"></script>
+<script type="text/javascript" src="/ezPublic/js/highchart/export-data.js"></script>
+<script type="text/javascript" src="/ezPublic/js/highchart/data.js"></script>
 
 
 <!-- Air Datepicker -->
-<script type="text/javascript" src="/tkheat/js/airdatepicker/datepicker.min.js"></script>
-<script type="text/javascript" src="/tkheat/js/airdatepicker/datepicker.ko.js"></script>
-<link rel="stylesheet" href="/tkheat/css/airdatepicker/datepicker.min.css"> 
+<script type="text/javascript" src="/ezPublic/js/airdatepicker/datepicker.min.js"></script>
+<script type="text/javascript" src="/ezPublic/js/airdatepicker/datepicker.ko.js"></script>
+<link rel="stylesheet" href="/ezPublic/css/airdatepicker/datepicker.min.css"> 
 
 <style>
 	
@@ -286,7 +286,7 @@ function pageObject(paramKey){
 	
 	function userInfoList(now_page_code) {
 	    $.ajax({
-	        url: '/tkheat/user/info',
+	        url: '/ezPublic/user/info',
 	        type: 'POST',
 	        contentType: 'application/json',
 	        dataType: 'json',

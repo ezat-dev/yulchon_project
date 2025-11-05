@@ -7,9 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>권한 설정</title>
     <%-- <%@ include file="../include/sideBar.jsp" %> --%>
-    <link rel="stylesheet" href="/tkheat/css/tabBar/tabBar.css">
+    <link rel="stylesheet" href="/ezPublic/css/tabBar/tabBar.css">
     <%@include file="../include/pluginpage.jsp" %>
-    <link rel="stylesheet" href="/tkheat/css/management/userinsert2.css">
+    <link rel="stylesheet" href="/ezPublic/css/management/userinsert2.css">
     <script type="text/javascript" src="https://oss.sheetjs.com/sheetjs/xlsx.full.min.js"></script>
     <style>
     
@@ -189,7 +189,6 @@
     <main class="main">
         <div class="tab">
         
-
             <div class="button-container">
             
                <div class="box1">
@@ -205,23 +204,21 @@
 			  <label class="daylabel">성명 :</label>
 			 <input type="text" id="user_name" style="font-size:16px; height:30px; width:220px; margin-bottom:10px; text-align:center; border-radius:6px; border:1px solid #ccc;" placeholder="이름 입력">
 
-
-
 	</div>
 
 	           
 		
                 <button class="select-button">
-                    <img src="/tkheat/css/image/search-icon.png" alt="select" class="button-image">조회
+                    <img src="/ezPublic/css/image/search-icon.png" alt="select" class="button-image">조회
                 </button>
                 <button class="insert-button">
-                    <img src="/tkheat/css/image/insert-icon.png" alt="insert" class="button-image">추가
+                    <img src="/ezPublic/css/image/insert-icon.png" alt="insert" class="button-image">추가
                 </button>
-<!--                 <button class="delete-button">
-				    <img src="/geomet/css/tabBar/xDel3.png" alt="delete" class="button-image"> 삭제
+                 <button class="delete-button">
+				    <img src="/ezPublic/css/image/delete-icon.png" alt="delete" class="button-image"> 삭제
 				</button>
                 
-                
+            <!--     
                 <button class="excel-button">
                     <img src="/geomet/css/tabBar/excel-icon.png" alt="excel" class="button-image">엑셀
                 </button> -->
@@ -240,8 +237,8 @@
 	        <h2>사용자 등록</h2>
 	        <form id="corrForm"autocomplete="off">
 	          
-		<!-- 	<input type="text" name="user_code" style="display:none;">
- -->
+		 	<input type="text" name="user_code" style="display:none;">
+ 
 	
 	            <label>ID</label>
 				<input type="text" name="user_id">
@@ -275,21 +272,7 @@
 	           
 	            <label>직책</label>
 	             <input type="text" name="user_jick">
-	             
-	        <label>1라인</label>
-			<select name="message_yn">
-			  <option value="Y">수신</option>
-			  <option value="N">수신 안함</option>
-			</select>
-			
-			<label>2라인</label>
-			<select name="message_yn2">
-			  <option value="Y">수신</option>
-			  <option value="N">수신 안함</option>
-			</select>
 	            
-	         
-	
 	            <button type="submit" id="saveCorrStatus">저장</button>
 	            <button type="submit" id="updateCorrStatus" style="display: none;">수정</button>
 	            <button type="button" id="closeModal">닫기</button>
@@ -302,6 +285,7 @@
 let now_page_code = "h03";
 var dataTable;
 var selectedRowData = null;
+let title = "만든 제목";
 
 $(function() {
   // Initialize the dataTable
@@ -311,7 +295,7 @@ $(function() {
     headerHozAlign: "center",
     ajaxConfig: { method: 'POST' },
     ajaxLoader: false,
-    ajaxURL: "/tkheat/user/selectList",
+    ajaxURL: "/ezPublic/user/selectList",
     ajaxParams: {},
     placeholder: "조회된 데이터가 없습니다.",
     ajaxResponse: function(url, params, response) {
@@ -322,7 +306,7 @@ $(function() {
       { title: "NO", formatter: "rownum", hozAlign: "center", width: 120 },
       { title: "user_code", field: "user_code", sorter: "string", width: 240, hozAlign: "center", visible: false },
 
-      { title: "아이디", field: "user_id", sorter: "string", width: 100, hozAlign: "center" },
+      { title: "ID", field: "user_id", sorter: "string", width: 100, hozAlign: "center" },
       { title: "비밀번호", field: "user_pw", sorter: "string", width: 240, hozAlign: "center", visible: false },
       { title: "성명", field: "user_name", sorter: "string", width: 240, hozAlign: "center" },
       { title: "입사일", field: "st_day", width: 170, hozAlign: "center" },
@@ -330,31 +314,7 @@ $(function() {
       { title: "등급", field: "user_level", sorter: "string", width: 240, hozAlign: "center", visible: false },
 
       { title: "부서", field: "user_busu", sorter: "string", width: 120, hozAlign: "center" },
-      { title: "직책", field: "user_jick", sorter: "string", width: 120, hozAlign: "center" },
-      { title: "1호기 수신", field: "message_yn", sorter: "string", width: 200, hozAlign: "center",
-          formatter: function(cell, formatterParams, onRender){
-              const value = cell.getValue();
-              if (value === 'Y') {
-                  return "수신";
-              } else if (value === 'N') {
-                  return "수신 안함";
-              } else {
-                  return value; // Y/N이 아닌 다른 값은 그대로 출력
-              }
-          }
-       },
-      { title: "2호기 수신", field: "message_yn2", sorter: "string", width: 200, hozAlign: "center",
-           formatter: function(cell, formatterParams, onRender){
-               const value = cell.getValue();
-               if (value === 'Y') {
-                   return "수신";
-               } else if (value === 'N') {
-                   return "수신 안함";
-               } else {
-                   return value; // Y/N이 아닌 다른 값은 그대로 출력
-               }
-           }
-        }
+      { title: "직책", field: "user_jick", sorter: "string", width: 120, hozAlign: "center" }
     ],
     rowClick: function(e, row) {
       $('#dataTable .tabulator-row').removeClass('row_select');
@@ -366,6 +326,7 @@ $(function() {
       selectedRowData = d;
       $('#corrForm')[0].reset();
       $('input[name="no"]').val(d.idx);
+      $('input[name="user_code"]').val(d.user_code);
       $('input[name="user_id"]').val(d.user_id);
       $('input[name="user_pw"]').val(d.user_pw);
       $('input[name="st_day"]').val(d.st_day);
@@ -385,18 +346,20 @@ $(function() {
 
   // 조회 버튼 클릭 시
   $('.select-button').click(function() {
-    var user_name = $('#user_name').val();
-    var startDate = $('#startDate').val();
-/*     console.log("조회 버튼 클릭됨 - 전송 데이터:", {
-      user_name: user_name,
-      startDate: startDate
-    }); */
-   // console.log("전송된 startDate 값:", startDate);
+	  const st_day = $('#startDate').val(); 
+	  const user_name = $('#user_name').val();  
+	  console.log("날짜:", st_day + ", 이름:", user_name);
 
-    dataTable.setData("/geomet/user/userInsert/select", {
-      user_name: user_name,
-      startDate: startDate
-    });
+	    const data = {};
+	    
+	    if (st_day) {
+	        data.st_day = st_day; 
+	    }
+	    if (user_name) {
+	        data.user_name = user_name;
+	    }
+	    
+	  dataTable.setData("/ezPublic/user/selectList", data);
   });
 
   // 삽입 버튼 클릭 시
@@ -425,14 +388,14 @@ $(function() {
     	console.log("삭제 요청 데이터:", deleteData); // 추가된 로그
 
     	$.ajax({
-    	  url: "/geomet/user/userInsert/delete",
+    	  url: "/ezPublic/user/deleteUser",
     	  type: "POST",
     	  contentType: "application/json",
     	  data: JSON.stringify(deleteData),
     	  success: function(res) {
     	    alert('삭제되었습니다.');
     	
-    	    dataTable.setData("/geomet/user/userInsert/select", {});
+    	    dataTable.setData("/ezPublic/user/selectList", {});
     	    selectedRowData = null;
     	  },
     	  error: function() {
@@ -451,16 +414,23 @@ $(function() {
     event.preventDefault();
     //var formData = new FormData($('#corrForm')[0]);
     var formData = $('#corrForm').serialize();
-    if (selectedRowData && selectedRowData.user_code) {
+
+    // 사용자 저장 시 user_code 삭제
+    formData = formData.replace(/&user_code=[^&]*/g, ''); 
+    formData = formData.replace(/^user_code=[^&]*&/g, ''); 
+    formData = formData.replace(/^user_code=[^&]*/g, '');
+    console.log("formData: ", formData);
+    //formData.
+/*     if (selectedRowData && selectedRowData.user_code) {
       formData.append('user_code', selectedRowData.user_code);  // 수정 시 user_code 추가
-    }
+    } */
 /*     for (var pair of formData.entries()) {
         console.log(pair[0] + ': ' + pair[1]);
       } */
         
 
     $.ajax({
-      url: "/tkheat/user/insert",
+      url: "/ezPublic/user/insert",
       type: "POST",
       data: formData,
       //processData: false,
@@ -470,7 +440,7 @@ $(function() {
         if (result.status === "OK") {
             alert(result.message); // "사용자 정보가 성공적으로 저장되었습니다."
             $('#modalContainer').hide();
-            dataTable.setData("/tkheat/user/selectList", {});
+            dataTable.setData("/ezPublic/user/selectList", {});
             selectedRowData = null;
         } else {
             alert("오류: " + result.data); 
@@ -485,29 +455,36 @@ $(function() {
   //수정 버튼 클릭 시
   $('#updateCorrStatus').click(function(event) {
     event.preventDefault();
-    //var formData = new FormData($('#corrForm')[0]);
-    var formData = $('#corrForm').serialize();
-    if (selectedRowData && selectedRowData.user_code) {
-      formData.append('user_code', selectedRowData.user_code);  // 수정 시 user_code 추가
-    }
-/*     for (var pair of formData.entries()) {
-        console.log(pair[0] + ': ' + pair[1]);
-      } */
-        
+    const data = {};
+    const formDataArray = $('#corrForm').serializeArray();
+    $.each(formDataArray, function() {
+        data[this.name] = this.value;
+    });
 
+    // 결과 확인 (콘솔 출력)
+    console.log("폼 데이터 추출 결과:", data);
+/*     if (selectedRowData && selectedRowData.user_code) {
+    	$('input[name="user_code"]').val(selectedRowData.user_code);  // 수정 시 user_code 추가
+    }
+    var formData = $('#corrForm').serialize(); */
+        
     $.ajax({
-      url: "/geomet/user/userInsert/update",
+      url: "/ezPublic/user/updateUser",
       type: "POST",
-      data: formData,
+      contentType: 'application/json',
+      data: JSON.stringify(data),
       //processData: false,
       //contentType: false,
-      success: function() {
+      success: function(result) {
+          if(result == true){
         alert("수정되었습니다!");
         $('#modalContainer').hide();
     
-        dataTable.setData("/geomet/user/userInsert/select", {});
-        selectedRowData = null;
-      },
+        dataTable.setData("/ezPublic/user/selectList", {});
+          }else{
+			alert('아이디를 확인해주세요');
+              }
+        },
       error: function() {
         alert('저장 중 오류가 발생했습니다.');
       }
