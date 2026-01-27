@@ -2,30 +2,30 @@
     pageEncoding="UTF-8"%>
 
 <!-- 제이쿼리홈페이지 js -->
-<script type="text/javascript" src="/ezPublic/js/jquery-3.7.1.min.js"></script>
+<script type="text/javascript" src="/yulchon/js/jquery-3.7.1.min.js"></script>
 
 <!-- Tabulator 테이블 -->
-<script type="text/javascript" src="/ezPublic/js/tabulator/tabulator.js"></script>
-<link rel="stylesheet" href="/ezPublic/css/tabulator/tabulator_simple.css">
+<script type="text/javascript" src="/yulchon/js/tabulator/tabulator.js"></script>
+<link rel="stylesheet" href="/yulchon/css/tabulator/tabulator_simple.css">
 
 <!-- moment -->
-<script type="text/javascript" src="/ezPublic/js/moment/moment.min.js"></script>
+<script type="text/javascript" src="/yulchon/js/moment/moment.min.js"></script>
 
 <!-- 화면캡쳐용 -->
-<script type="text/javascript" src="/ezPublic/js/html2canvas.js"></script>
+<script type="text/javascript" src="/yulchon/js/html2canvas.js"></script>
 
 
 <!-- 하이차트 -->
-<script type="text/javascript" src="/ezPublic/js/highchart/highcharts.js"></script>
-<script type="text/javascript" src="/ezPublic/js/highchart/exporting.js"></script>
-<script type="text/javascript" src="/ezPublic/js/highchart/export-data.js"></script>
-<script type="text/javascript" src="/ezPublic/js/highchart/data.js"></script>
+<script type="text/javascript" src="/yulchon/js/highchart/highcharts.js"></script>
+<script type="text/javascript" src="/yulchon/js/highchart/exporting.js"></script>
+<script type="text/javascript" src="/yulchon/js/highchart/export-data.js"></script>
+<script type="text/javascript" src="/yulchon/js/highchart/data.js"></script>
 
 
 <!-- Air Datepicker -->
-<script type="text/javascript" src="/ezPublic/js/airdatepicker/datepicker.min.js"></script>
-<script type="text/javascript" src="/ezPublic/js/airdatepicker/datepicker.ko.js"></script>
-<link rel="stylesheet" href="/ezPublic/css/airdatepicker/datepicker.min.css"> 
+<script type="text/javascript" src="/yulchon/js/airdatepicker/datepicker.min.js"></script>
+<script type="text/javascript" src="/yulchon/js/airdatepicker/datepicker.ko.js"></script>
+<link rel="stylesheet" href="/yulchon/css/airdatepicker/datepicker.min.css"> 
 
 <style>
 	
@@ -286,7 +286,7 @@ function pageObject(paramKey){
 	
 	function userInfoList(now_page_code) {
 	    $.ajax({
-	        url: '/ezPublic/user/info',
+	        url: '/yulchon/user/info',
 	        type: 'POST',
 	        contentType: 'application/json',
 	        dataType: 'json',
@@ -354,8 +354,8 @@ function pageObject(paramKey){
 
 
 	$(document).ready(function() {
-	    userInfoList(now_page_code);
-	    console.log("나우페이지코드",now_page_code)
+/* 	    userInfoList(now_page_code);
+	    console.log("나우페이지코드",now_page_code) */
 	});
 
 

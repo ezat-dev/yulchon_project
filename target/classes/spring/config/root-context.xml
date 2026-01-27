@@ -17,7 +17,6 @@
 		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task.xsd">
 		
 	<task:annotation-driven executor="executor" scheduler="scheduler" proxy-target-class="false"/>
-	<bean id="commProcessor" class="com.tkheat.async.CommProcessor" />
 	<task:scheduler id="scheduler" pool-size="4" />
 	<task:executor id="executor" keep-alive="10" pool-size="10-20"
 		queue-capacity="10" rejection-policy="ABORT" />
@@ -28,14 +27,22 @@
 		<property name="username" value="sa" /> 
 		<property name="password" value="ezat6695"/>
  	</bean>  -->
-		<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"> 
+<!-- 		<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"> 
 		<property name="driverClassName" value="org.mariadb.jdbc.Driver" /> 
-		<!-- <property name="url" value="jdbc:mariadb://192.168.1.115:3306/seco" />  -->
+		<property name="url" value="jdbc:mariadb://192.168.1.115:3306/seco" /> 
 		<property name="url" value="jdbc:mariadb://ezat.co.kr:3306/seco" />
 		<property name="username" value="root" /> 
 		<property name="password" value="ezat6695"/>
-	</bean> 
+	</bean>  -->
 
+	<!-- mssql -->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"> 
+        <property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" /> 
+<!--         <property name="url" value="jdbc:sqlserver://211.233.61.253:1433;DataBaseName=HEATDB_EZAT;" />  -->
+		<property name="url" value="jdbc:sqlserver://211.233.61.253:1433;DataBaseName=WISEN_DEV;" />
+        <property name="username" value="sa" /> 
+        <property name="password" value="WISEN"/>
+    </bean>
 	<tx:annotation-driven/>
 
 	<!-- 포스트그레 메인 -->	
@@ -51,6 +58,5 @@
 	       <property name="dataSource" ref="dataSource"/>
 	   </bean>
 
-	<context:component-scan base-package="com.tkheat.dao com.tkheat.service"/>
-	<bean id="userController" class="com.tkheat.controller.UserController" />
+	<context:component-scan base-package="com.yulchon.dao,com.yulchon.service"/>
 </beans>

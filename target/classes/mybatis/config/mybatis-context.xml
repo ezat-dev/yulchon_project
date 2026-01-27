@@ -4,28 +4,10 @@
   "http://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
 <typeAliases>
-	<package name="com.tkheat.domain"/>
+	<package name="com.yulchon.domain"/>
 </typeAliases>
   <mappers>
   	<mapper resource="mybatis/mapper/users.xml"/>
-  	<mapper resource="mybatis/mapper/corp.xml"/>
-  	<mapper resource="mybatis/mapper/fac.xml"/>
-  	<mapper resource="mybatis/mapper/product.xml"/>
-  	<mapper resource="mybatis/mapper/measure.xml"/>
-  	<mapper resource="mybatis/mapper/standard.xml"/>
-  	<mapper resource="mybatis/mapper/ipgo.xml"/>
-  	<mapper resource="mybatis/mapper/chulgo.xml"/>
-  	<mapper resource="mybatis/mapper/jaego.xml"/>
-  	<mapper resource="mybatis/mapper/gongjung.xml"/>
-  	<mapper resource="mybatis/mapper/work.xml"/>
-  	<mapper resource="mybatis/mapper/siljuk.xml"/>
-  	<mapper resource="mybatis/mapper/sparePart.xml"/>
-  	<mapper resource="mybatis/mapper/suip.xml"/>
-  	<mapper resource="mybatis/mapper/bega.xml"/>
-  	<mapper resource="mybatis/mapper/suri.xml"/>
-  	<mapper resource="mybatis/mapper/jeomgeom.xml"/>
-  	<mapper resource="mybatis/mapper/monitoring.xml"/>
-  	<mapper resource="mybatis/mapper/alarm.xml"/>
-  	<mapper resource="mybatis/mapper/temp.xml"/>
+  	<mapper resource="mybatis/mapper/management.xml"/>
   </mappers>
 </configuration>

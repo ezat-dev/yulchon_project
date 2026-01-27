@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/ezPublic/css/login/style.css">
+    <link rel="stylesheet" href="/yulchon/css/login/style.css">
     <%@include file="include/pluginpage.jsp" %>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <title>로그인</title>
@@ -116,17 +116,17 @@
 <body>
     <div class="login-container">
         
-        <h2 class="header-title">알람 발송 관리 로그인</h2>
+        <h2 class="header-title">율촌 생산제품 출하관리 시스템</h2>
         
         <form id="userForm">
             <div class="input-group">
                 <label for="n_id">아이디</label>
-                <input type="text" name="user_id" placeholder="아이디를 입력하세요." />
+                <input type="text" name="ID_LOGIN" placeholder="아이디를 입력하세요." />
             </div>
 
             <div class="input-group">
                 <label for="n_pw">패스워드</label>
-                <input type="password" name="user_pw" placeholder="비밀번호를 입력하세요." />
+                <input type="password" name="NO_PASSWORD" placeholder="비밀번호를 입력하세요." />
             </div>
 
             <input type="hidden" id="n_ip" name="user_ip" />
@@ -147,7 +147,7 @@
                 $("#n_ip").val(val.ip);
             });
         });
-        $('input[name="user_id"], input[name="user_pw"]').keypress(function(event) {
+        $('input[name="ID_LOGIN"], input[name="NO_PASSWORD"]').keypress(function(event) {
             if (event.keyCode == 13 || event.which == 13) {
                 event.preventDefault(); 
                 login(); 
@@ -156,7 +156,7 @@
         function login(){
             var userData = $("#userForm").serialize(); 
             $.ajax({
-                url:"/ezPublic/user/login",
+                url:"/yulchon/user/login",
                 type:"post",
                 dataType: "json",
                 data:userData,
@@ -165,7 +165,7 @@
                     if(result.status == "NG"){
                         alert(result.data);    
                     }else{                
-                        location.href = "/ezPublic/main";
+                        location.href = "/yulchon/main";
                     }
                 }
             });

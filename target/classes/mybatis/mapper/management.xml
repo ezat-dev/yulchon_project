@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="management">
+
+<!-- 인보이스 부여 안된 품목 조회(구현중) -->
+<select id="getInventoryList" parameterType="management" resultType="management">
+SELECT 'N' AS YN_CHECK
+     , A.CD_ITEM
+     , C.NM_ITEM
+     , C.SPEC_ITEM
+     , C.KGM_WEIGHT
+     , FLOOR(ISNULL(A.LBL_REAL_LENGTH, 0)) AS LBL_REAL_LENGTH
+     , A.LBL_LOT_NO
+     , A.NO_MFG_ORDER_SERIAL
+     , FLOOR(B.QTY_INVENTORY) AS qty_inventory
+     , (ISNULL(B.QTY_INVENTORY,0) * ISNULL(C.KGM_WEIGHT,0) * ISNULL(A.LBL_REAL_LENGTH,0)) / 1000 AS WGT_INVENTORY
+     , B.CD_WH
+     , (SELECT NM_WH FROM B_WAREHOUSE WHERE CD_WH = B.CD_WH) AS NM_WH
+     , A.LBL_DATE
+     , A.NM_CUSTOMER
+     , A.PO_CUSTOMER
+     , A.NO_RECEIPT
+     , A.REMARKS
+     , A.CD_WC
+     , A.SEQ_MFG_ORDER
+     , A.NM_LOCATION
+     , A.ID_INSERT
+     , A.DT_INSERT
+     , A.ID_UPDATE
+     , A.DT_UPDATE
+     , NULL AS invoice_no
+     , eiim.invoice_no 
+FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
+INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK)
+    ON A.CD_ITEM = B.CD_ITEM
+   AND A.LBL_LOT_NO = B.NO_LOT
+INNER JOIN B_ITEM C WITH (NOLOCK)
+    ON A.CD_ITEM = C.CD_ITEM
+INNER JOIN ez_inventory_lot_ext AS eile
+    ON A.LBL_LOT_NO = eile.ext_lot_no
+
+LEFT JOIN ez_invoice_inventory_mapping eiim
+    ON eiim.lot_no = A.LBL_LOT_NO
+LEFT JOIN ez_invoice_name ein
+    ON eiim.invoice_no = ein.invoice_no
+
+WHERE B.QTY_INVENTORY != 0
+  AND eiim.invoice_no IS NULL; 
+</select>
+
+<!-- 인보이스 조회 -->
+<select id="getInvoiceList" parameterType="management" resultType="management">
+SELECT * FROM ez_invoice_name ORDER BY invoice_name DESC
+</select>
+
+<!-- 인보이스 생성 -->
+<insert id="insertInvoiceName" parameterType="management">
+INSERT INTO ez_invoice_name (invoice_name)
+SELECT
+    #{invoice_name_base}
+    + '-'
+    + RIGHT(
+        '000' + CAST(
+            ISNULL(MAX(CAST(RIGHT(invoice_name, 3) AS INT)), 0) + 1
+            AS VARCHAR(3)
+        ),
+        3
+      )
+FROM ez_invoice_name WITH (UPDLOCK, HOLDLOCK)
+WHERE invoice_name LIKE #{invoice_name_base} + '-%'
+</insert>
+
+<!-- 가장 최근에 만든 인보이스 조회 -->
+<select id="getRecentInvoice" parameterType="management" resultType="management">
+SELECT TOP 1 * FROM ez_invoice_name ORDER BY insert_date DESC
+</select>
+
+<!-- 인보이스 클릭시 해당하는 품목 조회 -->
+<select id="getInvoiceInventoryList" parameterType="management" resultType="management">
+SELECT 'N' AS YN_CHECK --선택
+     , A.CD_ITEM --품목코드
+     , C.NM_ITEM --품목명
+     , C.SPEC_ITEM --규격
+     , C.KGM_WEIGHT --단중
+     , FLOOR(ISNULL(A.LBL_REAL_LENGTH, 0)) AS LBL_REAL_LENGTH --실길이
+     , A.LBL_LOT_NO --라벨ID
+     , A.NO_MFG_ORDER_SERIAL --W/O NO
+     , FLOOR(B.QTY_INVENTORY) AS qty_inventory --재고수량
+     , (ISNULL(B.QTY_INVENTORY,0) * ISNULL(C.KGM_WEIGHT,0) * ISNULL(A.LBL_REAL_LENGTH,0)) / 1000 AS WGT_INVENTORY --재고중량
+     , B.CD_WH --창고코드
+     , (SELECT NM_WH FROM B_WAREHOUSE WHERE CD_WH = B.CD_WH) AS NM_WH --창고명
+     , A.LBL_DATE --발행일자
+     , A.NM_CUSTOMER --고객명
+     , A.PO_CUSTOMER --고객PO NO
+     , A.NO_RECEIPT --입하NO
+     , A.REMARKS --비고
+     , A.CD_WC
+     , A.SEQ_MFG_ORDER
+     , A.NM_LOCATION
+     , A.ID_INSERT
+     , A.DT_INSERT
+     , A.ID_UPDATE
+     , A.DT_UPDATE
+     , eiim.invoice_no
+  FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
+       INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
+      INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
+
+        INNER JOIN ez_invoice_inventory_mapping eiim
+    ON eiim.lot_no = A.LBL_LOT_NO
+    INNER JOIN ez_invoice_name ein
+    ON eiim.invoice_no = ein.invoice_no
+    INNER JOIN ez_inventory_lot_ext AS eile ON LBL_LOT_NO = eile.ext_lot_no
+  WHERE 1=1
+      AND B.QTY_INVENTORY != 0
+      AND ein.invoice_no = #{invoice_no}
+</select>
+
+<!-- 재고 로트번호 동기화 프로시저 -->
+<select id="syncEzInventoryLotExt"
+        statementType="CALLABLE">
+    { CALL dbo.ez_usp_sync_ez_inventory_lot_ext }
+</select>
+
+<!-- 인보이스에 품목 추가 -->
+<update id="insertInvoiceInventory">
+  INSERT INTO ez_invoice_inventory_mapping (
+      invoice_no,
+      lot_no
+  )
+  VALUES
+  <foreach collection="lotList" item="lot" separator=",">
+    (#{invoice_no}, #{lot})
+  </foreach>
+</update>
+
+<!-- 인보이스 품목 삭제 -->
+<delete id="deleteInvoiceInventory">
+  DELETE FROM ez_invoice_inventory_mapping 
+  WHERE invoice_no = #{invoice_no}
+    AND lot_no IN
+    <foreach collection="lotList"
+             item="lot"
+             open="("
+             separator=","
+             close=")">
+      #{lot}
+  </foreach>
+</delete>
+
+<!-- Lot No별로 인보이스 부여되고 제품창고인 품목 하나 조회 -->
+<select id="getShippingMarkPrintInventory" parameterType="management" resultType="management">
+SELECT 'N' AS YN_CHECK --선택
+     , A.CD_ITEM --품목코드
+     , C.NM_ITEM --품목명
+     , C.SPEC_ITEM --규격
+     , C.KGM_WEIGHT --단중
+     , FLOOR(ISNULL(A.LBL_REAL_LENGTH, 0)) AS LBL_REAL_LENGTH --실길이
+     , A.LBL_LOT_NO --라벨ID
+     , A.NO_MFG_ORDER_SERIAL --W/O NO
+     , FLOOR(B.QTY_INVENTORY) AS qty_inventory --재고수량
+     , (ISNULL(B.QTY_INVENTORY,0) * ISNULL(C.KGM_WEIGHT,0) * ISNULL(A.LBL_REAL_LENGTH,0)) / 1000 AS WGT_INVENTORY --재고중량
+     , B.CD_WH --창고코드
+     , (SELECT NM_WH FROM B_WAREHOUSE WHERE CD_WH = B.CD_WH) AS NM_WH --창고명
+     , A.LBL_DATE --발행일자
+     , A.NM_CUSTOMER --고객명
+     , A.PO_CUSTOMER --고객PO NO
+     , A.NO_RECEIPT --입하NO
+     , A.REMARKS --비고
+     , A.CD_WC
+     , A.SEQ_MFG_ORDER
+     , A.NM_LOCATION
+     , A.ID_INSERT
+     , A.DT_INSERT
+     , A.ID_UPDATE
+     , A.DT_UPDATE
+     , eiim.invoice_no
+  FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
+       INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
+      INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
+
+        INNER JOIN ez_invoice_inventory_mapping eiim
+    ON eiim.lot_no = A.LBL_LOT_NO
+    INNER JOIN ez_invoice_name ein
+    ON eiim.invoice_no = ein.invoice_no
+    INNER JOIN ez_inventory_lot_ext AS eile ON LBL_LOT_NO = eile.ext_lot_no
+  WHERE 1=1
+      AND B.QTY_INVENTORY != 0
+      AND B.CD_WH = 'YC_FG3'
+      AND A.LBL_LOT_NO = #{lbl_lot_no}
+</select>
+
+<!-- 출하목록 생성 -->
+<insert id="insertShippingList">
+INSERT INTO ez_shipping_list (invoice_no, lbl_lot_no)
+SELECT #{invoice_no}, #{lbl_lot_no}
+WHERE NOT EXISTS (
+    SELECT 1 
+    FROM ez_shipping_list 
+    WHERE invoice_no = #{invoice_no} 
+      AND lbl_lot_no = #{lbl_lot_no}
+);
+</insert>
+
+<!-- 출하목록 삭제 -->
+<delete id="deleteShippingList">
+DELETE FROM ez_shipping_list
+WHERE 1=1
+AND invoice_no = #{invoice_no}
+AND lbl_lot_no = #{lbl_lot_no}
+</delete>
+
+<!-- 인보이스별 출하목록 조회 -->
+<select id="getShippingList" parameterType="management" resultType="management">
+SELECT 'N' AS YN_CHECK --선택
+     , A.CD_ITEM --품목코드
+     , C.NM_ITEM --품목명
+     , C.SPEC_ITEM --규격
+     , C.KGM_WEIGHT --단중
+     , FLOOR(ISNULL(A.LBL_REAL_LENGTH, 0)) AS LBL_REAL_LENGTH --실길이
+     , A.LBL_LOT_NO --라벨ID
+     , A.NO_MFG_ORDER_SERIAL --W/O NO
+     , FLOOR(B.QTY_INVENTORY) AS qty_inventory --재고수량
+     , (ISNULL(B.QTY_INVENTORY,0) * ISNULL(C.KGM_WEIGHT,0) * ISNULL(A.LBL_REAL_LENGTH,0)) / 1000 AS WGT_INVENTORY --재고중량
+     , B.CD_WH --창고코드
+     , (SELECT NM_WH FROM B_WAREHOUSE WHERE CD_WH = B.CD_WH) AS NM_WH --창고명
+     , A.LBL_DATE --발행일자
+     , A.NM_CUSTOMER --고객명
+     , A.PO_CUSTOMER --고객PO NO
+     , A.NO_RECEIPT --입하NO
+     , A.REMARKS --비고
+     , A.CD_WC
+     , A.SEQ_MFG_ORDER
+     , A.NM_LOCATION
+     , A.ID_INSERT
+     , A.DT_INSERT
+     , A.ID_UPDATE
+     , A.DT_UPDATE
+     , eiim.invoice_no
+  FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
+       INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
+      INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
+
+        INNER JOIN ez_invoice_inventory_mapping eiim
+    ON eiim.lot_no = A.LBL_LOT_NO
+    INNER JOIN ez_invoice_name ein
+    ON eiim.invoice_no = ein.invoice_no
+    INNER JOIN ez_inventory_lot_ext AS eile ON LBL_LOT_NO = eile.ext_lot_no
+    INNER JOIN ez_shipping_list AS esl ON A.LBL_LOT_NO = esl.lbl_lot_no
+  WHERE 1=1
+      AND B.QTY_INVENTORY != 0
+      AND B.CD_WH = 'YC_FG3'
+      AND eiim.invoice_no = #{invoice_no}
+      </select>
+      
+      <!-- 출하완료처리 저장(출하완료) -->
+      <insert id="insertShippingResult">
+INSERT INTO ez_shipping_result 
+(invoice_no, lbl_lot_no, is_shipped)
+VALUES(#{invoice_no}, #{lbl_lot_no}, 'y')
+</insert>
+
+      <!-- 출하완료처리 저장(출하취소) -->
+      <insert id="insertCancelShippingResult">
+INSERT INTO ez_shipping_result 
+(invoice_no, lbl_lot_no, is_shipped)
+VALUES(#{invoice_no}, #{lbl_lot_no}, 'n')
+</insert>
+
+<!-- 출하목록 품목삭제 -->
+<delete id="deleteShippingListInventory">
+  DELETE FROM ez_shipping_list
+  WHERE invoice_no = #{invoice_no}
+    AND lbl_lot_no IN
+    <foreach collection="lotList"
+             item="lot"
+             open="("
+             separator=","
+             close=")">
+      #{lot}
+  </foreach>
+</delete>
+</mapper>

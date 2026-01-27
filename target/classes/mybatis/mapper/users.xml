@@ -6,11 +6,9 @@
 
 	<select id="getLoginUser" parameterType="users"
 		resultType="users">
-		SELECT *
-		FROM tb_user
-		WHERE user_id = #{user_id} AND user_pw
-		= #{user_pw}
-		AND (user_role = '1' OR user_role = '0')
+		SELECT * FROM O_USER
+		WHERE ID_LOGIN = #{ID_LOGIN}
+		AND NO_PASSWORD = #{NO_PASSWORD}
 	</select>
 
 
@@ -99,117 +97,6 @@
 		#{user_phone}
 		)
 	</insert>
-
-	<!-- 선택한 사용자 권한조회 -->
-	<select id="authorityUserSelect" parameterType="permission"
-		resultType="permission">
-		SELECT *
-		FROM PERMISSION
-		WHERE USER_CODE = #{user_code}
-	</select>
-
-	<!-- 선택한 사용자 권한수정 -->
-	<update id="authorityUserSelectSave" parameterType="permission">
-		UPDATE
-		PERMISSION SET
-		A01 = #{a01},
-		A02 = #{a02},
-		A03 = #{a03},
-		A04 = #{a04},
-		A05
-		= #{a05},
-		A06 = #{a06},
-		A07 = #{a07},
-		A08 = #{a08},
-		A09 = #{a09},
-		A10 =
-		#{a10},
-		B01 = #{b01},
-		B02 = #{b02},
-		B03 = #{b03},
-		B04 = #{b04},
-		B05 =
-		#{b05},
-		C01 = #{c01},
-		C02 = #{c02},
-		C03 = #{c03},
-		C04 = #{c04},
-		C05 =
-		#{c05},
-		C06 = #{c06},
-		C07 = #{c07},
-		C08 = #{c08},
-		C09 = #{c09},
-		C10 =
-		#{c10},
-		C11 = #{c11},
-		C12 = #{c12},
-		D01 = #{d01},
-		D02 = #{d02},
-		D03 =
-		#{d03},
-		E01 = #{e01},
-		E02 = #{e02},
-		E03 = #{e03},
-		E04 = #{e04},
-		E05 =
-		#{e05},
-		E06 = #{e06},
-		E07 = #{e07},
-		E08 = #{e08},
-		E09 = #{e09},
-		F01 =
-		#{f01},
-		F02 = #{f02},
-		F03 = #{f03},
-		F04 = #{f04},
-		F05 = #{f05},
-		F06 =
-		#{f06},
-		F07 = #{f07},
-		F08 = #{f08},
-		F09 = #{f09},
-		G01 = #{g01},
-		G02 =
-		#{g02},
-		G03 = #{g03},
-		G04 = #{g04},
-		G05 = #{g05},
-		G06 = #{g06},
-		G07 =
-		#{g07},
-		G13 = #{g13},
-		G14 = #{g14},
-		G15 = #{g15},
-		G16 = #{g16},
-		G17 =
-		#{g17},
-		G19 = #{g19},
-		H01 = #{h01},
-		H02 = #{h02},
-		H03 = #{h03},
-		H04 =
-		#{h04},
-		H05 = #{h05},
-		H06 = #{h06},
-		H07 = #{h07},
-		H08 = #{h08},
-		H09 =
-		#{h09},
-		H10 = #{h10},
-		H11 = #{h11},
-		H12 = #{h12},
-		H13 = #{h13}
-		WHERE
-		USER_CODE = #{user_code}
-	</update>
-
-	<select id="userLoginPermission" parameterType="users"
-		resultType="permission">
-		SELECT *
-		FROM tb_permission
-		WHERE user_code = #{user_code}
-	</select>
 
 	<!-- 유저메뉴 (카운트 수가 10개 미만인지) -->
 	<select id="userMenuCount" parameterType="userMenu"

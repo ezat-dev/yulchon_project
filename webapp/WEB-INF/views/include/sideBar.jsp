@@ -6,13 +6,13 @@
   <meta name="description" content="태경열처리 관리 시스템">
   <meta name="author" content="태경열처리">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/ezPublic/css/login/style.css">
+  <link rel="stylesheet" href="/yulchon/css/login/style.css">
 
 	<script src="https://cdn.jsdelivr.net/npm/ionicons@latest/dist/ionicons/ionicons.js"></script>
 	
-  <link rel="stylesheet" href="/ezPublic/css/sideBar/styles.css">
+  <link rel="stylesheet" href="/yulchon/css/sideBar/styles.css">
 <%@include file="../include/pluginpage.jsp" %>  
-  <title>세코미보기아</title>
+  <title>율촌</title>
 </head>
 <style>
 *{
@@ -203,7 +203,7 @@
 	    <!-- 로그인정보 표현, 로그아웃 버튼 -->
 	    <p class="loginName" style="font-size:20px; margin-left:960px; color : white; font-weight:800;"></p>
         <button class="logout-button">
-            <img src="/ezPublic/css/sideBar/exit-outline.svg" alt="select" class="button-image">로그아웃	 	           
+            <img src="/yulchon/css/sideBar/exit-outline.svg" alt="select" class="button-image">로그아웃	 	           
         </button>
     </header>
     <div class="hhhh"></div>
@@ -211,17 +211,22 @@
         <nav class="nav">
             <div>
                 <div class="nav__brand">
-                     <a href="#" class="nav__logo"><img class="tkLogo" src="/ezPublic/css/sideBar/ez_logo.png" 
+                     <a href="#" class="nav__logo"><img class="yulchonLogo" src="/yulchon/css/sideBar/yulchon_logo.png" 
                      style="width: 167px;
-					    height: 40px;
+					    height: 55px;
 					    margin-left: -48px;
 					    margin-top:4px;"></a>
                 </div>
                 <div class="menu">
            <li><a href="#" class="collapse__sublink" 
-           onclick="updateHeaderAndNavigate(event, '/ezPublic/management/userinsert', '작업자 등록')">작업자 등록</a></li>
+           onclick="updateHeaderAndNavigate(event, '/yulchon/management/inventoryPackingList', '인보이스 생성 및 조회')">인보이스 생성 및 조회</a></li>
            <li><a href="#" class="collapse__sublink" 
-           onclick="updateHeaderAndNavigate(event, '/ezPublic/management/chimStandard', '그룹 관리')">그룹 관리</a></li>
+           onclick="updateHeaderAndNavigate(event, '/yulchon/management/inventoryProcessing', '출하 완료 처리')">출하 완료 처리</a></li>
+                      <li><a href="#" class="collapse__sublink" 
+           onclick="updateHeaderAndNavigate(event, '/yulchon/management/inventoryHistory', '출하 이력 조회 및 관리')">출하 이력 조회 및 관리</a></li>
+                                 <li><a href="#" class="collapse__sublink" 
+           onclick="updateHeaderAndNavigate(event, '/yulchon/management/shippingMarkManage', '쉬핑마크 관리')">쉬핑마크 관리</a></li>
+                      <li><a href="/yulchon/management/mobile/scan" class="collapse__sublink">스캔</a></li>
                 </div>
                 <div class="nav__list">
                 
@@ -239,23 +244,17 @@
 
    //로드
    $(function(){
-		var loginInfo = "${loginUser.user_name}";
+		var loginInfo = "${loginUserName}";
 
 
 		$(".loginName").text(loginInfo+"님 로그인");
-	   
-		//loginUserMenuSetting();
-		//menuList();
-		if("${loginUser.user_role}" == '0'){
-			iframeSrc('/ezPublic/management/adminPage', '관리자 화면');
-			}else{
-		iframeSrc('/ezPublic/management/userinsert', '작업자 등록');
-			}
+		
+		iframeSrc('/yulchon/management/inventoryPackingList', '인보이스 생성 및 조회');		
    });
 
 /* 	function loginUserMenuSetting(){
 		$.ajax({
-			url:"/tkheat/user/login/menuSetting",
+			url:"/yulchonheat/user/login/menuSetting",
 			type:"post",
 			dataType:"json",
 			success:function(result){
@@ -351,7 +350,7 @@
         
  	function menuSave(loginCode, menuUrl, menuName){
 		$.ajax({
-			url:"/tkheat/user/login/menuSave",
+			url:"/yulchonheat/user/login/menuSave",
 			type:"post",
 			dataType:"json",
 			data:{
@@ -369,7 +368,7 @@
 		var loginCode = "${loginUser.user_code}";
         	
 		$.ajax({
-			url:"/tkheat/user/login/menuList",
+			url:"/yulchonheat/user/login/menuList",
 			type:"post",
 			dataType:"json",
 			data:{
@@ -407,7 +406,7 @@
 			var loginCode = "${loginUser.user_code}";		   
 		   
 		   $.ajax({
-			  url:"/tkheat/user/login/menuRemove",
+			  url:"/yulchonheat/user/login/menuRemove",
 			  type:"post",
 			  dataType:"json",
 			  data:{
@@ -455,11 +454,11 @@
 
         $(".logout-button").on("click",function(){
        		$.ajax({
-       			url:"/ezPublic/user/logout",
+       			url:"/yulchon/user/logout",
        			type:"get",
        			dataTypa:"json",
        			success:function(result){
-       				location.href = "/ezPublic";
+       				location.href = "/yulchon";
        			}
        		});
        	});  
