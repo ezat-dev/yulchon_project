@@ -175,6 +175,7 @@ body {
 		font-size: 14px;
 	}
 }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -221,19 +222,75 @@ body {
 			<button class="btn btn-back" onclick="handleBack()">뒤로가기</button>
 		</div>
 	</div>
-
+<div id="loadingOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999999; flex-direction:column; align-items:center; justify-content:center; color:white;">
+    <div class="spinner" style="width:50px; height:50px; border:5px solid #f3f3f3; border-top:5px solid #3498db; border-radius:50%; animation:spin 1s linear infinite;"></div>
+    <p style="margin-top:15px; font-weight:bold;">쉬핑마크 출력 준비 중입니다. 잠시만 기다려 주세요...</p>
+</div>
 	<script>
   $(document).ready(function() {
+	  var invoice_no = "${data.invoice_no}";
+	  var selectedInvoiceNo = "${selectedInvoiceNo}";
+	  var selectedInvoiceName = "${selectedInvoiceName}";
+	  
 	  	$('#cd_item').text("${data.cd_item}");
 	    $('#lbl_lot_no').text("${data.lbl_lot_no}");
 	    $('#no_mfg_order_serial').text("${data.no_mfg_order_serial}");
 	    $('#qty_inventory').text("${data.qty_inventory}");
 	    $('#lbl_date').text("${data.lbl_date}");
 	    $('#nm_customer').text("${data.nm_customer}");
-	    $('#invoice_no').text("${data.invoice_no}");
+	    $('#invoice_no').text(invoice_no);
+
+	    if(invoice_no == null || invoice_no == ""){
+	    	var msg = "인보이스 부여되지 않은 품목입니다.\n" + selectedInvoiceName + "에 품목을 추가하시겠습니까?";
+	        
+	        if (confirm(msg)) {
+	            //확인 눌렀을 때
+	            insertInvoiceInventory(); 
+	        } else {
+	        	history.back();
+	        }
+		   }else if(invoice_no != selectedInvoiceNo){
+				alert("인보이스를 잘못 선택하셨습니다.\n다시 선택 후 스캔해주세요.");
+				history.back();
+			   }
+
+	    //인보이스 부여 안된거 스캔했을때 확인 누르고 추가
+	      function insertInvoiceInventory() {  
+	    	  var addList = [];
+	          addList.push({
+	              lbl_lot_no: "${data.lbl_lot_no}",
+	              cd_item: "${data.cd_item}"
+	          });
+	          
+	  	    const payload = {
+	  	    	    invoice_no: selectedInvoiceNo,
+	  	    	    addList: addList
+	  	    	  };
+	  	    		    console.log("전송 데이타: ", payload);
+	  	    		    $.ajax({
+	  	    			      url: "/yulchon/management/mobile/insertInvoiceInventory",
+	  	    			      type: "POST",
+	  	    			      contentType: 'application/json',
+	  	    			      data: JSON.stringify(payload),
+	  	    			      //processData: false,
+	  	    			      //contentType: false,
+	  	    			      success: function(result) {
+	  	    			          if(result === true || result === "true"){
+	  	    			        	  console.log("추가 성공");
+	  	    			        	  alert("추가 성공했습니다.");
+	  	    			          }else{
+	  	    				          console.log("추가 실패");
+	  	    				        alert("추가 실패했습니다.");
+	  	    			              }
+	  	    			        },
+	  	    			      error: function() {
+	  	    			        alert('추가 중 오류가 발생했습니다.');
+	  	    			      }
+	  	    			    });
+	    }
   });
 
-  //일단 출하목록에 추가만(출력은 나중에)
+   //쉬핑마크 출력 및 출하목록 저장
     function handlePrint() {
       const lot_no = $('#lbl_lot_no').text().trim();
       const invoice_no = $('#invoice_no').text().trim();
@@ -243,29 +300,36 @@ body {
           alert("Lot No가 없습니다. 다시 스캔해주세요.");
           return;
           }
-
-  	$.ajax({
-  	  url: "/yulchon/management/mobile/insertShippingList",
-  	  type: "POST",
-  	  contentType: "application/json",
-  	  data: JSON.stringify({lbl_lot_no: lot_no, invoice_no: invoice_no}),
-  	  success: function(result) {
-  	  	  if(result === true || result === "true"){
-				alert("출하목록 추가 완료");
-				history.back();
-  	  	  	  }else{
-				alert("출하목록 추가 실패");
-  	  	  	  	  }
-  	  },
-  	  error: function() {
-  	    alert('출하목록 추가 중 오류가 발생했습니다.');
-  	  }
-  	});
+    	$.ajax({
+    	  	  //url: "/yulchon/management/mobile/insertShippingList",
+    	  	  url: "/yulchon/management/mobile/printShippingMark",
+    	  	  type: "POST",
+    	  	  contentType: "application/json",
+    	  	  data: JSON.stringify({lbl_lot_no: lot_no, invoice_no: invoice_no}),
+    	  	  beforeSend: function(){
+    	  		$('#loadingOverlay').css('display', 'flex');
+        	  	  },
+    	  	  success: function(result) {
+    	  	  	  if(result.result === true || result.result === "true"){
+    					alert(result.message);
+    					history.back();
+    	  	  	  	  }else{
+    					alert(result.message);
+    	  	  	  	  	  }
+    	  	  },
+    	  	  error: function() {
+    	  	    alert('쉬핑마크 출력 중 오류가 발생했습니다.');
+    	  	  },
+    	  	  complete: function(){
+    	  		$('#loadingOverlay').hide();
+        	  	  }
+    	  	});
     }
 
     function handleBack() {
       history.back();
     }
+
   </script>
 </body>
 </html>

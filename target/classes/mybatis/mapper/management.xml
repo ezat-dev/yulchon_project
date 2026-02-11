@@ -4,7 +4,7 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="management">
 
-<!-- 인보이스 부여 안된 품목 조회(구현중) -->
+<!-- 인보이스 부여 안된 품목 조회 -->
 <select id="getInventoryList" parameterType="management" resultType="management">
 SELECT 'N' AS YN_CHECK
      , A.CD_ITEM
@@ -52,7 +52,19 @@ WHERE B.QTY_INVENTORY != 0
 
 <!-- 인보이스 조회 -->
 <select id="getInvoiceList" parameterType="management" resultType="management">
-SELECT * FROM ez_invoice_name ORDER BY invoice_name DESC
+SELECT 
+invoice_no,
+invoice_name,
+invoice_is_shipped,
+CONVERT(VARCHAR(19), insert_date, 120) AS insert_date,
+invoice_is_moved,
+move_invoice_name
+FROM ez_invoice_name 
+WHERE 1=1
+<if test="invoice_is_shipped != null and invoice_is_shipped != ''">
+AND invoice_is_shipped = #{invoice_is_shipped}
+</if>
+ORDER BY invoice_name DESC
 </select>
 
 <!-- 인보이스 생성 -->
@@ -104,6 +116,13 @@ SELECT 'N' AS YN_CHECK --선택
      , A.ID_UPDATE
      , A.DT_UPDATE
      , eiim.invoice_no
+     ,eiim.invoice_inventory_no
+     ,eiim.customer_product_code_number
+     ,eiim.extra_invoice_no
+     ,eiim.extra_packing_inspection
+     ,eiim.extra_order_no
+     ,eiim.extra_part_no
+     ,eiim.extra_spec
   FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
        INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
       INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
@@ -126,28 +145,54 @@ SELECT 'N' AS YN_CHECK --선택
 
 <!-- 인보이스에 품목 추가 -->
 <update id="insertInvoiceInventory">
-  INSERT INTO ez_invoice_inventory_mapping (
-      invoice_no,
-      lot_no
-  )
-  VALUES
-  <foreach collection="lotList" item="lot" separator=",">
-    (#{invoice_no}, #{lot})
-  </foreach>
+INSERT INTO ez_invoice_inventory_mapping (
+        invoice_no,
+        lot_no,
+        cd_item,
+        item_count
+    )
+    SELECT 
+        A.invoice_no,
+        A.lot_no,
+        A.cd_item,
+        -- 기존 DB의 MAX값 + 현재 묶음 안에서의 순번
+        A.current_max + ROW_NUMBER() OVER(PARTITION BY A.cd_item ORDER BY A.lot_no)
+    FROM (
+        <foreach collection="addList" item="item" separator="UNION ALL">
+            SELECT 
+                #{invoice_no} AS invoice_no, 
+                #{item.lbl_lot_no} AS lot_no, 
+                #{item.cd_item} AS cd_item,
+                -- 이 서브쿼리는 전체 묶음 실행 전 딱 한 번만 각 품목의 시작점을 잡습니다.
+                (SELECT ISNULL(MAX(item_count), 0) 
+                 FROM ez_invoice_inventory_mapping 
+                 WHERE invoice_no = #{invoice_no} 
+                   AND cd_item = #{item.cd_item}) AS current_max
+        </foreach>
+    ) A
 </update>
 
 <!-- 인보이스 품목 삭제 -->
 <delete id="deleteInvoiceInventory">
-  DELETE FROM ez_invoice_inventory_mapping 
-  WHERE invoice_no = #{invoice_no}
-    AND lot_no IN
-    <foreach collection="lotList"
-             item="lot"
-             open="("
-             separator=","
-             close=")">
-      #{lot}
-  </foreach>
+/* 1. 데이터 삭제 */
+    DELETE FROM ez_invoice_inventory_mapping 
+    WHERE invoice_no = #{invoice_no}
+      AND lot_no IN
+      <foreach collection="lotList" item="lot" open="(" separator="," close=")">
+          #{lot}
+      </foreach>;
+
+    /* 2. 해당 인보이스의 전체 번호 재정렬 */
+    WITH CTE AS (
+        SELECT item_count,
+               ROW_NUMBER() OVER (
+                   PARTITION BY cd_item 
+                   ORDER BY item_count, lot_no
+               ) as NewCount
+        FROM ez_invoice_inventory_mapping
+        WHERE invoice_no = #{invoice_no}
+    )
+    UPDATE CTE SET item_count = NewCount;
 </delete>
 
 <!-- Lot No별로 인보이스 부여되고 제품창고인 품목 하나 조회 -->
@@ -161,7 +206,7 @@ SELECT 'N' AS YN_CHECK --선택
      , A.LBL_LOT_NO --라벨ID
      , A.NO_MFG_ORDER_SERIAL --W/O NO
      , FLOOR(B.QTY_INVENTORY) AS qty_inventory --재고수량
-     , (ISNULL(B.QTY_INVENTORY,0) * ISNULL(C.KGM_WEIGHT,0) * ISNULL(A.LBL_REAL_LENGTH,0)) / 1000 AS WGT_INVENTORY --재고중량
+     , CAST(ROUND((ISNULL(B.QTY_INVENTORY,0) * ISNULL(C.KGM_WEIGHT,0) * ISNULL(A.LBL_REAL_LENGTH,0)) / 1000, 0) AS INT) AS WGT_INVENTORY --재고중량
      , B.CD_WH --창고코드
      , (SELECT NM_WH FROM B_WAREHOUSE WHERE CD_WH = B.CD_WH) AS NM_WH --창고명
      , A.LBL_DATE --발행일자
@@ -177,6 +222,25 @@ SELECT 'N' AS YN_CHECK --선택
      , A.ID_UPDATE
      , A.DT_UPDATE
      , eiim.invoice_no
+     , ein.invoice_name
+     ,C.OUT_DIAMETER  -- 외경
+	 ,C.IN_DAIMETER  -- 내경
+	 ,C.THICKNESS   -- 두께
+	 ,C.CD_MATERAIL	-- 재질
+	 ,eiim.customer_product_code_number
+     ,eiim.extra_invoice_no
+     ,eiim.extra_packing_inspection
+	 ,eiim.cd_item
+	 ,item_count
+	 ,eiim.extra_part_no
+	 ,eiim.extra_spec
+	 ,eiim.extra_order_no
+     , (
+         SELECT CAST(eiim.item_count AS VARCHAR) + '/' + CAST(COUNT(*) AS VARCHAR)
+         FROM ez_invoice_inventory_mapping sub_eiim
+         WHERE sub_eiim.invoice_no = eiim.invoice_no
+           AND sub_eiim.cd_item = eiim.cd_item
+       ) AS item_seq_total
   FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
        INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
       INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
@@ -239,6 +303,11 @@ SELECT 'N' AS YN_CHECK --선택
      , A.ID_UPDATE
      , A.DT_UPDATE
      , eiim.invoice_no
+     ,esl.shipping_list_no
+     ,eiim.customer_product_code_number
+     ,eiim.extra_invoice_no
+     ,eiim.extra_packing_inspection
+     ,eiim.extra_spec
   FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
        INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
       INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
@@ -248,19 +317,12 @@ SELECT 'N' AS YN_CHECK --선택
     INNER JOIN ez_invoice_name ein
     ON eiim.invoice_no = ein.invoice_no
     INNER JOIN ez_inventory_lot_ext AS eile ON LBL_LOT_NO = eile.ext_lot_no
-    INNER JOIN ez_shipping_list AS esl ON A.LBL_LOT_NO = esl.lbl_lot_no
+    LEFT JOIN ez_shipping_list AS esl ON A.LBL_LOT_NO = esl.lbl_lot_no
   WHERE 1=1
       AND B.QTY_INVENTORY != 0
       AND B.CD_WH = 'YC_FG3'
       AND eiim.invoice_no = #{invoice_no}
       </select>
-      
-      <!-- 출하완료처리 저장(출하완료) -->
-      <insert id="insertShippingResult">
-INSERT INTO ez_shipping_result 
-(invoice_no, lbl_lot_no, is_shipped)
-VALUES(#{invoice_no}, #{lbl_lot_no}, 'y')
-</insert>
 
       <!-- 출하완료처리 저장(출하취소) -->
       <insert id="insertCancelShippingResult">
@@ -282,4 +344,349 @@ VALUES(#{invoice_no}, #{lbl_lot_no}, 'n')
       #{lot}
   </foreach>
 </delete>
+
+<!-- 출하목록 출하취소 -->
+<delete id="cancelShippingList">
+  DELETE FROM ez_shipping_list
+  WHERE 1=1
+    AND invoice_no IN
+    <foreach collection="invoiceList"
+             item="invoice"
+             open="("
+             separator=","
+             close=")">
+      #{invoice}
+  </foreach>
+</delete>
+
+<!-- 출하취소 처리된 인보이스 업데이트 -->
+<update id="cancelInvoiceList">
+  UPDATE ez_invoice_name
+  SET invoice_is_shipped = 'N'
+  WHERE 1=1
+    AND invoice_no IN
+    <foreach collection="invoiceList"
+             item="invoice"
+             open="("
+             separator=","
+             close=")">
+      #{invoice}
+  </foreach>
+</update>
+
+<!-- 출하취소 처리된 인보이스 품목 삭제 -->
+<delete id="cancelInvoiceInventory">
+  DELETE FROM ez_invoice_inventory_mapping
+  WHERE 1=1
+    AND invoice_no IN
+    <foreach collection="invoiceList"
+             item="invoice"
+             open="("
+             separator=","
+             close=")">
+      #{invoice}
+  </foreach>
+</delete>
+
+<!-- 출하처리 안된 인보이스 조회 -->
+<select id="getNoUpdatedInvoiceList" parameterType="management" resultType="management">
+SELECT * FROM ez_invoice_name 
+WHERE invoice_is_shipped IS NULL
+ORDER BY invoice_name DESC
+</select>
+
+<!-- 인보이스 품목에 고객사 부여 품번 업데이트 -->
+<update id="updateCustomerProductCodeNumber">
+  UPDATE ez_invoice_inventory_mapping
+  SET ${targetField} = #{newValue}
+  WHERE 1=1
+    AND lot_no = #{lbl_lot_no}
+    AND invoice_inventory_no = #{invoice_inventory_no}
+</update>
+
+<!-- 출하완료 시 출하목록 저장(스캔 후 ez_shipping_list에 있는 것들만/출하완료처리 페이지에서 색깔 있는것들만 -->
+<insert id="insertShippingResult">
+INSERT INTO ez_shipping_result (
+    cd_item, nm_item, spec_item, kgm_weight, lbl_real_length, 
+    lbl_lot_no, no_mfg_order_serial, qty_inventory, wgt_inventory, 
+    cd_wh, nm_wh, lbl_date, nm_customer, po_customer, no_receipt, 
+    remarks, nm_location, invoice_no, invoice_name
+)
+SELECT 
+    A.CD_ITEM, 
+    C.NM_ITEM, 
+    C.SPEC_ITEM, 
+    C.KGM_WEIGHT, 
+    FLOOR(ISNULL(A.LBL_REAL_LENGTH, 0)) AS lbl_real_length, 
+    A.LBL_LOT_NO, 
+    A.NO_MFG_ORDER_SERIAL, 
+    FLOOR(B.QTY_INVENTORY) AS qty_inventory, 
+    (ISNULL(B.QTY_INVENTORY, 0) * ISNULL(C.KGM_WEIGHT, 0) * ISNULL(A.LBL_REAL_LENGTH, 0)) / 1000 AS wgt_inventory, 
+    B.CD_WH, 
+    (SELECT NM_WH FROM B_WAREHOUSE WHERE CD_WH = B.CD_WH) AS nm_wh, 
+    A.LBL_DATE, 
+    A.NM_CUSTOMER, 
+    A.PO_CUSTOMER, 
+    A.NO_RECEIPT, 
+    A.REMARKS, 
+    A.NM_LOCATION,
+    eiim.invoice_no,
+    ein.invoice_name
+  FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
+       INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
+       INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
+       INNER JOIN ez_invoice_inventory_mapping eiim ON eiim.lot_no = A.LBL_LOT_NO
+       INNER JOIN ez_invoice_name ein ON eiim.invoice_no = ein.invoice_no
+       INNER JOIN ez_inventory_lot_ext AS eile ON A.LBL_LOT_NO = eile.ext_lot_no
+       LEFT JOIN ez_shipping_list AS esl ON A.LBL_LOT_NO = esl.lbl_lot_no
+ WHERE 1=1
+   AND B.QTY_INVENTORY != 0
+   AND B.CD_WH = 'YC_FG3'
+   AND esl.shipping_list_no IS NOT NULL
+   AND eiim.invoice_no IN
+    <foreach collection="invoiceList"
+             item="invoice"
+             open="("
+             separator=","
+             close=")">
+      #{invoice}
+  </foreach>
+</insert>
+
+<!-- 출하완료 처리된 인보이스 업데이트 -->
+<update id="updateCompleteInvoiceList">
+  UPDATE ez_invoice_name
+  SET invoice_is_shipped = 'Y'
+  WHERE 1=1
+    AND invoice_no IN
+    <foreach collection="invoiceList"
+             item="invoice"
+             open="("
+             separator=","
+             close=")">
+      #{invoice}
+  </foreach>
+</update>
+
+<!-- 출하완료 목록 조회 -->
+<select id="getCompleteInventoryList" parameterType="management" resultType="management">
+SELECT * FROM ez_shipping_result
+WHERE invoice_no = #{invoice_no}
+</select>
+
+<!-- 출하취소 목록 조회 -->
+<select id="getCancelInventoryList" parameterType="management" resultType="management">
+SELECT * FROM ez_shipping_cancel
+WHERE invoice_no = #{invoice_no}
+</select>
+
+<!-- 출하 초기화(리셋) 목록 조회 -->
+<select id="getResetInventoryList" parameterType="management" resultType="management">
+SELECT * FROM ez_shipping_reset
+WHERE invoice_no = #{invoice_no}
+</select>
+
+<!-- 쉬핑마크 출력 시 해당 인보이스 하나 조회(인보이스 부여 안된건 자바로 처리) -->
+<select id="mobileGetShippingMarkPrintInventory" parameterType="management" resultType="management">
+SELECT 'N' AS YN_CHECK --선택
+     , A.CD_ITEM --품목코드
+     , C.NM_ITEM --품목명
+     , C.SPEC_ITEM --규격
+     , C.KGM_WEIGHT --단중
+     , FLOOR(ISNULL(A.LBL_REAL_LENGTH, 0)) AS LBL_REAL_LENGTH --실길이
+     , A.LBL_LOT_NO --라벨ID
+     , A.NO_MFG_ORDER_SERIAL --W/O NO
+     , FLOOR(B.QTY_INVENTORY) AS qty_inventory --재고수량
+     , ROUND((ISNULL(B.QTY_INVENTORY,0) * ISNULL(C.KGM_WEIGHT,0) * ISNULL(A.LBL_REAL_LENGTH,0)) / 1000, 0) AS WGT_INVENTORY --재고중량
+     , B.CD_WH --창고코드
+     , (SELECT NM_WH FROM B_WAREHOUSE WHERE CD_WH = B.CD_WH) AS NM_WH --창고명
+     , A.LBL_DATE --발행일자
+     , A.NM_CUSTOMER --고객명
+     , A.PO_CUSTOMER --고객PO NO
+     , A.NO_RECEIPT --입하NO
+     , A.REMARKS --비고
+     , A.CD_WC
+     , A.SEQ_MFG_ORDER
+     , A.NM_LOCATION
+     , A.ID_INSERT
+     , A.DT_INSERT
+     , A.ID_UPDATE
+     , A.DT_UPDATE
+     , eiim.invoice_no
+     , ein.invoice_name
+     ,C.OUT_DIAMETER  -- 외경
+	 ,C.IN_DAIMETER  -- 내경
+	 ,C.THICKNESS   -- 두께
+	 ,C.CD_MATERAIL	-- 재질
+	 ,eiim.customer_product_code_number
+     ,eiim.extra_invoice_no
+     ,eiim.extra_packing_inspection
+	 ,eiim.cd_item
+	 ,item_count
+     ,eiim.invoice_no
+     ,eiim.extra_spec
+  FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
+       INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
+      INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
+
+        LEFT JOIN ez_invoice_inventory_mapping eiim
+    ON eiim.lot_no = A.LBL_LOT_NO
+    LEFT JOIN ez_invoice_name ein
+    ON eiim.invoice_no = ein.invoice_no
+    INNER JOIN ez_inventory_lot_ext AS eile ON LBL_LOT_NO = eile.ext_lot_no
+  WHERE 1=1
+      AND B.QTY_INVENTORY != 0
+      AND B.CD_WH = 'YC_FG3'
+      AND A.LBL_LOT_NO = #{lbl_lot_no}
+</select>
+
+<!-- 출하완료 시 스캔 안한 품목 삭제 -->
+<delete id="deleteNoScanInventory">
+    DELETE FROM ez_invoice_inventory_mapping 
+    WHERE 1=1
+      AND invoice_no IN
+      <foreach collection="invoiceList" item="invoice" open="(" separator="," close=")">
+          #{invoice}
+      </foreach>
+</delete>
+
+<!-- 초기화 되었거나 처리 안된 인보이스 조회 -->
+<select id="getNoUpdatedOrResetInvoiceList" parameterType="management" resultType="management">
+SELECT * FROM ez_invoice_name ein
+WHERE (invoice_is_shipped IS NULL OR invoice_is_shipped = 'R')
+AND invoice_is_moved IS NULL
+ORDER BY invoice_name DESC
+</select>
+
+<!-- 초기화된 품목 조회 -->
+<select id="getResetDatas" parameterType="management" resultType="management">
+SELECT * FROM ez_shipping_reset
+WHERE invoice_no = #{invoice_no}
+</select>
+
+<!-- 취소테이블 저장 -->
+<insert id="insertShippingCancel">
+INSERT INTO ez_shipping_cancel (
+    cd_item, nm_item, spec_item, kgm_weight, lbl_real_length, 
+    lbl_lot_no, no_mfg_order_serial, qty_inventory, wgt_inventory, 
+    cd_wh, nm_wh, lbl_date, nm_customer, po_customer, no_receipt, 
+    remarks, nm_location, invoice_no, invoice_name
+)
+SELECT 
+    A.CD_ITEM, 
+    C.NM_ITEM, 
+    C.SPEC_ITEM, 
+    C.KGM_WEIGHT, 
+    FLOOR(ISNULL(A.LBL_REAL_LENGTH, 0)) AS lbl_real_length, 
+    A.LBL_LOT_NO, 
+    A.NO_MFG_ORDER_SERIAL, 
+    FLOOR(B.QTY_INVENTORY) AS qty_inventory, 
+    (ISNULL(B.QTY_INVENTORY, 0) * ISNULL(C.KGM_WEIGHT, 0) * ISNULL(A.LBL_REAL_LENGTH, 0)) / 1000 AS wgt_inventory, 
+    B.CD_WH, 
+    (SELECT NM_WH FROM B_WAREHOUSE WHERE CD_WH = B.CD_WH) AS nm_wh, 
+    A.LBL_DATE, 
+    A.NM_CUSTOMER, 
+    A.PO_CUSTOMER, 
+    A.NO_RECEIPT, 
+    A.REMARKS, 
+    A.NM_LOCATION,
+    eiim.invoice_no,
+    ein.invoice_name
+  FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
+       INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
+       INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
+       INNER JOIN ez_invoice_inventory_mapping eiim ON eiim.lot_no = A.LBL_LOT_NO
+       INNER JOIN ez_invoice_name ein ON eiim.invoice_no = ein.invoice_no
+       INNER JOIN ez_inventory_lot_ext AS eile ON A.LBL_LOT_NO = eile.ext_lot_no
+ WHERE 1=1
+   AND B.QTY_INVENTORY != 0
+   AND B.CD_WH = 'YC_FG3'
+   AND eiim.invoice_no IN
+    <foreach collection="invoiceList"
+             item="invoice"
+             open="("
+             separator=","
+             close=")">
+      #{invoice}
+  </foreach>
+</insert>
+
+<!-- 미처리 된 인보이스 중 데이터 이관당한거 칼럼 업데이트 -->
+<update id="updateInvoiceIsMoved">
+UPDATE ez_invoice_name
+SET invoice_is_moved = 'Y',
+move_invoice_name = #{move_invoice_name}
+WHERE invoice_no = #{invoice_no}
+</update>
+
+<!-- 고객사 조회(임시) -->
+<select id="getCustomerListTemporary" parameterType="management" resultType="management">
+	      SELECT *
+FROM (
+    SELECT 
+           'N' AS YN_CHECK
+         , A.NM_CUSTOMER
+         , A.CD_ITEM
+         , C.NM_ITEM
+         , C.SPEC_ITEM
+         , C.KGM_WEIGHT
+         , ISNULL(A.LBL_REAL_LENGTH, 0) AS LBL_REAL_LENGTH
+         , A.LBL_LOT_NO
+         , A.NO_MFG_ORDER_SERIAL
+         , FLOOR(B.QTY_INVENTORY) AS QTY_INVENTORY
+         , (ISNULL(B.QTY_INVENTORY,0) * ISNULL(C.KGM_WEIGHT,0) * ISNULL(A.LBL_REAL_LENGTH,0)) / 1000 AS WGT_INVENTORY
+         , B.CD_WH
+         , (SELECT TOP 1 NM_WH FROM B_WAREHOUSE WHERE CD_WH = B.CD_WH) AS NM_WH
+         , A.LBL_DATE
+         , A.PO_CUSTOMER
+         , A.NO_RECEIPT
+         , A.REMARKS
+         , ROW_NUMBER() OVER(PARTITION BY A.NM_CUSTOMER ORDER BY A.LBL_DATE DESC, A.LBL_LOT_NO DESC) AS RNUM
+      FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
+           INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) 
+                   ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
+           INNER JOIN B_ITEM C WITH (NOLOCK) 
+                   ON A.CD_ITEM = C.CD_ITEM
+     WHERE B.QTY_INVENTORY != 0
+	 AND A.NM_CUSTOMER != ''
+) T
+WHERE T.RNUM = 1 -- 고객별 데이터 하나만 추출
+ORDER BY T.NM_CUSTOMER ASC;
+</select>
+
+<!-- 고객사 조회 -->
+<select id="getCustomerList" parameterType="management" resultType="management">
+SELECT 
+customer_id,
+customer_name,
+customer_shippingmark_file_name,
+CONVERT(VARCHAR(19), regtime, 120) AS regtime,
+update_user_id,
+remark
+FROM ez_customer
+</select>
+
+<update id="updateShippingMarkFile">
+UPDATE ez_customer
+SET customer_shippingmark_file_name = #{customer_shippingmark_file_name},
+update_user_id = #{update_user_id},
+regtime = SYSDATETIME()
+WHERE customer_id = #{customer_id}
+</update>
+
+<!-- 고객사 비고 업데이트 -->
+<update id="updateCustomerRemark">
+  UPDATE ez_customer
+  SET ${targetField} = #{newValue}
+  WHERE 1=1
+    AND customer_id = #{customer_id}
+</update>
+
+<!-- 고객사 추가 -->
+<insert id="insertCustomer">
+INSERT INTO ez_customer
+(customer_name, customer_shippingmark_file_name, update_user_id)
+VALUES
+(#{customer_name}, #{customer_shippingmark_file_name}, #{update_user_id})
+</insert>
 </mapper>

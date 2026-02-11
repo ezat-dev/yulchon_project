@@ -84,7 +84,7 @@
 .scan-button-wrap,
 .scan-btn {
   position: relative !important;
-  z-index: 999999 !important;
+  /*z-index: 999999 !important;*/
 }
 @keyframes spin {
     0% { transform: rotate(0deg); }
@@ -107,6 +107,30 @@ display: none;
     justify-content: center; 
     color: white;
 }
+/* 모달 배경 */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000;
+}
+/* 모달 박스 */
+.modal-content {
+    width: 85%; max-width: 400px; background: #fff; border-radius: 8px; overflow: hidden;
+    display: flex; flex-direction: column; max-height: 70vh;
+}
+.modal-header { padding: 15px; background: #222; color: #fff; text-align: center; font-weight: bold; }
+.modal-body { flex: 1; overflow-y: auto; padding: 10px; }
+.modal-footer { border-top: 1px solid #eee; padding: 10px; text-align: center; }
+
+/* 리스트 스타일 */
+.invoice-list { list-style: none; padding: 0; margin: 0; }
+.invoice-item {
+    padding: 15px; border-bottom: 1px solid #f0f0f0; font-size: 16px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.invoice-item:active { background-color: #f8f8f8; }
+.invoice-item:after { content: '❯'; color: #ccc; font-size: 12px; }
+
+.btn-close-modal { width: 100%; padding: 10px; border: none; background: #eee; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -126,7 +150,18 @@ display: none;
     <div class="spinner" style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
     <p style="margin-top: 15px;">이미지를 분석 중입니다...</p>
 </div>
-
+<div id="invoiceModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">인보이스 선택</div>
+        <div class="modal-body">
+            <ul id="invoiceList" class="invoice-list">
+                </ul>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-close-modal">닫기</button>
+        </div>
+    </div>
+</div>
 <!-- 로그 -->
 <pre id="scanLog"
      style="white-space:pre-wrap; border:1px solid #ccc; padding:10px; margin-top:20px;">
@@ -135,6 +170,8 @@ display: none;
 let lotValue = "";
 let scannedText = null;
 let scannedFormat = null;
+let selectedInvoiceNo = "";
+let selectedInvoiceName = "";
 //===== 설정 값 =====
 const ZXING_FORMATS = [
     ZXing.BarcodeFormat.QR_CODE,
@@ -179,8 +216,64 @@ $(function() {
 	  console.log('.btn-cancel 개수:', $('.btn-cancel').length);
 	  console.log('.btn-check 개수:', $('.btn-check').length);
 
-	//쉬핑마크 출력 클릭시
+//쉬핑마크 출력 클릭시
 $(document).on("click", ".btn-print", function () {
+	//showLoading();
+    
+    $.ajax({
+        url: "/yulchon/management/mobile/getNoUpdatedInvoiceList",
+        method: "POST",
+        dataType: "json",
+        success: function (data) {
+            hideLoading();
+            renderInvoiceList(data);
+        },
+        error: function () {
+            hideLoading();
+            alert("에러 발생");
+        }
+    });
+});
+
+// 2. 리스트 렌더링 및 모달 표시
+function renderInvoiceList(list) {
+    const $listContainer = $("#invoiceList");
+    $listContainer.empty();
+
+    if (list.length === 0) {
+        $listContainer.append('<li class="invoice-item" style="justify-content:center;">목록이 없습니다.</li>');
+    } else {
+        list.forEach(item => {
+            var html =
+        	  '<li class="invoice-item"' +
+			  ' data-invoice-name="' + item.invoice_name + '"' +
+			  ' data-invoice-no="' + item.invoice_no + '">' +
+			    item.invoice_name +
+			  '</li>';
+            $listContainer.append(html);
+        });
+    }
+    $("#invoiceModal").fadeIn(200);
+}
+
+// 3. 인보이스 항목 클릭 시 -> 카메라 실행
+$(document).on("click", ".invoice-item", function() {
+    selectedInvoiceNo = $(this).data("invoice-no");
+    selectedInvoiceName = $(this).data("invoice-name");
+    console.log("selectedInvoiceNo", selectedInvoiceNo);
+    if(!selectedInvoiceNo) return;
+
+    $("#invoiceModal").fadeOut(200);
+    openCamera(); // 카메라 실행
+});
+
+// 모달 닫기
+$(document).on("click", ".btn-close-modal", function() {
+    $("#invoiceModal").fadeOut(200);
+});
+
+// 4. 카메라 실행 및 스캔 로직
+function openCamera() {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
@@ -188,32 +281,31 @@ $(document).on("click", ".btn-print", function () {
 
     input.onchange = async function (e) {
         const file = e.target.files && e.target.files[0];
-        if (!file) { 
-            return; 
-        }
+        if (!file) return;
 
         showLoading();
-
         try {
             const decoded = await decodeBarcodeOrQrFromFile(file);
-
-            console.log("[decoded]", decoded);
-
             if (decoded) {
-                window.location.href = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" + encodeURIComponent(decoded.text);
+                // 인보이스 번호와 QR/바코드 텍스트를 함께 전달
+            	var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" 
+                    + encodeURIComponent(decoded.text) 
+                    + "&selectedInvoiceNo=" 
+                    + encodeURIComponent(selectedInvoiceNo)
+                    + "&selectedInvoiceName=" 
+                    + encodeURIComponent(selectedInvoiceName);
+          window.location.href = url;
             } else {
-                alert("바코드나 QR코드를 인식하지 못했습니다. 선명하게 다시 촬영해주세요.");
+                alert("인식 실패. 선명하게 다시 촬영해주세요.");
             }
         } catch (err) {
-            console.error("[scan fatal error]", err);
-            alert("스캔 중 오류가 발생했습니다.");
+            alert("스캔 중 오류 발생");
         } finally {
             hideLoading();
         }
     };
-
     input.click();
-});
+}
 
 //출하 취소 클릭시
 $(document).on('click', '.btn-cancel', function(e) {

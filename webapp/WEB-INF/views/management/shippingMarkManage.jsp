@@ -29,7 +29,7 @@
 		    width: 113%;      /* 부모 너비 지정 */
         }
         .tab {
-            width: 100%;
+            width: 105%;
             margin-bottom: 37px;
             margin-top: 5px;
             height: 45px;
@@ -37,39 +37,6 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            transition: opacity 0.3s ease-in-out;
-        }
-	    .modal-content {
-	        background: white;
-	        width: 24%;
-	        max-width: 500px;
-	        height: 32vh; 
-	        overflow-y: auto; 
-	        margin: 8% auto 0;
-	        padding: 20px;
-	        border-radius: 10px;
-	        position: relative;
-	        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
-	        transform: scale(0.8);
-	        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
-	        opacity: 0;
-	    }
-        .modal.show {
-            display: block;
-            opacity: 1;
-        }
-        .modal.show .modal-content {
-            transform: scale(1);
-            opacity: 1;
         }
         .close {
             background-color:white;
@@ -80,21 +47,6 @@
             font-weight: bold;
             cursor: pointer;
         }
-        .modal-content form {
-            display: flex;
-            flex-direction: column;
-        }
-        .modal-content label {
-            font-weight: bold;
-            margin: 10px 0 5px;
-        }
-        .modal-content input, .modal-content textarea {
-            width: 97%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
         select {
             width: 100%;
             padding: 8px;
@@ -102,24 +54,11 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-        .modal-content button {
-            background-color: #d3d3d3;
-            color: black;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            margin-top: 10px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .modal-content button:hover {
-            background-color: #a9a9a9;
-        }
         .button-container {
     		display: flex;
 		    gap: 10px;
 		    margin-top: 40px;
-		    margin-left: 1200px;
+		    margin-left: 1320px;
 		}
 		.box1 {
 		    /*display: flex;*/
@@ -189,6 +128,45 @@ width: 105px;
 width: 40px;
 margin-top: 6px;
 }
+/* 모달 배경 */
+.modal {
+    position: fixed; z-index: 1000; left: 0; top: 0;
+    width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);
+}
+/* 모달 박스 */
+.modal-content {
+    background-color: #fefefe; margin: 10% auto; padding: 20px;
+    border: 1px solid #888; width: 400px; border-radius: 8px;
+}
+.modal-header { border-bottom: 1px solid #ddd; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.modal-body { padding: 20px 0; }
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+.input-group input { width: 100%; padding: 8px; box-sizing: border-box; }
+.modal-footer { text-align: right; border-top: 1px solid #ddd; padding-top: 10px; }
+.save-btn { background: #1890ff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+.cancel-btn { background: #f0f0f0; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-left: 5px; }
+.close-modal { cursor: pointer; font-size: 24px; }
+.select-button {
+    height: 40px;
+    padding: 0 11px;
+    border: 1px solid rgb(53, 53, 53);
+    border-radius: 10px;
+    background-color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+.insert-button {
+    height: 40px;
+    padding: 0 11px;
+    border: 1px solid rgb(53, 53, 53);
+    border-radius: 10px;
+    background-color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
     </style>
 </head>
 
@@ -207,7 +185,7 @@ margin-top: 6px;
                     <img src="/yulchon/css/image/search-icon.png" alt="select" class="button-image">조회
                 </button>
                  <button class="insert-button">
-                    <img src="/yulchon/css/image/insert-icon.png" alt="insert" class="button-image">업체 추가
+                    <img src="/yulchon/css/image/insert-icon.png" alt="insert" class="button-image">고객사 추가
                 </button>
 <!--                 <button class="delete-button">
 				    <img src="/yulchon/css/image/delete-icon.png" alt="delete" class="button-image"> 삭제
@@ -224,6 +202,29 @@ margin-top: 6px;
         <div class="view">
             <div id="dataTable"></div>
         </div>
+        
+        <div id="insertModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>신규 업체 등록</h3>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="input-group">
+                <label for="new_customer_name">고객사 이름:</label>
+                <input type="text" id="new_customer_name" placeholder="고객사명을 입력하세요">
+            </div>
+            <div class="input-group">
+                <label for="modal_file_input">양식 파일:</label>
+                <input type="file" id="modal_file_input" accept=".xlsx, .xls">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="btnSaveCustomer" class="save-btn">저장</button>
+            <button id="btnCloseModal" class="cancel-btn">취소</button>
+        </div>
+    </div>
+</div>
     </main>
 <script>
 let now_page_code = "h03";
@@ -238,7 +239,7 @@ dataTable = new Tabulator('#dataTable', {
   headerHozAlign: "center",
   ajaxConfig: { method: 'POST' },
   ajaxLoader: false,
-  ajaxURL: "/yulchon/management/getInventoryList",
+  ajaxURL: "/yulchon/management/getCustomerList",
   ajaxParams: {},
   placeholder: "조회된 데이터가 없습니다.",
   ajaxResponse: function(url, params, response) {
@@ -246,32 +247,124 @@ dataTable = new Tabulator('#dataTable', {
     return response;
   },
   columns: [
-    { title: "업체명", field: "nm_customer", sorter: "string", width: 200, hozAlign: "center" },
-    { title: "비고", field: "txt_remark", sorter: "string", width: 120, hozAlign: "center" },
-    { title: "최종수정일", field: "update_date", sorter: "string", width: 120, hozAlign: "center" },
-    { title: "최정수정자", field: "update_user", sorter: "string", width: 120, hozAlign: "center" }
+	  { title: "No", formatter: "rownum", sorter: false, width: 80, hozAlign: "center" },
+    { title: "고객명", field: "customer_name", sorter: "string", width: 370, hozAlign: "center", headerFilter: "input" },
+    {
+        title: "양식 파일명", 
+        field: "customer_shippingmark_file_name", 
+        hozAlign: "center",
+        width: 300,
+        formatter: function(cell) {
+            const fileName = cell.getValue();
+            if (fileName) {
+            	return "<a href='javascript:void(0);' onclick='downloadFile(\"" + fileName + "\")' " +
+                "style='color: #1890ff; text-decoration: underline;'>" + fileName + "</a>";
+            } else {
+                return "<span style='color: #ccc;'>양식 없음</span>";
+            }
+        }
+    },
+    {
+        title: "관리", 
+        width: 150, 
+        hozAlign: "center", 
+        headerSort: false,
+        formatter: function(cell) {
+            const fileName = cell.getData().customer_shippingmark_file_name;
+            const upBtn = `<button class='up-btn' style='border-radius:4px; cursor:pointer; margin-left:5px;'>업로드</button>`;
+            return upBtn;
+        },
+        cellClick: function(e, cell) {
+            const data = cell.getData();
+            console.log("데이터: ", data);
+            if (e.target.classList.contains("up-btn")) {
+                // 1. 숨겨진 파일 선택창 생성
+                const fileInput = document.createElement("input");
+                fileInput.type = "file";
+                fileInput.accept = ".xlsx"; // 엑셀만 허용
+
+                fileInput.onchange = function() {
+                    const file = fileInput.files[0];
+                    if (!file) return;
+
+                    // 2. FormData에 데이터 담기
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    formData.append("customer_id", data.customer_id); 
+                    formData.append("old_file_name", data.customer_shippingmark_file_name); // 삭제할 기존 파일명
+
+                    // 3. 서버로 전송
+                    $.ajax({
+                        url: "/yulchon/management/deleteAndUploadShippingMark",
+                        type: "POST",
+                        data: formData,
+                        processData: false, // 파일 전송 시 필수: 데이터를 쿼리 스트링으로 변환하지 않음
+                        contentType: false, // 파일 전송 시 필수: 브라우저가 자동으로 boundary를 설정하게 함
+                        success: function(isSuccess) {
+                            // 컨트롤러에서 boolean을 리턴하므로 isSuccess는 true/false임
+                            if(isSuccess) {
+                                alert("양식이 교체되었습니다.");
+                                dataTable.setData("/yulchon/management/getCustomerList", {});
+                            } else {
+                                alert("❌ 양식 교체에 실패했습니다.");
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("에러 발생:", error);
+                            alert("서버와 통신 중 오류가 발생했습니다.");
+                        }
+                    });
+                };
+                fileInput.click(); // 파일 탐색기 열기
+            }
+        }
+    },
+    { title: "최종수정일", field: "regtime", sorter: "string", width: 160, hozAlign: "center" },
+    { title: "최정수정자", field: "update_user_id", sorter: "string", width: 160, hozAlign: "center" },
+    { title: "비고", field: "remark", sorter: "string", width: 150, hozAlign: "center", editor: "input" }
   ],
-  rowClick: function(e, row) {
-    $('#dataTable .tabulator-row').removeClass('row_select');
-    row.getElement().classList.add('row_select');
-    selectedRowData = row.getData();
-  },
-  rowDblClick: function(e, row) {
-    var d = row.getData();
-    selectedRowData = d;
-    $('#corrForm')[0].reset();
-    $('input[name="no"]').val(d.idx);
-    $('input[name="user_code"]').val(d.user_code);
-    $('input[name="user_id"]').val(d.user_id);
-    $('input[name="user_pw"]').val(d.user_pw);
-    $('input[name="st_day"]').val(d.st_day);
-    $('input[name="user_phone"]').val(d.user_phone);
-    $('input[name="user_name"]').val(d.user_name);
-    $('select[name="user_level"]').val(d.user_level);
-    $('input[name="user_busu"]').val(d.user_busu);
-    $('input[name="user_jick"]').val(d.user_jick);
+  cellEdited: function(cell) {
+      // cell : 수정된 셀 객체
+      var rowData = cell.getRow().getData(); // 수정된 행 전체 데이터
+      var field = cell.getField();           // 수정된 필드명 (customer_product_code_number)
+      var newValue = cell.getValue();        // 바뀐 값
+      var customer_id = rowData.customer_id;
+      
+      console.log("수정할 필드: ", field);
+      console.log("새로운 데이터: ", newValue);
+      console.log("수정할 데이터: ", rowData);
+
+      var updateData = {
+    		  "targetField": field,
+    	        "newValue": newValue,
+    	        "customer_id": customer_id
+    	      }
+
+      $.ajax({
+          url: "/yulchon/management/updateCustomerRemark",
+          method: "POST",
+          data: JSON.stringify(updateData),
+          contentType: "application/json",
+          success: function(res) {
+			if(res === true || res === "true"){
+				console.log("비고 업데이트 완료");
+				}else{
+					console.log("비고 업데이트 실패")
+					}
+  			},
+		      error: function() {
+		    	  console.log("비고 수정 중 에러 발생");
+		      }
+      });
+      
   }
 });
+}
+
+//파일 다운로드 요청
+function downloadFile(fileName) {
+  // 서버로 파일명을 보내 다운로드 요청
+  location.href = "/yulchon/management/downloadShippingMark?fileName=" + encodeURIComponent(fileName);
 }
 
 $(function() {
@@ -292,9 +385,51 @@ $(function() {
 	        data.user_name = user_name;
 	    }
 	    
-	  dataTable.setData("/ezPublic/user/selectList", data);
+	  dataTable.setData("/yulchon/management/getCustomerList", data);
   });
 
+  //고객사 추가 버튼 클릭시
+  $(".insert-button").click(function() {
+      $("#new_customer_id, #new_customer_name, #modal_file_input").val(""); // 초기화
+      $("#insertModal").show();
+  });
+
+  // 모달 닫기
+  $(".close-modal, #btnCloseModal").click(function() {
+      $("#insertModal").hide();
+  });
+
+  //저장 버튼 클릭시
+  $("#btnSaveCustomer").click(function() {
+      const name = $("#new_customer_name").val();
+      const file = $("#modal_file_input")[0].files[0];
+
+      if(!name) {
+          alert("고객사를 입력해주세요.");
+          return;
+      }
+
+      const formData = new FormData();
+      formData.append("customer_name", name);
+      if(file) formData.append("file", file);
+
+      $.ajax({
+          url: "/yulchon/management/insertCustomer", 
+          type: "POST",
+          data: formData,
+          processData: false,
+          contentType: false,
+          success: function(result) {
+              if(result) {
+                  alert("성공적으로 등록되었습니다.");
+                  $("#insertModal").hide();
+                  dataTable.setData("/yulchon/management/getCustomerList", {});
+              } else {
+                  alert("등록 실패");
+              }
+          }
+      });
+  });
 
 });
 </script>

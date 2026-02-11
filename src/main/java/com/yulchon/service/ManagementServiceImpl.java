@@ -78,4 +78,104 @@ public class ManagementServiceImpl implements ManagementService{
 	public boolean deleteShippingListInventory(Management management) {
 		return managementDao.deleteShippingListInventory(management);
 	}
+	
+	@Override
+	public boolean cancelShippingList(Management management) {
+		return managementDao.cancelShippingList(management);
+	}
+	
+	@Override
+	public boolean cancelInvoiceList(Management management) {
+		return managementDao.cancelInvoiceList(management);
+	}
+	
+	@Override
+	public boolean cancelInvoiceInventory(Management management) {
+		return managementDao.cancelInvoiceInventory(management);
+	}
+	
+	@Override
+	public List<Management> getNoUpdatedInvoiceList(Management management) {
+		return managementDao.getNoUpdatedInvoiceList(management);
+	}
+	
+	@Override
+	public boolean updateCustomerProductCodeNumber(Management management) {
+		return managementDao.updateCustomerProductCodeNumber(management);
+	}
+	
+	@Override
+	public boolean insertShippingResult(Management management) {
+		return managementDao.insertShippingResult(management);
+	}
+	
+	@Override
+	public boolean updateCompleteInvoiceList(Management management) {
+		return managementDao.updateCompleteInvoiceList(management);
+	}
+	
+	@Override
+	public List<Management> getCompleteInventoryList(Management management) {
+		return managementDao.getCompleteInventoryList(management);
+	}
+	
+	@Override
+	public Management mobileGetShippingMarkPrintInventory(Management management) {
+		return managementDao.mobileGetShippingMarkPrintInventory(management);
+	}
+	
+	@Override
+	public boolean deleteNoScanInventory(Management management) {
+		return managementDao.deleteNoScanInventory(management);
+	}
+	
+	@Override
+	public List<Management> getNoUpdatedOrResetInvoiceList(Management management) {
+		return managementDao.getNoUpdatedOrResetInvoiceList(management);
+	}
+	
+	@Override
+	public List<Management> getResetDatas(Management management) {
+		return managementDao.getResetDatas(management);
+	}
+	
+	@Override
+	public boolean insertShippingCancel(Management management) {
+		return managementDao.insertShippingCancel(management);
+	}
+	
+	@Override
+	public List<Management> getCancelInventoryList(Management management) {
+		return managementDao.getCancelInventoryList(management);
+	}
+	
+	@Override
+	public List<Management> getResetInventoryList(Management management) {
+		return managementDao.getResetInventoryList(management);
+	}
+
+	@Override
+	public boolean updateInvoiceIsMoved(Management management) {
+		return managementDao.updateInvoiceIsMoved(management);
+	}
+	
+	@Override
+	public List<Management> getCustomerList(Management management) {
+		return managementDao.getCustomerList(management);
+	}
+	
+	@Override
+	public boolean updateShippingMarkFile(Management management) {
+		return managementDao.updateShippingMarkFile(management);
+	}
+	
+	@Override
+	public boolean updateCustomerRemark(Management management) {
+		return managementDao.updateCustomerRemark(management);
+	}
+	
+	@Override
+	public boolean insertCustomer(Management management) {
+		return managementDao.insertCustomer(management);
+	}
 }

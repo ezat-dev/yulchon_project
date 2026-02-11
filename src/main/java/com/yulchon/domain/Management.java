@@ -1,5 +1,6 @@
 package com.yulchon.domain;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class Management {
@@ -28,20 +29,243 @@ public class Management {
 	private String invoice_name_base;
 	private List<String> lotList;
 	private String is_shipped;
+	private String shipping_list_no;
+	private List<String> invoiceList;
+	private String invoice_is_shipped;
+	private String out_diameter; //외경
+	private String in_daimeter; //내경
+	private String thickness; //두께
+	private String cd_materail; //재질
+	private String customer_product_code_number; //고객사에서 지정한 품번
+	private List<Management> addList;
+	private Integer item_count; //인보이스 같은 품목별 번호
+	private Integer invoice_inventory_no;
+	private String insert_date;
+	private String start_date;
+	private String end_date;
+	private String move_invoice_name;
+	private String invoice_is_moved;
+	private String extra_invoice_no;
+	private String extra_packing_inspection;
+	private String targetField;
+	private String newValue;
+	private String extra_order_no;
+	private String extra_part_no;
+	private String extra_spec;
+	private String item_seq_total;
+	private String customer_id;
+	private String customer_name;
+	private String customer_shippingmark_file_name;
+	private String regtime;
+	private String update_user_id;
+	private String remark;
+	private String old_file_name;
+	private String user_id;
 	
-
 	
-	public String getIs_shipped() {
-		return is_shipped;
+	public String getUser_id() {
+		return user_id;
 	}
-	public void setIs_shipped(String is_shipped) {
-		this.is_shipped = is_shipped;
+	public void setUser_id(String user_id) {
+		this.user_id = user_id;
+	}
+	public String getOld_file_name() {
+		return old_file_name;
+	}
+	public void setOld_file_name(String old_file_name) {
+		this.old_file_name = old_file_name;
+	}
+	public String getCustomer_shippingmark_file_name() {
+		return customer_shippingmark_file_name;
+	}
+	public void setCustomer_shippingmark_file_name(String customer_shippingmark_file_name) {
+		this.customer_shippingmark_file_name = customer_shippingmark_file_name;
+	}
+	public String getCustomer_id() {
+		return customer_id;
+	}
+	public void setCustomer_id(String customer_id) {
+		this.customer_id = customer_id;
+	}
+	public String getCustomer_name() {
+		return customer_name;
+	}
+	public void setCustomer_name(String customer_name) {
+		this.customer_name = customer_name;
+	}
+	public String getRegtime() {
+		return regtime;
+	}
+	public void setRegtime(String regtime) {
+		this.regtime = regtime;
+	}
+	public String getUpdate_user_id() {
+		return update_user_id;
+	}
+	public void setUpdate_user_id(String update_user_id) {
+		this.update_user_id = update_user_id;
+	}
+	public String getRemark() {
+		return remark;
+	}
+	public void setRemark(String remark) {
+		this.remark = remark;
+	}
+	public String getItem_seq_total() {
+		return item_seq_total;
+	}
+	public void setItem_seq_total(String item_seq_total) {
+		this.item_seq_total = item_seq_total;
+	}
+	public String getExtra_spec() {
+		return extra_spec;
+	}
+	public void setExtra_spec(String extra_spec) {
+		this.extra_spec = extra_spec;
+	}
+	public String getExtra_part_no() {
+		return extra_part_no;
+	}
+	public void setExtra_part_no(String extra_part_no) {
+		this.extra_part_no = extra_part_no;
+	}
+	public String getExtra_order_no() {
+		return extra_order_no;
+	}
+	public void setExtra_order_no(String extra_order_no) {
+		this.extra_order_no = extra_order_no;
+	}
+	public String getTargetField() {
+		return targetField;
+	}
+	public void setTargetField(String targetField) {
+		this.targetField = targetField;
+	}
+	public String getNewValue() {
+		return newValue;
+	}
+	public void setNewValue(String newValue) {
+		this.newValue = newValue;
+	}
+	public String getExtra_invoice_no() {
+		return extra_invoice_no;
+	}
+	public void setExtra_invoice_no(String extra_invoice_no) {
+		this.extra_invoice_no = extra_invoice_no;
+	}
+	public String getExtra_packing_inspection() {
+		return extra_packing_inspection;
+	}
+	public void setExtra_packing_inspection(String extra_packing_inspection) {
+		this.extra_packing_inspection = extra_packing_inspection;
+	}
+	public String getInvoice_is_moved() {
+		return invoice_is_moved;
+	}
+	public void setInvoice_is_moved(String invoice_is_moved) {
+		this.invoice_is_moved = invoice_is_moved;
+	}
+	public String getMove_invoice_name() {
+		return move_invoice_name;
+	}
+	public void setMove_invoice_name(String move_invoice_name) {
+		this.move_invoice_name = move_invoice_name;
+	}
+	public String getStart_date() {
+		return start_date;
+	}
+	public void setStart_date(String start_date) {
+		this.start_date = start_date;
+	}
+	public String getEnd_date() {
+		return end_date;
+	}
+	public void setEnd_date(String end_date) {
+		this.end_date = end_date;
+	}
+	public String getInsert_date() {
+		return insert_date;
+	}
+	public void setInsert_date(String insert_date) {
+		this.insert_date = insert_date;
+	}
+	public String getIn_daimeter() {
+		return in_daimeter;
+	}
+	public void setIn_daimeter(String in_daimeter) {
+		this.in_daimeter = in_daimeter;
+	}
+	public Integer getInvoice_inventory_no() {
+		return invoice_inventory_no;
+	}
+	public void setInvoice_inventory_no(Integer invoice_inventory_no) {
+		this.invoice_inventory_no = invoice_inventory_no;
+	}
+	public Integer getItem_count() {
+		return item_count;
+	}
+	public void setItem_count(Integer item_count) {
+		this.item_count = item_count;
 	}
 	public List<String> getLotList() {
 		return lotList;
 	}
 	public void setLotList(List<String> lotList) {
 		this.lotList = lotList;
+	}
+	public List<Management> getAddList() {
+		return addList;
+	}
+	public void setAddList(List<Management> addList) {
+		this.addList = addList;
+	}
+	public String getCustomer_product_code_number() {
+		return customer_product_code_number;
+	}
+	public void setCustomer_product_code_number(String customer_product_code_number) {
+		this.customer_product_code_number = customer_product_code_number;
+	}
+	public String getOut_diameter() {
+		return out_diameter;
+	}
+	public void setOut_diameter(String out_diameter) {
+		this.out_diameter = out_diameter;
+	}
+	public String getThickness() {
+		return thickness;
+	}
+	public void setThickness(String thickness) {
+		this.thickness = thickness;
+	}
+	public String getCd_materail() {
+		return cd_materail;
+	}
+	public void setCd_materail(String cd_materail) {
+		this.cd_materail = cd_materail;
+	}
+	public String getInvoice_is_shipped() {
+		return invoice_is_shipped;
+	}
+	public void setInvoice_is_shipped(String invoice_is_shipped) {
+		this.invoice_is_shipped = invoice_is_shipped;
+	}
+	public List<String> getInvoiceList() {
+		return invoiceList;
+	}
+	public void setInvoiceList(List<String> invoiceList) {
+		this.invoiceList = invoiceList;
+	}
+	public String getShipping_list_no() {
+		return shipping_list_no;
+	}
+	public void setShipping_list_no(String shipping_list_no) {
+		this.shipping_list_no = shipping_list_no;
+	}
+	public String getIs_shipped() {
+		return is_shipped;
+	}
+	public void setIs_shipped(String is_shipped) {
+		this.is_shipped = is_shipped;
 	}
 	public String getInvoice_name_base() {
 		return invoice_name_base;
@@ -178,18 +402,13 @@ public class Management {
 				+ lbl_date + ", nm_customer=" + nm_customer + ", po_customer=" + po_customer + ", no_receipt="
 				+ no_receipt + ", remarks=" + remarks + ", nm_location=" + nm_location + ", invoice_no=" + invoice_no
 				+ ", invoice_name=" + invoice_name + ", invoice_date=" + invoice_date + ", invoice_name_base="
-				+ invoice_name_base + ", lotList=" + lotList + ", getLotList()=" + getLotList()
-				+ ", getInvoice_name_base()=" + getInvoice_name_base() + ", getInvoice_date()=" + getInvoice_date()
-				+ ", getInvoice_no()=" + getInvoice_no() + ", getInvoice_name()=" + getInvoice_name()
-				+ ", getCd_item()=" + getCd_item() + ", getNm_item()=" + getNm_item() + ", getSpec_item()="
-				+ getSpec_item() + ", getKgm_weight()=" + getKgm_weight() + ", getCd_wh()=" + getCd_wh()
-				+ ", getNm_wh()=" + getNm_wh() + ", getNm_customer()=" + getNm_customer() + ", getNm_location()="
-				+ getNm_location() + ", getLbl_real_length()=" + getLbl_real_length() + ", getNo_mfg_order_serial()="
-				+ getNo_mfg_order_serial() + ", getQty_inventory()=" + getQty_inventory() + ", getWgt_inventory()="
-				+ getWgt_inventory() + ", getLbl_date()=" + getLbl_date() + ", getPo_customer()=" + getPo_customer()
-				+ ", getNo_receipt()=" + getNo_receipt() + ", getRemarks()=" + getRemarks() + ", getLbl_lot_no()="
-				+ getLbl_lot_no() + ", getClass()=" + getClass() + ", hashCode()=" + hashCode() + ", toString()="
-				+ super.toString() + "]";
+				+ invoice_name_base + ", lotList=" + lotList + ", is_shipped=" + is_shipped + ", shipping_list_no="
+				+ shipping_list_no + ", invoiceList=" + invoiceList + ", invoice_is_shipped=" + invoice_is_shipped
+				+ ", out_diameter=" + out_diameter + ", in_daimeter=" + in_daimeter + ", thickness=" + thickness
+				+ ", cd_materail=" + cd_materail + ", customer_product_code_number=" + customer_product_code_number
+				+ ", addList=" + addList + ", item_count=" + item_count + ", invoice_inventory_no="
+				+ invoice_inventory_no + ", insert_date=" + insert_date + "]";
 	}
+
 	
 }

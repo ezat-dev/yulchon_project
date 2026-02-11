@@ -12,271 +12,434 @@
     <link rel="stylesheet" href="/yulchon/css/management/userinsert2.css">
     <script type="text/javascript" src="https://oss.sheetjs.com/sheetjs/xlsx.full.min.js"></script>
     <style>
- 제공해주신 코드에서 가장 문제가 되는 **고정 픽셀(1008px, 1200px 등)**과 **부모를 벗어나는 너비(113%)**를 제거하고, 어떤 모니터 해상도에서도 화면에 꽉 차게 들어오는 Flexbox 기반 반응형 레이아웃으로 수정했습니다.
+/* =========================
+   Global / Theme
+========================= */
+:root {
+  --bg: #f6f8fb;
+  --panel: #ffffff;
+  --border: #e6eaf2;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --primary-weak: #e8efff;
+  --shadow: 0 10px 24px rgba(16, 24, 40, 0.08);
+  --radius: 14px;
+}
 
-이 코드를 복사해서 기존 <style> 태그 내용을 교체하시면 바로 적용됩니다.
-
-CSS
-
-<style>
-/* 1. 기본 설정 - 박스 모델 고정 */
 * {
-    box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow-x: hidden; /* 가로 스크롤 '깔짝' 방지 */
 }
 
 body {
-    margin: 0;
-    padding: 0;
-    font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR",
+    Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
 }
 
-/* 2. 메인 컨테이너 - 고정 마진 제거 및 중앙 정렬 */
-.container {
-    display: flex;
-    flex-direction: column; /* 세로 배치로 변경하여 유연성 확보 */
-    padding: 20px;
-    margin: 40px auto; /* 중앙 정렬 */
-    width: 98%;      /* 모니터 너비에 맞춰 꽉 참 */
-    max-width: 1800px; 
+/* =========================
+   Page Layout
+========================= */
+.main {
+  width: min(1800px, 96vw);
+  margin: 22px auto;
+  padding: 14px;
 }
 
-/* 상단 날짜 선택/버튼 영역 */
-.box1 {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 20px;
-    gap: 10px;
+/* 상단 바(날짜 + 버튼 영역) */
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
-/* 3. 테이블 뷰 영역 - 화면에 꽉 차게 배치 */
-.view {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 20px;       /* 테이블 간 간격 */
-    width: 100%;     /* 113% 제거 */
-    overflow-x: hidden; 
+.button-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: 0px;
 }
 
-/* 왼쪽 인보이스 테이블 (작은 테이블) */
-#invoiceTable {
-    flex: 0 0 380px; /* 고정 너비 유지하되 유연함 부여 */
-    min-width: 300px;
-}
-
-/* 오른쪽 데이터 테이블 (큰 테이블) */
-#dataTable {
-height: 85vh !important;
-}
-/* 모달 내 좌우 테이블 배치 */
-.tables-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 25px;
-    width: 100%;
-}
-
-.table-section {
-    flex: 1;         /* 좌우 테이블 5:5 비율 */
-    min-width: 0;    /* Flex 자식 찌그러짐 방지 */
-}
-
-#leftTable, #rightTable {
-    width: 100% !important; /* 고정 688px 제거 */
-}
-
-/* 화살표 박스 */
-.arrow-container {
-    flex: 0 0 120px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-}
-
-/* 5. 공통 컴포넌트 수치 조정 */
+/* =========================
+   Inputs / Buttons
+========================= */
 .daySet {
-    height: 35px;
-    padding: 5px 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  outline: none;
 }
 
-.mid {
-    font-size: 18px;
-    font-weight: bold;
-    padding: 0 10px;
+.daySet::placeholder {
+  color: var(--muted);
 }
 
-.form-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-/* 1. 모달 전체 배경 */
-.modal, .addDeleteModal {
-    display: none;
-    position: fixed;    /* 화면에 고정 */
-    z-index: 999999;    /* 최상단으로 올림 */
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.6); /* 배경을 약간 더 어둡게 */
-    overflow: hidden;   /* 모달 떴을 때 배경 스크롤 방지용 */
+.daySet:focus {
+  border-color: rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
-/* 2. 모달 콘텐츠 (중앙 정렬 핵심) */
-.modal-content, .addDelete-modal-content {
-    background: white;
-    position: absolute; /* 부모(.modal) 기준 */
-    top: 50%;           /* 세로 중앙 */
-    left: 50%;          /* 가로 중앙 */
-    transform: translate(-50%, -50%) scale(0.9); /* 중앙 보정 및 애니메이션 준비 */
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.4);
-    transition: all 0.3s ease-in-out;
-    opacity: 0;
-    margin: 0;          /* 기존 margin 제거 */
+/* 날짜 input (inline style 덮어쓰기) */
+#invoice_date {
+  width: clamp(140px, 18vw, 250px);
+  min-width: 140px;
+  height: 40px;
+  margin-bottom: 0 !important; /* HTML inline margin-bottom 무력화 */
+  font-size: 15px !important;  /* HTML inline font-size 무력화 */
 }
 
-/* 3. 일반 등록 모달 크기 */
-.modal-content {
-    width: 400px;       /* 고정 너비 혹은 비율 */
-    max-height: 90vh;
-    overflow-y: auto;
+/* 기본 버튼 공통 */
+button,
+.insert-button {
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0 14px;
+  font-weight: 700;
 }
 
-/* 4. 추가/삭제 전용 큰 모달 크기 */
-.addDelete-modal-content {
-    width: 95%;
-    max-width: 1600px;
-    height: auto;
-    max-height: 95vh;
-    overflow-y: auto;
+/* 인보이스 생성 버튼 */
+#insert-invoice-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-color: rgba(37, 99, 235, 0.35);
+  background: var(--primary);
+  color: #fff;
 }
 
-/* 5. 모달이 열렸을 때 (show 클래스) */
-.modal.show, .addDeleteModal.show {
-    display: block !important;
+#insert-invoice-button .button-image {
+  width: 18px;
+  height: 18px;
+  filter: brightness(0) invert(1);
 }
 
-.modal.show .modal-content, 
-.addDeleteModal.show .addDelete-modal-content {
-    transform: translate(-50%, -50%) scale(1); /* 원래 크기로 */
-    opacity: 1;
-}
-/* 6. 모니터 해상도가 작아질 때 (1200px 이하) 대응 */
-@media (max-width: 1200px) {
-    .view {
-        flex-direction: column; /* 테이블을 위아래로 배치 */
-        align-items: center;
-    }
-    #invoiceTable, #dataTable {
-        width: 100%;
-        flex: none;
-    }
-    .tables-container {
-        flex-direction: column;
-    }
-    .arrow-container {
-        flex-direction: row;
-        margin: 20px 0;
-    }
-}
-.addDeleteInvoiceModalText{
-font-size: 30px;
-}
-#invoice_name_span{
-font-weight: bold;
-}
-/* 애니메이션 */
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-.arrow {
-    /* 기존 45px에서 대폭 상향 */
-    font-size: 50px; 
-    
-    /* 진한 하늘색 (Deep Sky Blue 계열) */
-    color: #007bff; 
-    
-    /* 볼드 처리 (화살표 자체 두께) */
-    font-weight: 900; 
-    
-    /* 텍스트 줄간격으로 인한 여백 제거 */
-    line-height: 1;
-    
-    /* 마우스 커서 포인터 유지 */
-    cursor: pointer;
-    
-    /* 선택 방지 (더블 클릭 시 텍스트 블록 지정 방지) */
-    user-select: none;
-    
-    transition: transform 0.2s ease;
+#insert-invoice-button:hover {
+  background: #1d4ed8;
 }
 
-/* 화살표 박스 크기도 화살표에 맞춰 자동 조절되도록 수정 */
-.arrow-box {
-    border: 3px solid #007bff; /* 테두리도 진한 하늘색으로 맞춤 */
-    border-radius: 12px;
-    padding: 5px; /* 내부 여백 확보 */
-    background-color: white;
+button:hover {
+  background: #f3f6ff;
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+/* =========================
+   Main View (Two Tables)
+   - 높이 통일 + 스크롤 깔짝 제거 + invoiceTable 내용 안 사라짐
+========================= */
+
+/* 두 테이블의 높이 기준: view가 잡고, 내부는 100% 따라감 */
+.view {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+  margin-top: 14px;
+
+  /* 핵심: 상단(tab) 포함한 전체 레이아웃 고려한 높이 */
+  height: calc(100vh - 160px);
+  min-height: 520px;
+
+  /* '깔짝' 스크롤 원인 차단 */
+  overflow: hidden;
+}
+
+/* 테이블 카드 공통 */
+#invoiceTable,
+#dataTable {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+
+  /* 중요: flex 안에서 가로 삐져나옴 방지 */
+  min-width: 0;
+
+  /* 중요: 테이블 라이브러리 absolute 레이아웃 대응 */
+  position: relative;
+
+  /* view 높이 따라감 */
+  height: 100%;
+
+  /* 0 높이로 떨어지는 문제 방지 */
+  min-height: 300px;
+}
+
+/* 좌측 인보이스 */
+#invoiceTable {
+  flex: 0 0 382px;
+  min-width: 320px;
+
+  /* 여기서 overflow:hidden 하면 라이브러리 내부 스크롤이 꼬여서
+     내용이 안 보이는 경우가 있어서 안전하게 auto/visible 처리 */
+  overflow: hidden;
+}
+
+/* 우측 데이터 */
+#dataTable {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+/* 만약 너가 쓰는 테이블이 Tabulator라면:
+   Tabulator 컨테이너/holder에만 높이를 지정해야 안정적 */
+#invoiceTable .tabulator,
+#dataTable .tabulator {
+  height: 100%;
+}
+
+/* 헤더 제외한 스크롤 영역 높이 (Tabulator 기본 헤더 높이 감안) */
+#invoiceTable .tabulator-tableholder,
+#dataTable .tabulator-tableholder {
+  height: calc(100% - 40px);
+}
+
+/* 혹시 DataTables(scrollY) 같은 경우 내부 wrapper가 이런 구조면 대응 */
+#invoiceTable .dataTables_wrapper,
+#dataTable .dataTables_wrapper {
+  height: 100%;
+}
+
+#invoiceTable .dataTables_scroll,
+#dataTable .dataTables_scroll {
+  height: 100%;
+}
+
+#invoiceTable .dataTables_scrollBody,
+#dataTable .dataTables_scrollBody {
+  height: calc(100% - 40px);
+}
+
+/* 기존 span margin 같은 잔여 스타일 제거 */
+#dataTable span {
+  margin-left: 15%;
+}
+
+/* 선택 행 강조 */
+.row_select {
+  background-color: #fff7d6 !important;
+}
+
+/* =========================
+   Modal
+========================= */
+.modal,
+.addDeleteModal {
+  display: none;
+  position: fixed;
+  z-index: 999999;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.55);
+  overflow: hidden;
+}
+
+.modal.show,
+.addDeleteModal.show {
+  display: block !important;
+}
+
+
+
+.arrow-box,
+.arrow-box2 {
+    margin-top: 220px;          /* arrow-box 기본값 */
+    font-size: 45px;
+
+    /* 박스 */
+    width: 70px;
+    height: 70px;
+    border-radius: 14px;
+    border: 2px solid #1e88e5;  /* 푸른색 테두리 */
+    background-color: #f5faff;  /* 아주 연한 하늘색 */
+
+    /* 가운데 정렬 */
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-.arrow-box:hover {
-    background-color: #c5e2fb;
-}
-#closeAddDeleteInvoiceProduct {
-    display: block;
-    margin: 20px auto 0;
-    padding: 10px 40px;
-    font-size: 14px;
-    font-weight: bold;
-    border: 2px solid #4a90e2;
-    background-color: white;
-    color: #4a90e2;
+
+    /* 아이콘 색 */
+    color: #1e88e5;             /* 진한 블루 */
+
+    /* UX */
     cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.3s;
+    user-select: none;
 }
-#closeAddDeleteInvoiceProduct:hover {
-    background-color: #4a90e2;
-    color: white;
+
+/* 두 번째 화살표는 간격만 다르게 */
+.arrow-box2 {
+    margin-top: 20px;
 }
-.button-container {
+
+/* hover 효과 – 하늘색 느낌 */
+.arrow-box:hover,
+.arrow-box2:hover {
+    background-color: #dbeeff;  /* 하늘색 */
+    border-color: #1565c0;      /* 조금 더 진한 블루 */
+    color: #1565c0;
+}
+
+/* 클릭 시 살짝 눌린 느낌 (애니메이션 없이) */
+.arrow-box:active,
+.arrow-box2:active {
+    background-color: #cfe6ff;
+}
+
+
+.modal-content,
+.addDelete-modal-content {
+  background: var(--panel);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(1600px, 94vw);
+  max-height: 95vh;
+  overflow: auto;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+}
+
+/* 모달 타이틀 */
+.addDeleteInvoiceModalText {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.invoice-number {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
+#invoice_name_span {
+  font-weight: 900;
+  color: var(--primary);
+}
+
+/* =========================
+   Modal Tables (Left/Right)
+========================= */
+.tables-container {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 14px;
+  width: 100%;
+}
+
+.table-section {
+  flex: 1 1 0;
+  min-width: 0;
+  background: #fbfcff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+#leftTable,
+#rightTable {
+  width: 100% !important;
+}
+
+
+
+
+.tabulator .tabulator-tableHolder {
+    position: relative;
+    width: 100%;
+    white-space: nowrap;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+}
+#closeAddDeleteInvoiceProduct{
+    margin-left: 46%;
+    width: 120px;
+    background-color: #93c4f5;
+}
+.legend-container {
     display: flex;
-    gap: 10px;
-    margin-left: 1%;
-    margin-right: 10px;
+    align-items: center;
+    gap: 16px;
+    margin-left: 10px; /* 버튼과의 간격 */
+    padding: 0 10px;
 }
-#invoice_date{
-/* 기본적으로 부모 너비의 100%를 시도하되 */
-    width: 25%; 
-    
-    /* 모니터에서 너무 길어지면 보기 흉하므로 최대폭 제한 */
-    max-width: 250px; 
-    
-    /* 너무 좁아져서 날짜가 잘리지 않도록 최소폭 제한 */
-    min-width: 88px; 
-    height: 29px;
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
-#dataTable span{
-margin-left: 15%;
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    border: 1px solid var(--border); /* 흰색 동그라미를 위해 경계선 추가 */
 }
-.row_select {
-background-color: #ffeeba !important;
+
+.scan-complete {
+    background-color: #beddf8;
+    border-color: #000000; 
 }
+.scan-cancel {
+    background-color: #f8c1be;
+    border-color: #000000; 
+}
+.scan-reset {
+    background-color: #e6e6e6;
+    border-color: #000000; 
+}
+.scan-wait {
+    background-color: #ffffff;
+    border-color: #000000; 
+}
+.legend-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+/* 모바일 대응: 화면이 좁아지면 범례도 자연스럽게 줄바꿈 */
+@media (max-width: 1200px) {
+    .legend-container {
+        margin-left: 0;
+        margin-top: 5px;
+        width: 100%;
+    }
+}
+/* 모달 내 좌/우 테이블도 내부 라이브러리 높이 안정화 */
+.table-sectio
+
     </style>
 </head>
 
@@ -293,33 +456,19 @@ background-color: #ffeeba !important;
                 <button class="insert-button" id="insert-invoice-button">
                     <img src="/yulchon/css/image/insert-icon.png" alt="insert" class="button-image">인보이스 생성
                 </button>
-                
-<!--                <div class="box1">
-	           <p class="tabP" style="font-size: 20px; margin-left: 40px; color: white; font-weight: 800;"></p>
-	           <label class="daylabel">발행일자 :</label>
-				<input type="text" autocomplete="off" class="daySet" id="startDate" style="font-size:16px; margin-bottom:10px; text-align:center; border-radius:6px; border:1px solid #ccc;" placeholder="시작 날짜 선택">
-				
-				 <span class="mid"  style="font-size: 20px; font-weight: bold; margin-botomm:10px;"> ~ </span>
-	 	<input type="text"autocomplete="off" class="daySet" id="endDate" style="font-size: 16px; margin-bottom:10px;" placeholder="종료 날짜 선택"> 
-	</div>
-
-	           
-		
-                <button class="select-button">
-                    <img src="/yulchon/css/image/search-icon.png" alt="select" class="button-image">조회
-                </button> -->
-<!--                 <button class="insert-button">
-                    <img src="/yulchon/css/image/insert-icon.png" alt="insert" class="button-image">추가
-                </button>
-                 <button class="delete-button">
-				    <img src="/yulchon/css/image/delete-icon.png" alt="delete" class="button-image"> 삭제
-				</button> -->
-                
-            <!--     
-                <button class="excel-button">
-                    <img src="/geomet/css/tabBar/excel-icon.png" alt="excel" class="button-image">엑셀
-                </button> -->
-                
+                <span class="info-text">
+      			  * 미처리된 인보이스를 더블클릭하면 새로운 인보이스에 추가할 수 있습니다.
+    			</span>
+               	<div class="legend-container">
+				<div class="legend-item">
+				        <span class="dot scan-reset"></span>
+				        <span class="legend-text">미처리</span>
+				</div>
+				<div class="legend-item">
+				        <span class="dot scan-wait"></span>
+				        <span class="legend-text">대기</span>
+				</div>
+				</div>
             </div>
         </div>
 
@@ -328,20 +477,7 @@ background-color: #ffeeba !important;
             <div id="dataTable"></div>
         </div>
     </main>
-	
-	<!-- 인보이스 부여 모달 -->
-<!-- 	<div id="modalContainer" class="modal">
-	    <div class="modal-content">
-	        <span class="close">&times;</span>
-	        <h2>인보이스 생성</h2>
-	        <form id="corrForm"autocomplete="off">
-		 	<input type="text"autocomplete="off" class="daySet" id="invoice_date" style="font-size: 16px; margin-bottom:10px;" placeholder="날짜 선택"> 
-	            
-	            <button type="submit" id="saveCorrStatus">저장</button>
-	            <button type="button" id="closeModal">닫기</button>
-	        </form>
-	    </div>
-	</div> -->
+
 	
 	<!-- 인보이스 품목 추가/삭제 모달 -->
 	<div id="addDeleteInvoiceProduct" class="addDeleteModal">
@@ -354,7 +490,6 @@ background-color: #ffeeba !important;
             <span id="invoice_name_span">YP-20260101-001</span>
             <span id="invoice_no_span" style="display: none"></span>
         </div>
-        
                 <div class="tables-container">
             <div class="table-section">
                 <div id="leftTable"></div>
@@ -364,7 +499,7 @@ background-color: #ffeeba !important;
                 <div class="arrow-box">
                     <div class="arrow" id="insertArrow">⬅</div>
                 </div>
-                <div class="arrow-box">
+                <div class="arrow-box2">
                     <div class="arrow" id="deleteArrow">➡</div>
                 </div>
             </div>
@@ -389,6 +524,7 @@ var rightTable;
 var selectedLeftRows = [];
 var selectedRightRows = [];
 var clickedInvoiceNo = "";
+var clickedInvoiceIsReset = "";
 
 // 재고현황 조회
 function initDataTable(){
@@ -410,10 +546,16 @@ dataTable = new Tabulator('#dataTable', {
     { title: "품목코드", field: "cd_item", hozAlign: "center", width: 120, headerFilter: "input"},
     { title: "품목명", field: "nm_item", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
     { title: "규격", field: "spec_item", sorter: "string", width: 100, hozAlign: "center", headerFilter: "input" },
-    { title: "단중", field: "kgm_weight", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
-    { title: "실길이", field: "lbl_real_length", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
     { title: "Lot No.", field: "lbl_lot_no", width: 170, hozAlign: "center", headerFilter: "input" },
     { title: "W/O No", field: "no_mfg_order_serial", width: 170, hozAlign: "center", headerFilter: "input" },
+    { title: "고객사 부여 품번", field: "customer_product_code_number", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
+    { title: "출력용 인보이스", field: "extra_invoice_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
+    { title: "출력용 Packinglist No/Inspection No", field: "extra_packing_inspection", width: 300, hozAlign: "center", headerFilter: "input", editor: "input" },
+    { title: "출력용 Order No", field: "extra_order_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
+    { title: "출력용 Part No", field: "extra_part_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
+    { title: "출력용 Spec", field: "extra_spec", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
+    { title: "단중", field: "kgm_weight", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
+    { title: "실길이", field: "lbl_real_length", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
     { title: "재고수량", field: "qty_inventory", sorter: "string", width: 100, hozAlign: "center", headerFilter: "input"},
     { title: "재고중량", field: "wgt_inventory", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
     { title: "창고코드", field: "cd_wh", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
@@ -423,49 +565,90 @@ dataTable = new Tabulator('#dataTable', {
     { title: "고객PO", field: "po_customer", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
     { title: "입하No", field: "no_receipt", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
     { title: "비고", field: "remarks", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
-    { title: "위치", field: "nm_location", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" }
+    { title: "위치", field: "nm_location", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
+    { title: "invoice_inventory_no", field: "invoice_inventory_no", visible: false }
   ],
-  rowClick: function(e, row) {
-    $('#dataTable .tabulator-row').removeClass('row_select');
-    row.getElement().classList.add('row_select');
-    selectedRowData = row.getData();
+  cellEdited: function(cell) {
+      // cell : 수정된 셀 객체
+      var rowData = cell.getRow().getData(); // 수정된 행 전체 데이터
+      var field = cell.getField();           // 수정된 필드명 (customer_product_code_number)
+      var newValue = cell.getValue();        // 바뀐 값
+      var lbl_lot_no = rowData.lbl_lot_no;
+      var invoice_inventory_no = rowData.invoice_inventory_no;
+      
+      console.log("수정할 필드: ", field);
+      console.log("새로운 데이터: ", newValue);
+      console.log("수정할 데이터: ", rowData);
+      console.log("수정할 lot_no: ", lbl_lot_no);
+
+      var updateData = {
+    		  "targetField": field,
+    	        "newValue": newValue,
+    	        "lbl_lot_no": lbl_lot_no,
+    	        "invoice_inventory_no": invoice_inventory_no
+    	      }
+
+      $.ajax({
+          url: "/yulchon/management/updateCustomerProductCodeNumber",
+          method: "POST",
+          data: JSON.stringify(updateData),
+          contentType: "application/json",
+          success: function(res) {
+			if(res === true || res === "true"){
+				console.log("고객사 부여 품번 수정 완료");
+				}else{
+					console.log("고객사 부여 품번 수정 실패")
+					}
+  			},
+		      error: function() {
+		    	  console.log("고객사 부여 품번 수정 중 에러 발생");
+		      }
+      });
+      
   },
-  rowDblClick: function(e, row) {
-    var d = row.getData();
-    selectedRowData = d;
-    $('#corrForm')[0].reset();
-    $('input[name="no"]').val(d.idx);
-    $('input[name="user_code"]').val(d.user_code);
-    $('input[name="user_id"]').val(d.user_id);
-    $('input[name="user_pw"]').val(d.user_pw);
-    $('input[name="st_day"]').val(d.st_day);
-    $('input[name="user_phone"]').val(d.user_phone);
-    $('input[name="user_name"]').val(d.user_name);
-    $('select[name="user_level"]').val(d.user_level);
-    $('input[name="user_busu"]').val(d.user_busu);
-    $('input[name="user_jick"]').val(d.user_jick);
-  }
 });
 }
 
 //인보이스 조회
 function initInvoiceTable(){
 	invoiceTable = new Tabulator('#invoiceTable', {
-	  height: "705px",
 	  layout: "fitColumns",
 	  headerHozAlign: "center",
 	  ajaxConfig: { method: 'POST' },
 	  ajaxLoader: false,
-	  ajaxURL: "/yulchon/management/getInvoiceList",
+	  ajaxURL: "/yulchon/management/getNoUpdatedOrResetInvoiceList",
 	  ajaxParams: {},
 	  placeholder: "조회된 데이터가 없습니다.",
 	  ajaxResponse: function(url, params, response) {
 	    return response;
 	  },
+	  	  rowFormatter: function(row) {
+	      var data = row.getData();
+	      var status = (data.invoice_is_shipped || "").toString().trim().toUpperCase();
+	      if(status === "R"){
+	    	  row.getElement().style.backgroundColor = "#e6e6e6";
+		      }
+	  },
 	  columns: [
 		  { title: "NO", formatter: "rownum", hozAlign: "center", width: 80, frozen: true },
-	    { title: "인보이스", field: "invoice_name", hozAlign: "center", width: 300, headerFilter: "input" },
-		  { title: "invoice_no", formatter: "invoice_no", hozAlign: "center", width: 80, visible:false}
+		  {title: "인보이스", 
+	        field: "invoice_name", 
+	        hozAlign: "center", 
+	        width: 300, 
+	        headerFilter: "input",
+	        formatter: function(cell, formatterParams, onRendered) {
+	            const rowData = cell.getData(); // 현재 행 데이터
+	            const name = cell.getValue();   // invoice_name 값
+	            
+	            // invoice_is_shipped 값이 'R' 인 경우 뒤에 (미처리) 추가
+	            if (rowData.invoice_is_shipped && rowData.invoice_is_shipped.trim() === "R") {
+	                return name + "(미처리)";
+	            }
+	            return name; 
+	        }
+		  },
+		  { title: "invoice_no", formatter: "invoice_no", hozAlign: "center", width: 80, visible:false},
+		  { title: "invoice_is_shipped", field: "invoice_is_shipped", hozAlign: "center", width: 80, visible:false}
 	  ],
 	  rowClick: function(e, row) {
 	    $('#invoiceTable .tabulator-row').removeClass('row_select');
@@ -473,19 +656,90 @@ function initInvoiceTable(){
 	    selectedRowData = row.getData();
 	    console.log("인보이스 pk: ", selectedRowData.invoice_no);
 		  clickedInvoiceNo = selectedRowData.invoice_no;
+		  clickedInvoiceIsReset = selectedRowData.invoice_is_shipped?.trim();
+		  console.log("인보이스 리셋 여부: [", clickedInvoiceIsReset, "]");
 
 	    //다시 로딩
 	    dataTable.setData("/yulchon/management/getInvoiceInventoryList", 
-	    	    { invoice_no: selectedRowData.invoice_no });
+	    	    { invoice_no: selectedRowData.invoice_no,
+    	    invoice_is_shipped: clickedInvoiceIsReset });
 	  },
 	  rowDblClick: function(e, row) {
 		syncEzInventoryLotExt();
 	    var d = row.getData();
 	    selectedRowData = d;
 	    console.log("selectedRowData.invoice_name: ", selectedRowData.invoice_name);
+	    console.log("미처리 여부: ", selectedRowData.invoice_is_shipped);
 
 	    $('#invoice_name_span').text(selectedRowData.invoice_name);
 	    $('#invoice_no_span').text(selectedRowData.invoice_no);
+	    
+	    if(selectedRowData.invoice_is_shipped && selectedRowData.invoice_is_shipped.trim() == "R"){
+	    	if (confirm(selectedRowData.invoice_name + "의 미처리 품목들을\n새로운 인보이스에 추가하시겠습니까?")) {
+	            
+	            // 현재 dataTable 테이터 가져오기
+	            var allItems = dataTable.getData(); 
+	            
+	            console.log("새 인보이스에 추가할 품목 배열: ", allItems);
+	            console.log("추출된 품목 개수: ", allItems.length);
+
+	            if (allItems.length === 0) {
+	                alert("추가할 품목 데이터가 없습니다.");
+	                return;
+	            }
+
+	            //일단 새로운 인보이스 생성
+			const date = $('#invoice_date').val(); 
+		    const formattedDate = date.replace(/-/g, '');
+		    const invoice_name_base = 'YC-' + formattedDate;
+		    console.log("invoice_name_base: ", invoice_name_base); // 20260101
+		    $.ajax({
+		      url: "/yulchon/management/insertInvoiceName",
+		      type: "POST",
+		      data: {invoice_name_base: invoice_name_base},
+		      //processData: false,
+		      //contentType: false,
+		      success: function(result) {
+		        console.log(result);
+		        if (result === true || result === "true") {
+			        console.log("인보이스 생성 완료");
+		              
+		            getRecentInvoice(function(){
+		    		    //새로운 인보이스에 미처리된 품목 추가
+			            insertInvoiceInventoryItems(allItems);
+
+			            //미처리 인보이스 칼럼 업데이트
+			            updateInvoiceIsMoved(selectedRowData.invoice_no);
+			            
+			            invoiceTable.replaceData("/yulchon/management/getNoUpdatedOrResetInvoiceList")
+			            .then(() => {
+				              const firstRow = invoiceTable.getRows()[0];
+				              if (!firstRow) {
+				                return;
+				              }
+
+				              $('#invoiceTable .tabulator-row').removeClass('row_select');
+				              firstRow.getElement().classList.add('row_select');
+			            
+			            selectedRowData = null;
+			            });
+			            
+			         });
+
+		        } else {
+		            alert("새로운 인보이스 생성 실패: " + result); 
+		        }
+		      },
+		      error: function() {
+		        alert('새로운 인보이스 생성 중 오류가 발생했습니다.');
+		      }
+		    });
+		    return;
+	        } else {
+	            console.log("추가 취소됨");
+	            return; // 취소 누르면 중단
+	        }
+		    }
 	    
 	    leftTable.setData("/yulchon/management/getInvoiceInventoryList", 
 	    	    { invoice_no: selectedRowData.invoice_no });
@@ -513,14 +767,18 @@ function initLeftTable(){
 	    return response;
 	  },
 	  columns: [
-			{ title: "<div style='margin-bottom: 15px;'>No</div>", formatter: "rownum", hozAlign: "center", width: 60, headerSort: false},
+			{ title: "<div style='margin-bottom: 3px;'>No</div>", formatter: "rownum", hozAlign: "center", width: 60, headerSort: false},
 		    { 
-		        title: "<div style='margin-bottom: 15px;'>선택</div>", 
+		        title: "선택", 
 		        field: "selected", 
 		        hozAlign: "center", 
 		        width: 80,
 		        formatter: "rowSelection", 
-		        //titleFormatter: "rowSelection", 
+		        titleFormatter: "rowSelection", 
+		        //필터링된 데이터들만 선택 되도록
+		        titleFormatterParams:{
+			        rowRange: "active"
+			        },
 		        headerSort: false,
 		        cellClick: function(e, cell) {
 		            cell.getRow().toggleSelect();
@@ -528,11 +786,11 @@ function initLeftTable(){
 		    },
 		    { title: "품목코드", field: "cd_item", hozAlign: "center", width: 120, headerFilter: "input" },
 		    { title: "품목명", field: "nm_item", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
+		    { title: "W/O No", field: "no_mfg_order_serial", width: 170, hozAlign: "center", headerFilter: "input" },
+		    { title: "Lot No.", field: "lbl_lot_no", width: 170, hozAlign: "center", headerFilter: "input" },
 		    { title: "규격", field: "spec_item", sorter: "string", width: 100, hozAlign: "center", headerFilter: "input" },
 		    { title: "단중", field: "kgm_weight", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
 		    { title: "실길이", field: "lbl_real_length", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
-		    { title: "Lot No.", field: "lbl_lot_no", width: 170, hozAlign: "center", headerFilter: "input" },
-		    { title: "W/O No", field: "no_mfg_order_serial", width: 170, hozAlign: "center", headerFilter: "input" },
 		    { title: "재고수량", field: "qty_inventory", sorter: "string", width: 100, hozAlign: "center", headerFilter: "input"},
 		    { title: "재고중량", field: "wgt_inventory", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
 		    { title: "창고코드", field: "cd_wh", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
@@ -580,14 +838,18 @@ function initRightTable(){
 	    return response;
 	  },
 	  columns: [
-			{ title: "<div style='margin-bottom: 15px;'>No</div>", formatter: "rownum", hozAlign: "center", width: 60, headerSort: false},
+			{ title: "<div style='margin-bottom: 3px;'>No</div>", formatter: "rownum", hozAlign: "center", width: 60, headerSort: false},
 		    { 
-		        title: "<div style='margin-bottom: 15px;'>선택</div>", 
+		        title: "선택", 
 		        field: "selected", 
 		        hozAlign: "center", 
 		        width: 80,
 		        formatter: "rowSelection", 
-		        //titleFormatter: "rowSelection", 
+		        titleFormatter: "rowSelection", 
+		        //필터링된 데이터들만 선택 되도록
+		        titleFormatterParams:{
+			        rowRange: "active"
+			        },
 		        headerSort: false,
 		        cellClick: function(e, cell) {
 		            cell.getRow().toggleSelect();
@@ -595,11 +857,11 @@ function initRightTable(){
 		    },
 		    { title: "품목코드", field: "cd_item", hozAlign: "center", width: 120, headerFilter: "input" },
 		    { title: "품목명", field: "nm_item", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
+		    { title: "W/O No", field: "no_mfg_order_serial", width: 170, hozAlign: "center", headerFilter: "input" },
+		    { title: "Lot No.", field: "lbl_lot_no", width: 170, hozAlign: "center", headerFilter: "input" },
 		    { title: "규격", field: "spec_item", sorter: "string", width: 100, hozAlign: "center", headerFilter: "input" },
 		    { title: "단중", field: "kgm_weight", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
 		    { title: "실길이", field: "lbl_real_length", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
-		    { title: "Lot No.", field: "lbl_lot_no", width: 170, hozAlign: "center", headerFilter: "input" },
-		    { title: "W/O No", field: "no_mfg_order_serial", width: 170, hozAlign: "center", headerFilter: "input" },
 		    { title: "재고수량", field: "qty_inventory", sorter: "string", width: 100, hozAlign: "center", headerFilter: "input"},
 		    { title: "재고중량", field: "wgt_inventory", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
 		    { title: "창고코드", field: "cd_wh", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
@@ -651,6 +913,34 @@ function syncEzInventoryLotExt(){
       }
     });
   }
+
+//가장 최근에 생긴 인보이스 가져오기
+function getRecentInvoice(callback){
+	    $.ajax({
+	      url: "/yulchon/management/getRecentInvoice",
+	      type: "POST",
+	      contentType: 'application/json',
+	      data:{},
+	      //processData: false,
+	      //contentType: false,
+	      success: function(result) {
+	          if(result && result.invoice_name){
+		          console.log("새로 만들어진 인보이스: ", result.invoice_name, result.invoice_no);
+	        	  $('#invoice_name_span').text(result.invoice_name);
+	        	  $('#invoice_no_span').text(result.invoice_no);
+
+	        	  if (typeof callback === "function") {
+	                    callback(); 
+	                }
+	          }else{
+		          alert("생성한 인보이스 조회 실패");
+	              }
+	        },
+	      error: function() {
+	        alert('저장 중 오류가 발생했습니다.');
+	      }
+	    });
+	  }
 $(function() {
 	initDataTable();
 	initInvoiceTable();
@@ -694,7 +984,7 @@ $(function() {
             $('#modalContainer').hide();
             //initInvoiceTable();
 
-            invoiceTable.replaceData("/yulchon/management/getInvoiceList")
+            invoiceTable.replaceData("/yulchon/management/getNoUpdatedOrResetInvoiceList")
             .then(() => {
               const firstRow = invoiceTable.getRows()[0];
               if (!firstRow) {
@@ -720,29 +1010,6 @@ $(function() {
     });
   });
 
-  //가장 최근에 생긴 인보이스 가져오기
-function getRecentInvoice(){
-	    $.ajax({
-	      url: "/yulchon/management/getRecentInvoice",
-	      type: "POST",
-	      contentType: 'application/json',
-	      data:{},
-	      //processData: false,
-	      //contentType: false,
-	      success: function(result) {
-	          if(result && result.invoice_name){
-	        	  $('#invoice_name_span').text(result.invoice_name);
-	        	  $('#invoice_no_span').text(result.invoice_no);
-	          }else{
-		          alert("생성한 인보이스 조회 실패");
-	              }
-	        },
-	      error: function() {
-	        alert('저장 중 오류가 발생했습니다.');
-	      }
-	    });
-	  }
-
 	//추가 화살표 클릭시
 $('#insertArrow').click(function() {
 	  //console.log("추가할 데이터 개수: ", selectedRightRows.length);
@@ -764,7 +1031,10 @@ $('#insertArrow').click(function() {
 	  //전송 데이터
 	    const payload = {
     invoice_no: invoice_no,
-    lotList: selectedRightRows.map(row => row.lbl_lot_no)
+    addList: selectedRightRows.map(row => ({
+        lbl_lot_no: row.lbl_lot_no,
+        cd_item: row.cd_item
+    }))
   };
 	    console.log("전송 데이타: ", payload);
 	    $.ajax({
@@ -776,7 +1046,7 @@ $('#insertArrow').click(function() {
 		      //contentType: false,
 		      success: function(result) {
 		          if(result === true || result === "true"){
-		        	  console.log("추가 성공");
+		        	  console.log("화살표로 품목 추가 성공");
 		    	    
 		    	    leftTable.setData("/yulchon/management/getInvoiceInventoryList", 
 		    	    	    { invoice_no: invoice_no });
@@ -819,7 +1089,7 @@ $('#deleteArrow').click(function() {
 		      //contentType: false,
 		      success: function(result) {
 		          if(result === true || result === "true"){
-		        	  console.log("추가 성공");
+		        	  console.log("삭제 성공");
 		    	    
 		    	    leftTable.setData("/yulchon/management/getInvoiceInventoryList", 
 		    	    	    { invoice_no: invoice_no });
@@ -827,16 +1097,103 @@ $('#deleteArrow').click(function() {
 	    	    dataTable.setData("/yulchon/management/getInvoiceInventoryList", 
 	    	    	    { invoice_no: invoice_no });
 		          }else{
-			          console.log("추가 실패");
+			          console.log("삭제 실패");
 		              }
 		        },
 		      error: function() {
-		        alert('저장 중 오류가 발생했습니다.');
+		        alert('삭제 중 오류가 발생했습니다.');
 		      }
 		    });
 });
-	
 });
+
+
+//인보이스에 품목 추가 함수(미처리 인보이스 더블릭해서 새로 추가할 때 사용)
+function insertInvoiceInventoryItems(items) {
+  if (!items || items.length === 0) {
+      alert("추가할 품목이 없습니다.");
+      return;
+  }
+  const invoiceNo = $('#invoice_no_span').text();
+  const invoiceName = $('#invoice_name_span').text();
+  console.log("추가할 인보이스 이름: ", invoiceName, "추가할 인보이스 번호: ", invoiceNo);
+  
+  // 전송 데이터 구조 생성
+  const payload = {
+      invoice_no: invoiceNo,
+      addList: items.map(row => ({
+          lbl_lot_no: row.lbl_lot_no,
+          cd_item: row.cd_item
+      }))
+  };
+
+  console.log("새로운 인보이스에 품목 추가 시 전송 데이터: ", payload);
+
+  $.ajax({
+      url: "/yulchon/management/insertInvoiceInventory",
+      type: "POST",
+      contentType: 'application/json',
+      data: JSON.stringify(payload),
+      success: function(result) {
+          if (result === true || result === "true") {
+              console.log("인보이스에 품목 추가 성공");
+              alert("성공적으로 추가되었습니다.");
+
+              // 테이블들 새로고침
+              if (typeof leftTable !== "undefined") {
+                  leftTable.setData("/yulchon/management/getInvoiceInventoryList", { invoice_no: invoiceNo });
+              }
+              if (typeof rightTable !== "undefined") {
+                  rightTable.setData("/yulchon/management/getInventoryList", {});
+              }
+              if (typeof dataTable !== "undefined") {
+                  dataTable.setData("/yulchon/management/getInvoiceInventoryList", { invoice_no: invoiceNo });
+              }
+          } else {
+              console.log("추가 실패");
+              alert("추가에 실패했습니다. 데이터를 확인해주세요.");
+          }
+      },
+      error: function(xhr, status, error) {
+          console.error("에러 상세:", error);
+          alert('저장 중 서버 오류가 발생했습니다.');
+      }
+  });
+}
+
+//미처리 된 인보이스 중 데이터 이동하면 인보이스 칼럼 2개 변경(invoice_is_moved, move_invoice_name)
+function updateInvoiceIsMoved(invoiceNo) {
+  if (!invoiceNo || invoiceNo.length === 0) {
+      console.log("인보이스 is_moved 업데이트 중 데이터 안 들어옴");
+      return;
+  }
+  const moveInvoiceName = $('#invoice_name_span').text();
+  // 전송 데이터 구조 생성
+  const payload = {
+      invoice_no: invoiceNo,
+      move_invoice_name: moveInvoiceName
+  };
+
+  console.log("새로운 인보이스에 품목 추가 시 전송 데이터: ", payload);
+
+  $.ajax({
+      url: "/yulchon/management/updateInvoiceIsMoved",
+      type: "POST",
+      contentType: 'application/json',
+      data: JSON.stringify(payload),
+      success: function(result) {
+          if (result === true || result === "true") {
+              console.log("미처리 인보이스 칼럼 업데이트 성공");
+          } else {
+              console.log("미처리 인보이스 칼럼 업데이트 실패");
+          }
+      },
+      error: function(xhr, status, error) {
+          console.error("에러 상세:", error);
+          alert('저장 중 서버 오류가 발생했습니다.');
+      }
+  });
+}
 </script>
 
 

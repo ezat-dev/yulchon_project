@@ -28,7 +28,7 @@
        display: flex;
        align-items: center;
        width: 92.7%;
-       height: 50px;
+       /*height: 50px;*/
        
        margin-left: 131px;
        padding: 8px 14px;
@@ -113,7 +113,7 @@
    .frameDiv {
        display: flex;
        width: 92.7%;
-       height: 90%;
+       height: 94%;
        background: white;
        margin-left: 131px;
        border-radius: 14px;

@@ -269,10 +269,10 @@
 	  data: JSON.stringify({lbl_lot_no: lot_no, invoice_no: invoice_no}),
 	  success: function(result) {
 	  	  if(result === true || result === "true"){
-				alert("출하목록 삭제 완료");
+				alert("출하 취소 완료");
 				history.back();
 	  	  	  }else{
-				alert("출하목록 삭제 실패");
+				alert("출하 취소 실패\n쉬핑마크 출력한 품목인지 확인하세요.");
 	  	  	  	  }
 	  },
 	  error: function() {
