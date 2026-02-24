@@ -38,4 +38,6 @@ public interface ManagementService {
 	boolean updateShippingMarkFile(Management management);
 	boolean updateCustomerRemark(Management management);
 	boolean insertCustomer(Management management);
+	List<Management> getShippingDatas(Management management);
+	boolean processShippingComplete(Management manegement, String loginUserId);
 }

@@ -38,4 +38,20 @@ public interface ManagementDao {
 	boolean updateShippingMarkFile(Management management);
 	boolean updateCustomerRemark(Management management);
 	boolean insertCustomer(Management management);
+	List<Management> getShippingDatas(Management management);
+	List<Management> getRealDeductInventoryList(Management management);
+	boolean updateS_SALES_REQUEST_PROCESS(List<Management> datas);
+	Management getSeqSalesRequestInventoryList(Management management);
+	boolean updateS_SALES_REQUEST_DETAIL(Management datas);
+	boolean updateS_SALES_REQUEST_LOT(List<Management> datas);
+	Management getI_ONHAND_INVENTORY(Management management);
+	boolean updateI_ONHAND_INVENTORY(Management datas);
+	boolean updateI_WH_ONHAND_INVENTORY(Management datas);
+	boolean updateI_MONTHLY_INVENTORY(Management datas);
+	boolean updateI_WH_MONTHLY_INVENTORY(Management datas);
+	Management getI_WH_MONTHY_INVENTORY(Management management);
+	boolean updateI_WH_MONTHLY_INVENTORY2(Management datas);
+	Management getI_MONTHY_INVENTORY(Management management);
+	boolean updateI_MONTHLY_INVENTORY2(Management datas);
+	boolean updateI_MONTHLY_INVENTORY3(Management datas);
 }

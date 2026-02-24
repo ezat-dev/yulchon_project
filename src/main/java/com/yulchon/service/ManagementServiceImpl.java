@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.yulchon.dao.ManagementDao;
 import com.yulchon.domain.Management;
@@ -177,5 +178,84 @@ public class ManagementServiceImpl implements ManagementService{
 	@Override
 	public boolean insertCustomer(Management management) {
 		return managementDao.insertCustomer(management);
+	}
+	
+	@Override
+	public List<Management> getShippingDatas(Management management) {
+		return managementDao.getShippingDatas(management);
+	}
+	
+	@Transactional(rollbackFor = Exception.class) // 에러 발생 시 전체 롤백
+    public boolean processShippingComplete(Management management, String loginUserID) {
+		try {
+	        System.out.println(">>> 출하 완료 프로세스 시작 (사용자: " + loginUserID + ")");
+
+	        // 1. 기초 데이터 처리
+	        managementDao.insertShippingResult(management);
+	        managementDao.updateCompleteInvoiceList(management);
+	        managementDao.deleteNoScanInventory(management);
+	        System.out.println("1단계: 기초 데이터 처리 완료");
+
+	        // 2. 차감 데이터 조회
+	        List<Management> datas1 = managementDao.getRealDeductInventoryList(management);
+	        if (datas1 == null || datas1.isEmpty()) {
+	            System.out.println("알림: 차감할 데이터가 없습니다.");
+	            throw new RuntimeException("차감할 재고 데이터가 존재하지 않아 출하 완료를 취소합니다.");
+	        }
+	        for(Management v : datas1) { v.setUser_id(loginUserID); }
+	        System.out.println("2단계: 차감 대상 조회 완료 (건수: " + datas1.size() + ")");
+
+	        // 3. S_SALES_REQUEST 업데이트
+	        managementDao.updateS_SALES_REQUEST_PROCESS(datas1);
+	        for(Management v : datas1) {
+	            Management data = managementDao.getSeqSalesRequestInventoryList(v);
+	            if(data != null) {
+	                data.setUser_id(loginUserID);
+	                managementDao.updateS_SALES_REQUEST_DETAIL(data);
+	            }
+	        }
+	        managementDao.updateS_SALES_REQUEST_LOT(datas1);
+	        System.out.println("3단계: S_SALES_REQUEST 관련 업데이트 완료");
+
+	        // 4. 재고(Inventory) 루프 업데이트
+	        int count = 0;
+	        for(Management v : datas1) {
+	            Management data = managementDao.getI_ONHAND_INVENTORY(v);
+	            if(data != null) {
+	                data.setUser_id(loginUserID);
+	                managementDao.updateI_ONHAND_INVENTORY(data);
+	                managementDao.updateI_WH_ONHAND_INVENTORY(data);
+	                managementDao.updateI_MONTHLY_INVENTORY(data);
+	                managementDao.updateI_WH_MONTHLY_INVENTORY(data);
+	            }
+	            
+	            Management whData = managementDao.getI_WH_MONTHY_INVENTORY(v);
+	            if(whData != null) {
+	                whData.setUser_id(loginUserID);
+	                managementDao.updateI_WH_MONTHLY_INVENTORY2(whData);
+	            }
+	            
+	            Management monData = managementDao.getI_MONTHY_INVENTORY(v);
+	            if(monData != null) {
+	                monData.setUser_id(loginUserID);
+	                managementDao.updateI_MONTHLY_INVENTORY2(monData);
+	                managementDao.updateI_MONTHLY_INVENTORY3(monData);
+	            }
+	            count++;
+	        }
+	        System.out.println("4단계: 상세 재고 차감 루프 완료 (처리건수: " + count + ")");
+
+	        System.out.println(">>> 모든 프로세스 성공적으로 완료 (COMMIT)");
+	        return true;
+
+	    } catch (Exception e) {
+	        // 여기서 로그를 찍어야 어디서 에러가 났는지 알 수 있음
+	        System.err.println("!!! 출하 프로세스 중 에러 발생 (ROLLBACK) !!!");
+	        System.err.println("에러 메시지: " + e.getMessage());
+	        e.printStackTrace(); // 전체 에러 스택 확인용
+	        
+	        // 중요: 에러를 다시 던져야 @Transactional이 인식하고 롤백을 수행함
+	        throw e; 
+	    }
 	}
 }

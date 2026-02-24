@@ -39,9 +39,8 @@ public class PrintExcel {
 	//고이데 KAB
 	public Map<String, Object> printKoideKab(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 
 		//QR 임시 저장 경로
@@ -62,13 +61,8 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -132,15 +126,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -150,9 +139,8 @@ public class PrintExcel {
 	//고이데 KCB
 	public Map<String, Object> printKoideKcb(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
@@ -173,12 +161,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -243,15 +227,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -261,9 +240,8 @@ public class PrintExcel {
 	//고이데 KKB
 	public Map<String, Object> printKoideKkb(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
@@ -284,12 +262,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -354,15 +328,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -372,9 +341,8 @@ public class PrintExcel {
 	//SANKIN
 	public Map<String, Object> printKoideSankin(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
@@ -395,12 +363,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -441,15 +405,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -459,9 +418,8 @@ public class PrintExcel {
 	//KKM
 	public Map<String, Object> printKkm(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
@@ -482,12 +440,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -549,15 +503,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -567,9 +516,8 @@ public class PrintExcel {
 	//KOB
 	public Map<String, Object> printKob(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
@@ -590,12 +538,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -657,15 +601,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -675,9 +614,8 @@ public class PrintExcel {
 	//CASH
 	public Map<String, Object> printCash(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
@@ -698,12 +636,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -784,15 +718,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -802,9 +731,8 @@ public class PrintExcel {
 	//ELM2
 	public Map<String, Object> printElm2(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
@@ -825,12 +753,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -904,15 +828,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -922,9 +841,8 @@ public class PrintExcel {
 	//KEEPRO
 	public Map<String, Object> printKeepro(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 
 		//QR 임시 저장 경로
@@ -946,12 +864,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1010,15 +924,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -1028,9 +937,8 @@ public class PrintExcel {
 	//MBI
 	public Map<String, Object> printMbi(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 
 		//QR 임시 저장 경로
@@ -1052,12 +960,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1119,15 +1023,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -1137,9 +1036,8 @@ public class PrintExcel {
 	//MMP
 	public Map<String, Object> printMmp(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 
 		//QR 임시 저장 경로
@@ -1161,12 +1059,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1223,15 +1117,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -1241,9 +1130,8 @@ public class PrintExcel {
 	//NOK
 	public Map<String, Object> printNok(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 
 		//QR 임시 저장 경로
@@ -1265,12 +1153,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1331,15 +1215,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -1349,9 +1228,8 @@ public class PrintExcel {
 	//NST
 	public Map<String, Object> printNst(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 
 		//QR 임시 저장 경로
@@ -1373,12 +1251,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1441,15 +1315,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -1459,9 +1328,8 @@ public class PrintExcel {
 	//PROFENDER
 	public Map<String, Object> printProfender(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 
 		//QR 임시 저장 경로
@@ -1483,12 +1351,8 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 
-			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1545,15 +1409,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -1563,9 +1422,8 @@ public class PrintExcel {
 	//DKK
 	public Map<String, Object> printDkk(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
-		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 
 		//QR 임시 저장 경로
@@ -1588,11 +1446,7 @@ public class PrintExcel {
 
 
 			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1655,15 +1509,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}
@@ -1673,9 +1522,9 @@ public class PrintExcel {
 	//KTH
 	public Map<String, Object> printKth(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-		ActiveXComponent excel = null;
+		ActiveXComponent excel = ExcelManager.getInstance().getExcel();
 		Dispatch workbooks = null;
-		Dispatch workbook = null;
+		Dispatch workbook = ExcelManager.getInstance().getWorkbook(file_path);
 		Dispatch sheet = null;
 
 		//QR 임시 저장 경로
@@ -1698,11 +1547,12 @@ public class PrintExcel {
 
 
 			// 엑셀 실행
-			excel = new ActiveXComponent("Excel.Application");
-
-			excel.setProperty("Visible", false);
-			workbooks = excel.getProperty("Workbooks").toDispatch();
-			workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			
+			//workbooks = excel.getProperty("Workbooks").toDispatch();
+			//workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+			
+			//속도 최적화
+			excel.setProperty("ScreenUpdating", false);
 
 			// 시트 가져오기
 			Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1765,15 +1615,10 @@ public class PrintExcel {
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
 			try {
-				if (workbook != null) {
-					Dispatch.call(workbook, "Close", false);
-				}
 			} catch (Exception ignore) {
 			}
 			try {
-				if (excel != null) {
-					excel.invoke("Quit");
-				}
+				excel.setProperty("ScreenUpdating", true);
 			} catch (Exception ignore) {
 			}
 		}

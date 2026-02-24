@@ -251,6 +251,126 @@ public class ManagementDaoImpl implements ManagementDao {
 		}
 		return true;
 	}
+	
+	@Override
+	public List<Management> getShippingDatas(Management management) {
+		return sqlSession.selectList("management.getShippingDatas", management);
+	}
+
+	@Override
+	public List<Management> getRealDeductInventoryList(Management management) {
+		return sqlSession.selectList("management.getRealDeductInventoryList", management);
+	}
+
+	@Override
+	public boolean updateS_SALES_REQUEST_PROCESS(List<Management> datas) {
+		int result =  sqlSession.update("management.updateS_SALES_REQUEST_PROCESS", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public Management getSeqSalesRequestInventoryList(Management management) {
+		return sqlSession.selectOne("management.getSeqSalesRequestInventoryList", management);
+	}
+
+	@Override
+	public boolean updateS_SALES_REQUEST_DETAIL(Management datas) {
+		int result =  sqlSession.update("management.updateS_SALES_REQUEST_DETAIL", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public boolean updateS_SALES_REQUEST_LOT(List<Management> datas) {
+		int result =  sqlSession.update("management.updateS_SALES_REQUEST_LOT", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public Management getI_ONHAND_INVENTORY(Management management) {
+		return sqlSession.selectOne("management.getI_ONHAND_INVENTORY", management);
+	}
+
+	@Override
+	public boolean updateI_ONHAND_INVENTORY(Management datas) {
+		int result =  sqlSession.update("management.updateI_ONHAND_INVENTORY", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public boolean updateI_WH_ONHAND_INVENTORY(Management datas) {
+		int result =  sqlSession.update("management.updateI_WH_ONHAND_INVENTORY", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public boolean updateI_MONTHLY_INVENTORY(Management datas) {
+		int result =  sqlSession.update("management.updateI_MONTHLY_INVENTORY", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public boolean updateI_WH_MONTHLY_INVENTORY(Management datas) {
+		int result =  sqlSession.update("management.updateI_WH_MONTHLY_INVENTORY", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public Management getI_WH_MONTHY_INVENTORY(Management management) {
+		return sqlSession.selectOne("management.getI_WH_MONTHY_INVENTORY", management);
+	}
+
+	@Override
+	public boolean updateI_WH_MONTHLY_INVENTORY2(Management datas) {
+		int result =  sqlSession.update("management.updateI_WH_MONTHLY_INVENTORY2", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public Management getI_MONTHY_INVENTORY(Management management) {
+		return sqlSession.selectOne("management.getI_MONTHY_INVENTORY", management);
+	}
+
+	@Override
+	public boolean updateI_MONTHLY_INVENTORY2(Management datas) {
+		int result =  sqlSession.update("management.updateI_MONTHLY_INVENTORY2", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public boolean updateI_MONTHLY_INVENTORY3(Management datas) {
+		int result =  sqlSession.update("management.updateI_MONTHLY_INVENTORY3", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
 
 }
 

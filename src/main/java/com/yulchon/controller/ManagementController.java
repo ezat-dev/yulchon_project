@@ -226,6 +226,11 @@ public class ManagementController {
 	@RequestMapping(value = "/management/deleteInvoiceInventory", method = RequestMethod.POST) 
 	@ResponseBody 
 	public boolean deleteInvoiceInventory(@RequestBody Management management) {
+		List<Management> datas = managementService.getShippingDatas(management);
+		System.out.println("스캔한거 있는지: " + datas.size());
+		if(datas.size() > 0) {
+			return false;
+		}
 		return managementService.deleteInvoiceInventory(management);
 	}
 
@@ -233,6 +238,8 @@ public class ManagementController {
 	@RequestMapping(value="/management/mobile/printShippingMark", method=RequestMethod.POST)
 	@ResponseBody
 	public Map<String, Object> autoPrint(@RequestBody Management management) {
+		long start = System.nanoTime();
+
 		Map<String, Object> resultMap = new HashMap<>();
 		System.out.println("인쇄 함수");
 		Management data = managementService.getShippingMarkPrintInventory(management);
@@ -245,10 +252,10 @@ public class ManagementController {
 		}
 		String customerName = data.getNm_customer();
 		String file_path = getShippingMarkFilePath(customerName);
-		
+
 		//테스트용으로 해놓음
-		customerName = "KTH";
-		
+		//customerName = "DKK";
+
 		Map<String, Object> printResult = new HashMap<>();
 		if(customerName.contains("KAB")) {
 			printResult = printExcel.printKoideKab(data, KAB_FILE_PATH);
@@ -286,23 +293,25 @@ public class ManagementController {
 			resultMap.put("result", false);
 			resultMap.put("message", "고객사 양식이 없습니다.\n다시 확인해주세요");
 		}
-		
+
 		if ((boolean) printResult.get("result")) {
-	        boolean isInserted = managementService.insertShippingList(data);
-	        
-	        if(isInserted) {
-	            resultMap.put("result", true);
-	            resultMap.put("message", "출력 요청 및 출하목록 추가 완료");
-	        } else {
-	            resultMap.put("result", false);
-	            resultMap.put("message", "출력 요청 완료\n잠시만 기다려 주세요.");
-	        }
-	    } else {
-	        // 인쇄 자체가 실패한 경우
-	        resultMap = printResult;
-	    }
+			boolean isInserted = managementService.insertShippingList(data);
+
+			if(isInserted) {
+				resultMap.put("result", true);
+				resultMap.put("message", "출력 요청 및 출하목록 추가 완료");
+			} else {
+				resultMap.put("result", false);
+				resultMap.put("message", "출력 요청 완료\n잠시만 기다려 주세요.");
+			}
+		} else {
+			// 인쇄 자체가 실패한 경우
+			resultMap = printResult;
+		}
 
 
+		long end = System.nanoTime();   // 끝 시간
+		System.out.println("⏱ 실행시간(ms): " + (end - start));
 
 		return resultMap;
 	}
@@ -386,26 +395,82 @@ public class ManagementController {
 	}
 
 	//출하완료
+	/*
+	 * @RequestMapping(value = "/management/shippingComplete", method =
+	 * RequestMethod.POST)
+	 * 
+	 * @ResponseBody public boolean shippingComplete(@RequestBody Management
+	 * management, HttpSession session) { String loginUserID =
+	 * (String)session.getAttribute("loginUserId"); //스캔한 품목들만 출하완료 테이블에 저장 boolean
+	 * flag1 = managementService.insertShippingResult(management);
+	 * 
+	 * //출하완료 'Y'로 업데이트 boolean flag2 =
+	 * managementService.updateCompleteInvoiceList(management);
+	 * 
+	 * //인보이스/품목 매핑 테이블에서 삭제 boolean flag3 =
+	 * managementService.deleteNoScanInventory(management);
+	 * 
+	 * //실제 재고 차감 시작!!!!!!!!!!!!!!!!!!!!!! //차감할 데이터 조회 List<Management> datas1 =
+	 * managementService.getRealDeductInventoryList(management); for(Management v:
+	 * datas1) { v.setUser_id(loginUserID); } System.out.println("차감할 데이터 조회: " +
+	 * datas1);
+	 * 
+	 * //S_SALES_REQUEST_PROCESS 업데이트 boolean flag4 =
+	 * managementService.updateS_SALES_REQUEST_PROCESS(datas1);
+	 * System.out.println("첫 번째 업데이트(S_SALES_REQUEST_PROCESS): " + flag4);
+	 * 
+	 * //출하요청등록번호에 순번의 수량 조회해서 그 배열만큼 업데이트 for(Management v: datas1) { Management
+	 * data = managementService.getSeqSalesRequestInventoryList(v);
+	 * data.setUser_id(loginUserID); boolean flag5 =
+	 * managementService.updateS_SALES_REQUEST_DETAIL(data);
+	 * System.out.println("총 재고에 따가 R, P, F 업데이트: " + flag5); }
+	 * 
+	 * //로트번호별로 F(아마 finish?)업데이트 boolean flag6 =
+	 * managementService.updateS_SALES_REQUEST_LOT(datas1);
+	 * System.out.println("로트번호별로 F로 업데이트: " + flag6);
+	 * 
+	 * //재고차감(I_ONHAND_INVENTORY 테이블 업데이트) for(Management v: datas1) { Management
+	 * data = managementService.getI_ONHAND_INVENTORY(v);
+	 * data.setUser_id(loginUserID); boolean flag7 =
+	 * managementService.updateI_ONHAND_INVENTORY(data); boolean flag8 =
+	 * managementService.updateI_WH_ONHAND_INVENTORY(data); boolean flag9 =
+	 * managementService.updateI_MONTHLY_INVENTORY(data); boolean flag10 =
+	 * managementService.updateI_WH_MONTHLY_INVENTORY(data);
+	 * System.out.println("I_ONHAND_INVENTORY 업데이트: " + flag7);
+	 * System.out.println("I_WH_ONHAND_INVENTORY 업데이트: " + flag8);
+	 * System.out.println("I_MONTHLY_INVENTORY 업데이트: " + flag9);
+	 * System.out.println("I_WH_MONTHLY_INVENTORY 업데이트: " + flag10);
+	 * 
+	 * //월, 로트별 재고 조회? data = managementService.getI_WH_MONTHY_INVENTORY(v);
+	 * data.setUser_id(loginUserID); boolean flag11 =
+	 * managementService.updateI_WH_MONTHLY_INVENTORY2(data);
+	 * 
+	 * //월별재고 업데이트? data = managementService.getI_MONTHY_INVENTORY(v);
+	 * data.setUser_id(loginUserID); boolean flag12 =
+	 * managementService.updateI_MONTHLY_INVENTORY2(data); boolean flag13 =
+	 * managementService.updateI_MONTHLY_INVENTORY3(data); }
+	 * 
+	 * //I_TRANSACTION_DETAIL 테이블 INSERT/UPDATE, I_TRANSACTION_SALES 테이블 INSERT 안함
+	 * 
+	 * System.out.println("출하완료 테이블 저장: " + flag1);
+	 * System.out.println("인보이스 출하완료로 업데이트: " + flag2);
+	 * System.out.println("인보이스/품목 매핑 테이블에서 삭제: " + flag3);
+	 * 
+	 * if(flag1 && flag2 && flag3) { return true; } return false; }
+	 */
 	@RequestMapping(value = "/management/shippingComplete", method = RequestMethod.POST) 
 	@ResponseBody 
-	public boolean shippingComplete(@RequestBody Management management) {
-		//스캔한 품목들만 출하완료 테이블에 저장
-		boolean flag1 =   managementService.insertShippingResult(management);
-
-		//출하완료 'Y'로 업데이트
-		boolean flag2 = managementService.updateCompleteInvoiceList(management);
-
-		//인보이스/품목 매핑 테이블에서 삭제
-		boolean flag3 = managementService.deleteNoScanInventory(management);
-
-		System.out.println("출하완료 테이블 저장: " + flag1);
-		System.out.println("인보이스 출하완료로 업데이트: " + flag2);
-		System.out.println("인보이스,품목 매핑 테이블에서 삭제: " + flag3);
-
-		if(flag1 && flag2 && flag3) {
-			return true;
-		}
-		return false;
+	public boolean shippingComplete(@RequestBody Management management, HttpSession session) {
+		String loginUserID = (String)session.getAttribute("loginUserId");
+	    
+	    try {
+	        // 모든 로직이 묶인 서비스 호출
+	        return managementService.processShippingComplete(management, loginUserID);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        // 에러 발생 시 서비스에서 롤백을 수행하므로 데이터는 안전함
+	        return false;
+	    }
 	}
 
 	//출하완료된 품목 인보이스별 조회
@@ -436,21 +501,21 @@ public class ManagementController {
 	public List<Management> getNoUpdatedOrResetInvoiceList(Management management) {
 		return managementService.getNoUpdatedOrResetInvoiceList(management);
 	}
-	
+
 	//미처리 된 인보이스 중 데이터 이관당한거 칼럼 업데이트
 	@RequestMapping(value = "/management/updateInvoiceIsMoved", method = RequestMethod.POST) 
 	@ResponseBody 
 	public boolean updateInvoiceIsMoved(@RequestBody Management management) {
 		return managementService.updateInvoiceIsMoved(management);
 	}
-	
+
 	//고객사 조회
 	@RequestMapping(value = "/management/getCustomerList", method = RequestMethod.POST) 
 	@ResponseBody 
 	public List<Management> getCustomerList(Management management) {
 		return managementService.getCustomerList(management);
 	}
-	
+
 	//쉬핑마크 양식 삭제 및 업로드
 	@RequestMapping(value = "/management/deleteAndUploadShippingMark", method = RequestMethod.POST) 
 	@ResponseBody 
@@ -459,38 +524,38 @@ public class ManagementController {
 			HttpSession session) {
 		String basePath = "D:/율촌_쉬핑마크_양식/";
 		String oldFileName = management.getOld_file_name();
-		
-		try {
-	        // 1. 기존 파일 삭제 (값이 있을 때만)
-	        if (oldFileName != null && !oldFileName.isEmpty()) {
-	            File oldFile = new File(basePath + oldFileName);
-	            if (oldFile.exists()) {
-	                oldFile.delete(); 
-	            }
-	        }
 
-	        // 2. 신규 파일 저장
-	        String newFileName = file.getOriginalFilename();
-	        File targetFile = new File(basePath + newFileName);
-	        file.transferTo(targetFile);
-	        
-	        management.setCustomer_shippingmark_file_name(newFileName);
-	        management.setUpdate_user_id((String)session.getAttribute("loginUserId"));
-	        
-	        return managementService.updateShippingMarkFile(management);
-	    } catch (Exception e) {
-	    	e.printStackTrace();
-	        return false;
-	    }
+		try {
+			// 1. 기존 파일 삭제 (값이 있을 때만)
+			if (oldFileName != null && !oldFileName.isEmpty()) {
+				File oldFile = new File(basePath + oldFileName);
+				if (oldFile.exists()) {
+					oldFile.delete(); 
+				}
+			}
+
+			// 2. 신규 파일 저장
+			String newFileName = file.getOriginalFilename();
+			File targetFile = new File(basePath + newFileName);
+			file.transferTo(targetFile);
+
+			management.setCustomer_shippingmark_file_name(newFileName);
+			management.setUpdate_user_id((String)session.getAttribute("loginUserId"));
+
+			return managementService.updateShippingMarkFile(management);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
-	
+
 	//고객사 비고 업데이트
 	@RequestMapping(value = "/management/updateCustomerRemark", method = RequestMethod.POST) 
 	@ResponseBody 
 	public boolean updateCustomerRemark(@RequestBody Management management) {
 		return managementService.updateCustomerRemark(management);
 	}
-	
+
 	//고객사 추가
 	@RequestMapping(value = "/management/insertCustomer", method = RequestMethod.POST) 
 	@ResponseBody 
@@ -501,57 +566,57 @@ public class ManagementController {
 		String newFileName = "";
 		try {
 
-	        // 신규 파일 저장
+			// 신규 파일 저장
 			if(file != null) {
-	        newFileName = file.getOriginalFilename();
-	        File targetFile = new File(basePath + newFileName);
-	        file.transferTo(targetFile);
+				newFileName = file.getOriginalFilename();
+				File targetFile = new File(basePath + newFileName);
+				file.transferTo(targetFile);
 			}
-	        management.setCustomer_shippingmark_file_name(newFileName);
-	        management.setUpdate_user_id((String)session.getAttribute("loginUserId"));
-	        
-	        return managementService.insertCustomer(management);
-	    } catch (Exception e) {
-	    	e.printStackTrace();
-	        return false;
-	    }
+			management.setCustomer_shippingmark_file_name(newFileName);
+			management.setUpdate_user_id((String)session.getAttribute("loginUserId"));
+
+			return managementService.insertCustomer(management);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
-	
+
 	//쉬핑마크 양식 클릭해서 다운로드
 	@RequestMapping(value = "/management/downloadShippingMark", method = RequestMethod.GET) 
 	@ResponseBody 
 	public void downloadFile(@RequestParam("fileName") String fileName,
 			HttpServletResponse response) {
-	    String filePath = "D:/율촌_쉬핑마크_양식/" + fileName;
-	    File file = new File(filePath);
+		String filePath = "D:/율촌_쉬핑마크_양식/" + fileName;
+		File file = new File(filePath);
 
-	    if (!file.exists()) {
-	        return;
-	    }
+		if (!file.exists()) {
+			return;
+		}
 
-	    try {
-	        // 1. 파일명을 브라우저가 인식할 수 있게 인코딩 (한글 깨짐 방지)
-	        String encodedFileName = URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20");
-	        
-	        // 2. 응답 헤더 설정
-	        response.setContentType("application/octet-stream");
-	        response.setHeader("Content-Disposition", "attachment; filename=\"" + encodedFileName + "\"");
-	        response.setContentLength((int) file.length());
+		try {
+			// 1. 파일명을 브라우저가 인식할 수 있게 인코딩 (한글 깨짐 방지)
+			String encodedFileName = URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20");
 
-	        // 3. 파일을 읽어서 클라이언트에 전송
-	        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
-	             BufferedOutputStream bos = new BufferedOutputStream(response.getOutputStream())) {
-	            
-	            byte[] buffer = new byte[8192];
-	            int bytesRead;
-	            while ((bytesRead = bis.read(buffer)) != -1) {
-	                bos.write(buffer, 0, bytesRead);
-	            }
-	            bos.flush();
-	        }
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
+			// 2. 응답 헤더 설정
+			response.setContentType("application/octet-stream");
+			response.setHeader("Content-Disposition", "attachment; filename=\"" + encodedFileName + "\"");
+			response.setContentLength((int) file.length());
+
+			// 3. 파일을 읽어서 클라이언트에 전송
+			try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
+					BufferedOutputStream bos = new BufferedOutputStream(response.getOutputStream())) {
+
+				byte[] buffer = new byte[8192];
+				int bytesRead;
+				while ((bytesRead = bis.read(buffer)) != -1) {
+					bos.write(buffer, 0, bytesRead);
+				}
+				bos.flush();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 }

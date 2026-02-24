@@ -61,8 +61,99 @@ public class Management {
 	private String remark;
 	private String old_file_name;
 	private String user_id;
+	private Integer qty_process;
+	private Integer qty_good_process;
+	private Integer qty_bad_process;
+	private String id_update;
+	private String dt_update;
+	private String no_sales_request_serial;
+	private Integer seq_sales_request;
+	private String fg_process;
+	private String tp_process;
+	private String fg_module;
+	private Integer amt_inventory;
+	private Integer up_inventory;
+	private String no_lot;
 	
 	
+	public String getNo_lot() {
+		return no_lot;
+	}
+	public void setNo_lot(String no_lot) {
+		this.no_lot = no_lot;
+	}
+	public Integer getAmt_inventory() {
+		return amt_inventory;
+	}
+	public void setAmt_inventory(Integer amt_inventory) {
+		this.amt_inventory = amt_inventory;
+	}
+	public Integer getUp_inventory() {
+		return up_inventory;
+	}
+	public void setUp_inventory(Integer up_inventory) {
+		this.up_inventory = up_inventory;
+	}
+	public Integer getQty_process() {
+		return qty_process;
+	}
+	public void setQty_process(Integer qty_process) {
+		this.qty_process = qty_process;
+	}
+	public Integer getQty_good_process() {
+		return qty_good_process;
+	}
+	public void setQty_good_process(Integer qty_good_process) {
+		this.qty_good_process = qty_good_process;
+	}
+	public Integer getQty_bad_process() {
+		return qty_bad_process;
+	}
+	public void setQty_bad_process(Integer qty_bad_process) {
+		this.qty_bad_process = qty_bad_process;
+	}
+	public String getId_update() {
+		return id_update;
+	}
+	public void setId_update(String id_update) {
+		this.id_update = id_update;
+	}
+	public String getDt_update() {
+		return dt_update;
+	}
+	public void setDt_update(String dt_update) {
+		this.dt_update = dt_update;
+	}
+	public String getNo_sales_request_serial() {
+		return no_sales_request_serial;
+	}
+	public void setNo_sales_request_serial(String no_sales_request_serial) {
+		this.no_sales_request_serial = no_sales_request_serial;
+	}
+	public Integer getSeq_sales_request() {
+		return seq_sales_request;
+	}
+	public void setSeq_sales_request(Integer seq_sales_request) {
+		this.seq_sales_request = seq_sales_request;
+	}
+	public String getFg_process() {
+		return fg_process;
+	}
+	public void setFg_process(String fg_process) {
+		this.fg_process = fg_process;
+	}
+	public String getTp_process() {
+		return tp_process;
+	}
+	public void setTp_process(String tp_process) {
+		this.tp_process = tp_process;
+	}
+	public String getFg_module() {
+		return fg_module;
+	}
+	public void setFg_module(String fg_module) {
+		this.fg_module = fg_module;
+	}
 	public String getUser_id() {
 		return user_id;
 	}

@@ -597,6 +597,7 @@ $(function() {
   invoiceList: selectedInvoiceRows.map(row => row.invoice_no)
 };
 	    console.log("전송 데이타: ", payload);
+	    if(confirm("정말로 출하완료하시겠습니까?")){
 	    $.ajax({
 		      url: "/yulchon/management/shippingComplete",
 		      type: "POST",
@@ -620,6 +621,9 @@ $(function() {
 		        alert('출하완료 중 오류가 발생했습니다.');
 		      }
 		    });
+	    }else{
+			return;
+		    }
   });
 
   // 품목삭제 버튼 클릭 시
