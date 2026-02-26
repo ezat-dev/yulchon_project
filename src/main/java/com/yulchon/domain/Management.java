@@ -74,8 +74,85 @@ public class Management {
 	private Integer amt_inventory;
 	private Integer up_inventory;
 	private String no_lot;
+	private String no_sales_serial;
+	private String uuid;
+	private Integer amt_transaction;
+	private Integer amt_expense;
+	private String seq_transaction;
+	private String seq_aux_transaction;
+	private String no_sales_order_serial;
+	private String no_sales_order;
+	private String no_sales_request;
+	private String cd_partner;
+	private String no_transaction;
 	
 	
+	public String getNo_transaction() {
+		return no_transaction;
+	}
+	public void setNo_transaction(String no_transaction) {
+		this.no_transaction = no_transaction;
+	}
+	public String getNo_sales_order_serial() {
+		return no_sales_order_serial;
+	}
+	public void setNo_sales_order_serial(String no_sales_order_serial) {
+		this.no_sales_order_serial = no_sales_order_serial;
+	}
+	public String getNo_sales_order() {
+		return no_sales_order;
+	}
+	public void setNo_sales_order(String no_sales_order) {
+		this.no_sales_order = no_sales_order;
+	}
+	public String getNo_sales_request() {
+		return no_sales_request;
+	}
+	public void setNo_sales_request(String no_sales_request) {
+		this.no_sales_request = no_sales_request;
+	}
+	public String getCd_partner() {
+		return cd_partner;
+	}
+	public void setCd_partner(String cd_partner) {
+		this.cd_partner = cd_partner;
+	}
+	public String getSeq_transaction() {
+		return seq_transaction;
+	}
+	public void setSeq_transaction(String seq_transaction) {
+		this.seq_transaction = seq_transaction;
+	}
+	public String getSeq_aux_transaction() {
+		return seq_aux_transaction;
+	}
+	public void setSeq_aux_transaction(String seq_aux_transaction) {
+		this.seq_aux_transaction = seq_aux_transaction;
+	}
+	public Integer getAmt_transaction() {
+		return amt_transaction;
+	}
+	public void setAmt_transaction(Integer amt_transaction) {
+		this.amt_transaction = amt_transaction;
+	}
+	public Integer getAmt_expense() {
+		return amt_expense;
+	}
+	public void setAmt_expense(Integer amt_expense) {
+		this.amt_expense = amt_expense;
+	}
+	public String getUuid() {
+		return uuid;
+	}
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
+	}
+	public String getNo_sales_serial() {
+		return no_sales_serial;
+	}
+	public void setNo_sales_serial(String no_sales_serial) {
+		this.no_sales_serial = no_sales_serial;
+	}
 	public String getNo_lot() {
 		return no_lot;
 	}

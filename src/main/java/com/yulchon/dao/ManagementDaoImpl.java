@@ -336,8 +336,8 @@ public class ManagementDaoImpl implements ManagementDao {
 	}
 
 	@Override
-	public Management getI_WH_MONTHY_INVENTORY(Management management) {
-		return sqlSession.selectOne("management.getI_WH_MONTHY_INVENTORY", management);
+	public Management getI_WH_MONTHLY_INVENTORY(Management management) {
+		return sqlSession.selectOne("management.getI_WH_MONTHLY_INVENTORY", management);
 	}
 
 	@Override
@@ -350,8 +350,8 @@ public class ManagementDaoImpl implements ManagementDao {
 	}
 
 	@Override
-	public Management getI_MONTHY_INVENTORY(Management management) {
-		return sqlSession.selectOne("management.getI_MONTHY_INVENTORY", management);
+	public Management getI_MONTHLY_INVENTORY(Management management) {
+		return sqlSession.selectOne("management.getI_MONTHLY_INVENTORY", management);
 	}
 
 	@Override
@@ -366,6 +366,47 @@ public class ManagementDaoImpl implements ManagementDao {
 	@Override
 	public boolean updateI_MONTHLY_INVENTORY3(Management datas) {
 		int result =  sqlSession.update("management.updateI_MONTHLY_INVENTORY3", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean insertI_TRANSACTION(Management datas) {
+		int result =  sqlSession.insert("management.insertI_TRANSACTION", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean insertI_TRANSACTION_DETAIL(Management datas) {
+		int result =  sqlSession.insert("management.insertI_TRANSACTION_DETAIL", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public Management getI_TRANSACTION_DETAIL(Management management) {
+		return sqlSession.selectOne("management.getI_TRANSACTION_DETAIL", management);
+	}
+
+	@Override
+	public boolean updateI_TRANSACTION_DETAIL(Management datas) {
+		int result =  sqlSession.update("management.updateI_TRANSACTION_DETAIL", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean insertI_TRANSACTION_SALES(Management datas) {
+		int result =  sqlSession.insert("management.insertI_TRANSACTION_SALES", datas);
 		if(result <= 0) {
 			return false;
 		}

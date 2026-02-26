@@ -1,6 +1,7 @@
 package com.yulchon.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -189,28 +190,41 @@ public class ManagementServiceImpl implements ManagementService{
     public boolean processShippingComplete(Management management, String loginUserID) {
 		try {
 	        System.out.println(">>> 출하 완료 프로세스 시작 (사용자: " + loginUserID + ")");
+	        String invoice_no = management.getInvoiceList().get(0);
+	        System.out.println("인보이스 번호: " + invoice_no);
+	        management.setInvoice_no(invoice_no);
 
-	        // 1. 기초 데이터 처리
-	        managementDao.insertShippingResult(management);
-	        managementDao.updateCompleteInvoiceList(management);
-	        managementDao.deleteNoScanInventory(management);
-	        System.out.println("1단계: 기초 데이터 처리 완료");
 
 	        // 2. 차감 데이터 조회
 	        List<Management> datas1 = managementDao.getRealDeductInventoryList(management);
+	        System.out.println("차감할 데이터 개수: " + datas1.size());
+	        
+	        if(datas1 == null || datas1.size() == 0 || datas1.isEmpty()) {
+	            System.out.println("알림: 차감할 데이터가 없습니다.");
+	            throw new RuntimeException("차감할 재고 데이터가 존재하지 않아 출하 완료를 취소합니다.");
+	        }
+	        String no_sales_request_serial = datas1.get(0).getNo_sales_request_serial();
+	        System.out.println("no_sales_request_serial: " + no_sales_request_serial);
+	        
 	        if (datas1 == null || datas1.isEmpty()) {
 	            System.out.println("알림: 차감할 데이터가 없습니다.");
 	            throw new RuntimeException("차감할 재고 데이터가 존재하지 않아 출하 완료를 취소합니다.");
 	        }
+	        
 	        for(Management v : datas1) { v.setUser_id(loginUserID); }
 	        System.out.println("2단계: 차감 대상 조회 완료 (건수: " + datas1.size() + ")");
 
 	        // 3. S_SALES_REQUEST 업데이트
 	        managementDao.updateS_SALES_REQUEST_PROCESS(datas1);
+	        
 	        for(Management v : datas1) {
+	        	Integer seq_sales_request = v.getSeq_sales_request();
 	            Management data = managementDao.getSeqSalesRequestInventoryList(v);
 	            if(data != null) {
 	                data.setUser_id(loginUserID);
+	                data.setNo_sales_request_serial(no_sales_request_serial);
+	                data.setSeq_sales_request(seq_sales_request);
+	                System.out.println(data);
 	                managementDao.updateS_SALES_REQUEST_DETAIL(data);
 	            }
 	        }
@@ -220,32 +234,79 @@ public class ManagementServiceImpl implements ManagementService{
 	        // 4. 재고(Inventory) 루프 업데이트
 	        int count = 0;
 	        for(Management v : datas1) {
+	        	String lbl_lot_no = v.getLbl_lot_no();
+	        	String inventoryCount = v.getQty_inventory();
+	        	String invoice_name = v.getInvoice_name();
 	            Management data = managementDao.getI_ONHAND_INVENTORY(v);
 	            if(data != null) {
 	                data.setUser_id(loginUserID);
+	                data.setQty_inventory(inventoryCount);
+	                data.setNo_lot(lbl_lot_no);
 	                managementDao.updateI_ONHAND_INVENTORY(data);
 	                managementDao.updateI_WH_ONHAND_INVENTORY(data);
 	                managementDao.updateI_MONTHLY_INVENTORY(data);
 	                managementDao.updateI_WH_MONTHLY_INVENTORY(data);
 	            }
 	            
-	            Management whData = managementDao.getI_WH_MONTHY_INVENTORY(v);
+	            //I_TRANSACTION 테이블에 추가
+	            //수불번호 만들기
+	            String[] parts = invoice_name.split("-");
+	            String datePart = parts[1]; // "20260226"
+	            int sequencePart = Integer.parseInt(parts[2]); // 1 (숫자로 변환)
+
+	            String noTransaction = String.format("ISS%s%05d", datePart, sequencePart);
+	            System.out.println("만든 수불번호: " + noTransaction);
+	            v.setNo_transaction(noTransaction);
+	            managementDao.insertI_TRANSACTION(v);
+	            
+	          //I_TRANSACTION_DETAIL 테이블에 추가
+	            UUID uuid = UUID.randomUUID();
+	         String finalUuid = uuid.toString().replace("-", "").toUpperCase();
+	            v.setUuid(finalUuid);
+	            managementDao.insertI_TRANSACTION_DETAIL(v);
+	            
+	            Management whData = managementDao.getI_WH_MONTHLY_INVENTORY(v);
 	            if(whData != null) {
 	                whData.setUser_id(loginUserID);
+	                whData.setLbl_lot_no(lbl_lot_no);
 	                managementDao.updateI_WH_MONTHLY_INVENTORY2(whData);
 	            }
+	                    
+	            Management monData = managementDao.getI_MONTHLY_INVENTORY(v);
+	            monData.setLbl_lot_no(lbl_lot_no);
 	            
-	            Management monData = managementDao.getI_MONTHY_INVENTORY(v);
+	            String seq_transaction = "";
+	            //I_TRANSACTION에서 SEQ_TRANSACTION 조회
+	            System.out.println("SEQ_TRANSACTION 조회할 로트번호: " + v.getLbl_lot_no());
+	            Management seqTransactionData = managementDao.getI_TRANSACTION_DETAIL(v);
+	            seq_transaction = seqTransactionData.getSeq_transaction();
+	            
 	            if(monData != null) {
 	                monData.setUser_id(loginUserID);
+	                monData.setInvoice_name(invoice_name);
 	                managementDao.updateI_MONTHLY_INVENTORY2(monData);
 	                managementDao.updateI_MONTHLY_INVENTORY3(monData);
+	                
+	                monData.setSeq_transaction(seq_transaction);
+	                managementDao.updateI_TRANSACTION_DETAIL(monData);
 	            }
+	            
+	            v.setSeq_transaction(seq_transaction);
+	            managementDao.insertI_TRANSACTION_SALES(v);
 	            count++;
 	        }
 	        System.out.println("4단계: 상세 재고 차감 루프 완료 (처리건수: " + count + ")");
+	        
+	        // 기초 데이터 처리
+			  managementDao.insertShippingResult(management);
+			  managementDao.updateCompleteInvoiceList(management);
+			  managementDao.deleteNoScanInventory(management);
+			 
+	        System.out.println("기초 데이터 처리 완료(순서 맨 뒤로 뺌)");
 
-	        System.out.println(">>> 모든 프로세스 성공적으로 완료 (COMMIT)");
+	        System.out.println(">>> 모든 프로세스 성공적으로 완료");
+	        System.out.println("일부러 롤백 시작");
+	        if(true) throw new RuntimeException("테스트를 위한 강제 롤백!");
 	        return true;
 
 	    } catch (Exception e) {

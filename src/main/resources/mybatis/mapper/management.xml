@@ -702,7 +702,7 @@ SELECT * FROM ez_shipping_list
 
 <!-- 재고차감할 품목 조회 -->
 <select id="getRealDeductInventoryList" parameterType="management" resultType="management">
-SELECT 
+ SELECT 
     -- [첫 번째 쿼리: 라벨 및 재고 정보]
        'N' AS YN_CHECK
      , A.CD_ITEM
@@ -727,9 +727,12 @@ SELECT
      , eiim.extra_invoice_no
      , eiim.extra_packing_inspection
      , eiim.extra_spec
+     , ein.invoice_name
+     , S_REQ.NO_SALES_ORDER_SERIAL 
+     , S_REQ.NO_SALES_ORDER_VAL     
 
-    -- [두 번째 쿼리: 출하요청 정보]
-     , L.STS_PROGRESS AS STS_PROGRESS_LOT -- 스캔여부
+    -- [두 번째 쿼리: 출하요청 정보 - 원본 유지 및 프로세스 수량 추가]
+     , L.STS_PROGRESS AS STS_PROGRESS_LOT
      , S_REQ.QTY_SALES_REQUEST
      , S_REQ.QTY_WH_STOCK
      , S_REQ.QTY_PROCESS
@@ -741,18 +744,22 @@ SELECT
      , S_REQ.TXT_REMARK AS REQ_REMARK
      , S_REQ.NO_SALES_REQUEST_SERIAL 
      , S_REQ.SEQ_SALES_REQUEST
-     , S_REQ.QTY_SALES_REQUEST
-     , S_REQ.NO_SALES_ORDER
-     , S_REQ.NO_SALES_REQUEST
-     , S_REQ.NM_PARTNER
-     , S_REQ.NM_SALES_MAN
-     , S_REQ.TXT_REMARK AS REQ_REMARK
+     , S_REQ.QTY_SALES_REQUEST -- 중복 포함
+     , S_REQ.NO_SALES_ORDER     -- 중복 포함
+     , S_REQ.NO_SALES_REQUEST   -- 중복 포함
+     , S_REQ.NM_PARTNER         -- 중복 포함
+     , S_REQ.NM_SALES_MAN       -- 중복 포함
+     , S_REQ.TXT_REMARK AS REQ_REMARK -- 중복 포함
      , S_REQ.TP_SALES
      , S_REQ.CD_MFG_UNIT
-     , S_REQ.QTY_WH_STOCK
-     , S_REQ.QTY_PROCESS
-     , S_REQ.QTY_REFERENCE
-     , L.STS_PROGRESS AS STS_PROGRESS_LOT -- 스캔여부
+     , S_REQ.QTY_WH_STOCK       -- 중복 포함
+     , S_REQ.QTY_PROCESS         -- 중복 포함
+     , S_REQ.QTY_REFERENCE       -- 중복 포함
+     , L.STS_PROGRESS AS STS_PROGRESS_LOT -- 중복 포함
+     , S_REQ.QTY_PROCESS         -- 중복 포함
+     , S_REQ.QTY_GOOD_PROCESS    -- 새로 합친 양품 수량
+     , S_REQ.QTY_BAD_PROCESS     -- 새로 합친 불량 수량
+     , S_REQ.CD_PARTNER
 
   FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
        INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) 
@@ -768,11 +775,9 @@ SELECT
        LEFT JOIN ez_shipping_list AS esl 
                ON A.LBL_LOT_NO = esl.lbl_lot_no
 
-       -- [핵심 조인 부] LOT_NO를 키로 사용하여 출하요청 데이터 결합
        LEFT JOIN S_SALES_REQUEST_LOT L WITH (NOLOCK) 
                ON A.LBL_LOT_NO = L.LOT_NO
        
-       -- 출하요청 상세 및 마스터 정보를 서브쿼리로 조인 (성능 및 가독성)
        LEFT JOIN (
             SELECT 
                 SD.NO_SALES_REQUEST_SERIAL
@@ -780,13 +785,18 @@ SELECT
               , SD.QTY_SALES_REQUEST
               , SD.NO_SALES_ORDER
               , SR.NO_SALES_REQUEST
+              , SO.NO_SALES_ORDER_SERIAL
+			  , SO.NO_SALES_ORDER AS NO_SALES_ORDER_VAL
               , P.NM_PARTNER
               , U.NM_BIZ_USER AS NM_SALES_MAN
               , SD.TXT_REMARK
               , SD.TP_SALES
               , SG.CD_MFG_UNIT
+              , P.CD_PARTNER
               , CAST(DBO.WISEN_IN_STOCK_Q('A','*', '', SD.CD_ITEM, 'G', '') AS NUMERIC(18,6)) AS QTY_WH_STOCK
               , ISNULL(PROC_SUM.QTY_PROCESS, 0) AS QTY_PROCESS
+              , ISNULL(PROC_SUM.QTY_GOOD_PROCESS, 0) AS QTY_GOOD_PROCESS
+              , ISNULL(PROC_SUM.QTY_BAD_PROCESS, 0) AS QTY_BAD_PROCESS
               , (FLOOR(SD.QTY_STOCK_UNIT + (SD.QTY_STOCK_UNIT * ISNULL(SO.RATE_OVER_MAX, 0) / 100)) - ISNULL(PROC_SUM.QTY_PROCESS, 0)) AS QTY_REFERENCE
             FROM S_SALES_REQUEST_DETAIL SD WITH (NOLOCK)
                  INNER JOIN S_SALES_REQUEST SR WITH (NOLOCK) ON SR.NO_SALES_REQUEST_SERIAL = SD.NO_SALES_REQUEST_SERIAL
@@ -794,25 +804,26 @@ SELECT
                  LEFT JOIN B_BIZ_USER U WITH (NOLOCK) ON U.CD_BIZ_USER = SR.CD_SALES_MAN
                  LEFT JOIN B_SALES_GROUP SG WITH (NOLOCK) ON SG.CD_SALES_GROUP = SR.CD_SALES_GROUP
                  LEFT JOIN S_SALES_ORDER SO WITH (NOLOCK) ON SO.NO_SALES_ORDER_SERIAL = SD.NO_SALES_ORDER_SERIAL
-                 -- 출하 처리 수량 집계 서브쿼리
+                 -- [프로세스 집계 조인]
                  LEFT JOIN (
-                     SELECT NO_SALES_REQUEST_SERIAL, SEQ_SALES_REQUEST, SUM(QTY_PROCESS) AS QTY_PROCESS
+                     SELECT NO_SALES_REQUEST_SERIAL, SEQ_SALES_REQUEST
+                          , SUM(QTY_PROCESS) AS QTY_PROCESS
+                          , SUM(QTY_GOOD_PROCESS) AS QTY_GOOD_PROCESS
+                          , SUM(QTY_BAD_PROCESS) AS QTY_BAD_PROCESS
                      FROM S_SALES_REQUEST_PROCESS WITH (NOLOCK)
-                     WHERE TP_PROCESS = 'INSAI' AND FG_MODULE = 'IN' AND FG_PROCESS = 'P'
+                     WHERE FG_PROCESS = 'P' AND TP_PROCESS = 'INSAI' AND FG_MODULE = 'IN'
                      GROUP BY NO_SALES_REQUEST_SERIAL, SEQ_SALES_REQUEST
                  ) PROC_SUM ON PROC_SUM.NO_SALES_REQUEST_SERIAL = SD.NO_SALES_REQUEST_SERIAL 
                            AND PROC_SUM.SEQ_SALES_REQUEST = SD.SEQ_SALES_REQUEST
        ) S_REQ ON L.NO_SALES_REQUEST_SERIAL = S_REQ.NO_SALES_REQUEST_SERIAL 
               AND L.SEQ_SALES_REQUEST = S_REQ.SEQ_SALES_REQUEST
 
-       -- 판매유형 조인 (필터링용)
        LEFT JOIN S_SALES_TYPE ST WITH (NOLOCK) ON ST.TP_SALES = S_REQ.TP_SALES
 
  WHERE 1=1
    AND B.QTY_INVENTORY != 0
    AND B.CD_WH = 'YC_FG3'
    AND eiim.invoice_no = #{invoice_no}
-   -- 두 번째 쿼리의 필터 조건 적용
    AND (ST.YN_TRANSACTION IS NULL OR ST.YN_TRANSACTION = 'Y')
    AND (S_REQ.CD_MFG_UNIT IN (SELECT X.CD_MFG_UNIT FROM B_PARTY_USER X, B_BIZ_USER Y WHERE X.CD_BIZ_USER = Y.CD_BIZ_USER) 
         OR ISNULL(S_REQ.CD_MFG_UNIT, '') = '')
@@ -822,16 +833,16 @@ SELECT
 </select>
 
 <!-- 첫 번째 업데이트(S_SALES_REQUEST_PROCESS - 출하요청까지 완료된거 품목 테이블?) -->
-<update id="update_S_SALES_REQUEST_PROCESS">
+<update id="updateS_SALES_REQUEST_PROCESS">
 <foreach collection="list" item="item" separator=";">
 UPDATE S_SALES_REQUEST_PROCESS
-   SET QTY_PROCESS = QTY_PROCESS + #{item.QTY_GOOD_PROCESS} + #{item.QTY_BAD_PROCESS}
-       ,QTY_GOOD_PROCESS = QTY_GOOD_PROCESS + #{item.QTY_GOOD_PROCESS}
-       ,QTY_BAD_PROCESS = QTY_BAD_PROCESS + #{item.QTY_BAD_PROCESS}
+   SET QTY_PROCESS = QTY_PROCESS + #{item.qty_inventory} + #{item.qty_bad_process}
+       ,QTY_GOOD_PROCESS = QTY_GOOD_PROCESS + #{item.qty_inventory}
+       ,QTY_BAD_PROCESS = QTY_BAD_PROCESS + #{item.qty_bad_process}
        ,ID_UPDATE = #{item.user_id}
        ,DT_UPDATE = GETDATE()
- WHERE NO_SALES_REQUEST_SERIAL = #{item.NO_SALES_REQUEST_SERIAL}
-   AND SEQ_SALES_REQUEST = #{item.SEQ_SALES_REQUEST}
+ WHERE NO_SALES_REQUEST_SERIAL = #{item.no_sales_request_serial}
+   AND SEQ_SALES_REQUEST = #{item.seq_sales_request}
    AND FG_PROCESS = 'P'
    AND TP_PROCESS = 'INSAI'
    AND FG_MODULE = 'IN'
@@ -843,7 +854,7 @@ SELECT ISNULL(SUM(QTY_PROCESS),0) AS QTY_PROCESS
        ,ISNULL(SUM(QTY_GOOD_PROCESS),0) AS QTY_GOOD_PROCESS
        ,ISNULL(SUM(QTY_BAD_PROCESS),0) AS QTY_BAD_PROCESS
   FROM S_SALES_REQUEST_PROCESS
- WHERE NO_SALES_REQUEST_SERIAL = #{no_sales_serial}
+ WHERE NO_SALES_REQUEST_SERIAL = #{no_sales_request_serial}
    AND SEQ_SALES_REQUEST = #{seq_sales_request}
    AND FG_PROCESS = 'P'
 </select>
@@ -872,7 +883,7 @@ UPDATE S_SALES_REQUEST_LOT
     SET STS_PROGRESS = 'F'
   WHERE NO_SALES_REQUEST_SERIAL = #{item.no_sales_request_serial}
     AND SEQ_SALES_REQUEST = #{item.seq_sales_request}
-    AND LOT_NO = #{lbl_lot_no}
+    AND LOT_NO = #{item.lbl_lot_no}
    </foreach>
 </update>
 
@@ -914,7 +925,7 @@ UPDATE I_MONTHLY_INVENTORY
        ,UP_INVENTORY = UP_INVENTORY
        ,ID_UPDATE = #{user_id}
        ,DT_UPDATE = GETDATE()
- WHERE YM_MONTH = FORMAT(GETDATE(), 'yyyyMM')
+ WHERE YM_MONTH = CONVERT(VARCHAR(6), GETDATE(), 112)
    AND CD_ITEM = #{cd_item}
    AND STS_ITEM = 'G'
    AND NO_LOT = #{no_lot}
@@ -929,7 +940,7 @@ UPDATE I_WH_MONTHLY_INVENTORY
        ,AMT_INVENTORY = AMT_INVENTORY + #{amt_inventory}
        ,ID_UPDATE = #{user_id}
        ,DT_UPDATE = GETDATE()
- WHERE YM_MONTH = FORMAT(GETDATE(), 'yyyyMM')
+ WHERE YM_MONTH = CONVERT(VARCHAR(6), GETDATE(), 112)
    AND CD_WH = 'YC_FG3'
    AND CD_ITEM = #{cd_item}
    AND STS_ITEM = 'G'
@@ -939,14 +950,14 @@ UPDATE I_WH_MONTHLY_INVENTORY
    AND TP_TRANSACTION = 'SIN01'
 </update>
 
-<select id="getI_WH_MONTHY_INVENTORY" parameterType="management" resultType="management">
+<select id="getI_WH_MONTHLY_INVENTORY" parameterType="management" resultType="management">
 SELECT *
   FROM I_WH_MONTHLY_INVENTORY
- WHERE YM_MONTH = FORMAT(GETDATE(), 'yyyyMM')
+ WHERE YM_MONTH = CONVERT(VARCHAR(6), GETDATE(), 112)
    AND CD_WH = 'YC_FG3'
    AND CD_ITEM = #{cd_item}
    AND STS_ITEM = 'G'
-   AND NO_LOT = #{no_lot}
+   AND NO_LOT = #{lbl_lot_no}
    AND FG_INVENTORY = 'S'
    AND FG_TRANSACTION = 'SS'
    AND TP_TRANSACTION = '*'
@@ -958,11 +969,11 @@ UPDATE I_WH_MONTHLY_INVENTORY
        ,AMT_INVENTORY = #{amt_inventory}
        ,ID_UPDATE = #{user_id}
        ,DT_UPDATE = GETDATE()
- WHERE YM_MONTH = FORMAT(GETDATE(), 'yyyyMM')
+ WHERE YM_MONTH = CONVERT(VARCHAR(6), GETDATE(), 112)
    AND CD_WH = 'YC_FG3'
    AND CD_ITEM = #{cd_item}
    AND STS_ITEM = 'G'
-   AND NO_LOT = #{no_lot}
+   AND NO_LOT = #{lbl_lot_no}
    AND FG_INVENTORY = 'S'
    AND FG_TRANSACTION = 'SS'
    AND TP_TRANSACTION = '*'
@@ -971,10 +982,10 @@ UPDATE I_WH_MONTHLY_INVENTORY
 <select id="getI_MONTHLY_INVENTORY" parameterType="management" resultType="management">
 SELECT *
   FROM I_MONTHLY_INVENTORY
- WHERE YM_MONTH = FORMAT(GETDATE(), 'yyyyMM')
-   AND CD_ITEM = #{cd_item}
-   AND STS_ITEM = 'G'
-   AND NO_LOT = #{no_lot}
+ WHERE 
+ <!-- YM_MONTH = CONVERT(VARCHAR(6), GETDATE(), 112) AND CD_ITEM = #{cd_item} AND  -->
+   STS_ITEM = 'G'
+   AND NO_LOT = #{lbl_lot_no}
    AND FG_INVENTORY = 'S'
    AND FG_TRANSACTION = 'SS'
    AND TP_TRANSACTION = '*'
@@ -986,7 +997,7 @@ UPDATE I_MONTHLY_INVENTORY
        ,AMT_INVENTORY = #{amt_inventory}
        ,ID_UPDATE = #{user_id}
        ,DT_UPDATE = GETDATE()
- WHERE YM_MONTH = FORMAT(GETDATE(), 'yyyyMM')
+ WHERE YM_MONTH = CONVERT(VARCHAR(6), GETDATE(), 112)
    AND CD_ITEM = #{cd_item}
    AND STS_ITEM = 'G'
    AND NO_LOT = #{no_lot}
@@ -1000,8 +1011,197 @@ UPDATE I_MONTHLY_INVENTORY
    SET UP_INVENTORY =  #{up_inventory}
        ,ID_UPDATE = #{user_id}
        ,DT_UPDATE = GETDATE()
- WHERE YM_MONTH = FORMAT(GETDATE(), 'yyyyMM')
+ WHERE YM_MONTH = CONVERT(VARCHAR(6), GETDATE(), 112)
    AND CD_ITEM = #{cd_item}
    AND FG_INVENTORY = 'S'
 </update>
+
+<insert id="insertI_TRANSACTION">
+IF NOT EXISTS (
+        SELECT 1 
+        FROM I_TRANSACTION 
+        WHERE NO_TRANSACTION_SERIAL = #{invoice_name}
+    )
+BEGIN
+INSERT INTO I_TRANSACTION (
+    NO_TRANSACTION_SERIAL, 
+    NO_TRANSACTION,
+    DT_TRANSACTION, 
+    WORK_TIME, 
+    ID_INSERT, 
+    DT_INSERT, 
+    ID_UPDATE, 
+    DT_UPDATE,
+    CD_WH,
+    NO_SLIP,
+    NO_SLIP_SERIAL,
+    NO_AUTO_SLIP_SERIAL,
+    FG_TRANSACTION
+) VALUES (
+    #{invoice_name},
+    #{no_transaction},	--수불번호인데 어디있는지 모르겠음(자바에서 만듬)
+    CONVERT(VARCHAR(8), GETDATE(), 112),         -- 오늘 날짜
+    '',           -- 현재 시간
+    #{user_id}, 
+    GETDATE(), 
+    #{user_id}, 
+    GETDATE(),
+    #{cd_wh},
+    '*',
+    '*',
+    '*',
+    'SD'
+)
+END
+</insert>
+
+<insert id="insertI_TRANSACTION_DETAIL">
+INSERT INTO I_TRANSACTION_DETAIL (
+    NO_TRANSACTION_SERIAL, 
+    SEQ_TRANSACTION,
+    SEQ_AUX_TRANSACTION, 
+    CD_ITEM,
+    STS_ITEM,
+    CD_WH,
+    CD_TRANSACTION,
+    NO_LOT,
+    QTY_TRANSACTION,
+    UP_TRANSACTION,
+    FAMT_TRANSACTION,
+    AMT_TRANSACTION,
+    RATE_EXCHANGE,
+    FG_INC_DEC,
+    NO_TRANSACTION_REF,
+    FG_COST_TRANSACTION,
+    ID_INSERT, 
+    DT_INSERT, 
+    ID_UPDATE, 
+    DT_UPDATE,
+    FG_TRANSACTION,
+    TP_TRANSACTION
+) VALUES (
+    #{invoice_name},
+    (SELECT ISNULL(MAX(SEQ_TRANSACTION), 0) + 1 
+     FROM I_TRANSACTION_DETAIL 
+     WHERE NO_TRANSACTION_SERIAL = #{invoice_name}),
+     0,
+     #{cd_item},
+     'G',
+     #{cd_wh},
+     #{cd_partner},
+     #{lbl_lot_no},
+     #{qty_inventory},
+     0,
+     0,
+     0,
+     1,
+     'D',
+     #{uuid},
+     'SD',
+    #{user_id}, 
+    GETDATE(), 
+    #{user_id}, 
+    GETDATE(),
+    'SD',
+    'SIN01'
+)
+</insert>
+
+<update id="updateI_TRANSACTION_DETAIL">
+UPDATE I_TRANSACTION_DETAIL 
+   SET AMT_TRANSACTION_TOTAL  = #{amt_transaction} + #{amt_expense}
+   WHERE NO_TRANSACTION_SERIAL = #{invoice_name}
+   AND SEQ_TRANSACTION = #{seq_transaction}
+   AND SEQ_AUX_TRANSACTION = '0'
+</update>
+
+<select id="getI_TRANSACTION_DETAIL" parameterType="management" resultType="management">
+SELECT TOP 1 * FROM I_TRANSACTION_DETAIL
+WHERE NO_LOT = #{lbl_lot_no}
+ORDER BY DT_UPDATE DESC
+</select>
+
+<insert id="insertI_TRANSACTION_SALES">
+INSERT INTO I_TRANSACTION_SALES(
+    NO_TRANSACTION_SERIAL,
+    SEQ_TRANSACTION,
+    SEQ_AUX_TRANSACTION,
+    NO_SALES_ORDER_SERIAL,
+    NO_SALES_ORDER,
+    SEQ_SALES_ORDER,
+    NO_SALES_REQUEST_SERIAL,
+    NO_SALES_REQUEST,
+    SEQ_SALES_REQUEST,
+    NO_EXPORT_LLC_SERIAL,
+    NO_EXPORT_LLC,
+    SEQ_EXPORT_LLC,
+    NO_EXPORT_LC_SERIAL,
+    NO_EXPORT_LC,
+    SEQ_EXPORT_LC,
+    NO_EXPORT_INVOICE_SERIAL,
+    NO_EXPORT_INVOICE,
+    SEQ_EXPORT_INVOICE,
+    NO_EXPORT_PASS_SERIAL,
+    NO_EXPORT_PASS,
+    SEQ_EXPORT_PASS,
+    NO_EXPORT_BL_SERIAL,
+    NO_EXPORT_BL,
+    SEQ_EXPORT_BL,
+    NO_SALES_SERIAL,
+    NO_SALES,
+    SEQ_SALES,
+    QTY_SALES,
+    UP_SALES,
+    FG_OPERATOR,
+    FAMT_SALES,
+    AMT_SALES,
+    RATE_EXCHANGE,
+    RATE_VAT,
+    AMT_VAT,
+    ID_INSERT,
+    DT_INSERT,
+    ID_UPDATE,
+    DT_UPDATE)
+VALUES(
+    #{invoice_name},
+    #{seq_transaction},
+    0,
+    #{no_sales_order_serial},
+    #{no_sales_order},
+    #{seq_sales_request},
+    #{no_sales_request_serial},
+    #{no_sales_request},
+    #{seq_sales_request},
+    '',
+    '',
+    0,
+    '',
+    '',
+    0,
+    '',
+    '',
+    0,
+    '*',
+    '*',
+    0,
+    '*',
+    '*',
+    0,
+    '*',
+    '*',
+    0,
+    #{qty_inventory},
+    0,
+    'M',
+    0,
+    0,
+    1,
+    10,
+    0,
+    #{user_id}, 
+    GETDATE(), 
+    #{user_id}, 
+    GETDATE() 
+)
+</insert>
 </mapper>

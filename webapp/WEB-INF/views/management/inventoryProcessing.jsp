@@ -526,6 +526,7 @@ function initInvoiceTable(){
 	  ajaxURL: "/yulchon/management/getNoUpdatedInvoiceList",
 	  ajaxParams: {},
 	  placeholder: "조회된 데이터가 없습니다.",
+	  selectable: 1,
 	  ajaxResponse: function(url, params, response) {
 	    return response;
 	  },
@@ -536,7 +537,7 @@ function initInvoiceTable(){
 		        hozAlign: "center", 
 		        width: 80,
 		        formatter: "rowSelection", 
-		        titleFormatter: "rowSelection", 
+		        //titleFormatter: "rowSelection", 
 		        //필터링된 데이터들만 선택 되도록
 		        titleFormatterParams:{
 			        rowRange: "active"
@@ -565,7 +566,7 @@ function initInvoiceTable(){
 		  //체크박스 선택/해제 시
 		  rowSelectionChanged: function(data, rows){
 			  selectedInvoiceRows = data;
-			  console.log("선택된 삭제할 데이터:", selectedInvoiceRows, "개수:", selectedInvoiceRows.length);
+			  console.log("선택된 데이터:", selectedInvoiceRows, "개수:", selectedInvoiceRows.length);
 			}
 	});
 	}
@@ -591,13 +592,13 @@ $(function() {
 		    alert("선택된 인보이스가 없습니다.");
 		    return;
 		  }
-	  
+	  console.log("선택된 인보이스: ", selectedInvoiceRows.invoice_no );
 	  //전송 데이터
 	    const payload = {
   invoiceList: selectedInvoiceRows.map(row => row.invoice_no)
 };
 	    console.log("전송 데이타: ", payload);
-	    if(confirm("정말로 출하완료하시겠습니까?")){
+	    if(confirm("정말로 출하 완료하시겠습니까?")){
 	    $.ajax({
 		      url: "/yulchon/management/shippingComplete",
 		      type: "POST",
@@ -615,6 +616,7 @@ $(function() {
 			    	    	    {});
 		          }else{
 			          console.log("출하완료 실패");
+			          alert("출하완료 실패했습니다. 스캔한 품목이 있는지 확인해주세요.")
 		              }
 		        },
 		      error: function() {
@@ -678,6 +680,7 @@ $(function() {
     invoiceList: selectedInvoiceRows.map(row => row.invoice_no)
   };
 	    console.log("전송 데이타: ", payload);
+	    if(confirm("정말로 출하 취소하시겠습니까?")){
 	    $.ajax({
 		      url: "/yulchon/management/cancelShippingList",
 		      type: "POST",
@@ -702,6 +705,9 @@ $(function() {
 		        alert('취소 중 오류가 발생했습니다.');
 		      }
 		    });
+	    }else{
+			return;
+		    }
   });
 
   // 인보이스 생성 모달 닫기

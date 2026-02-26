@@ -444,6 +444,19 @@ button:hover {
 .high-z-index {
     z-index: 9999999 !important;
 }
+.left-table-summary {
+    display: flex;
+    gap: 20px;
+    padding: 6px 10px;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-top: none;
+    font-size: 15px;
+}
+
+.left-table-summary strong {
+    color: #333;
+}
     </style>
 </head>
 
@@ -497,6 +510,11 @@ button:hover {
                 <div class="tables-container">
             <div class="table-section">
                 <div id="leftTable"></div>
+                                <!-- 합계 영역 -->
+                <div class="left-table-summary">
+                    <span>총수량 : <strong id="leftTotalQty">0</strong></span>
+                    <span>총중량 : <strong id="leftTotalWeight">0.00</strong> kg</span>
+                </div>
             </div>
             
             <div class="arrow-container">
@@ -842,6 +860,18 @@ function initLeftTable(){
 	  rowSelectionChanged: function(data, rows){
 		  selectedLeftRows = data;
 		  console.log("선택된 삭제할 데이터:", selectedLeftRows, "개수:", selectedLeftRows.length);
+		},
+		dataLoaded: function(data) {
+		    let totalQty = 0;
+		    let totalWeight = 0;
+
+		    data.forEach(row => {
+		        totalQty += parseFloat(row.qty_inventory || 0);
+		        totalWeight += parseFloat(row.wgt_inventory || 0);
+		    });
+
+		    document.getElementById("leftTotalQty").innerText = totalQty;
+		    document.getElementById("leftTotalWeight").innerText = totalWeight.toFixed(2);
 		}
 		  
 	});

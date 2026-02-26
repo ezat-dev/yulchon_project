@@ -50,6 +50,10 @@ public class ManagementController {
 	private static final String PROFENDER_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_PROFENDER_양식.xlsx";
 	private static final String DKK_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_DKK_양식.xlsx";
 	private static final String KTH_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_KTH_양식.xlsx";
+	private static final String KPS_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_KPS_양식.xlsx";
+	private static final String KMEX_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_KMEX_양식.xlsx";
+	private static final String THAIAUTO_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_THAIAUTO_양식.xlsx";
+	private static final String PIONEER_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_PIONEER_양식.xlsx";
 
 	private String getShippingMarkFilePath(String companyName) {
 		if(companyName.contains("KEEPRO")) {
@@ -254,7 +258,7 @@ public class ManagementController {
 		String file_path = getShippingMarkFilePath(customerName);
 
 		//테스트용으로 해놓음
-		//customerName = "DKK";
+		customerName = "PIONEER";
 
 		Map<String, Object> printResult = new HashMap<>();
 		if(customerName.contains("KAB")) {
@@ -289,9 +293,16 @@ public class ManagementController {
 			printResult = printExcel.printDkk(data, DKK_FILE_PATH);
 		}else if(customerName.contains("KTH")) {
 			printResult = printExcel.printKth(data, KTH_FILE_PATH);
+		}else if(customerName.contains("KPS")) {
+			printResult = printExcel.printKps(data, KPS_FILE_PATH);
+		}else if(customerName.contains("KMEX")) {
+			printResult = printExcel.printKmex(data, KMEX_FILE_PATH);
+		}else if(customerName.contains("THAI AUTO")) {
+			printResult = printExcel.printThaiAuto(data, THAIAUTO_FILE_PATH);
+		}else if(customerName.contains("PIONEER")) {
+			printResult = printExcel.printThaiAuto(data, PIONEER_FILE_PATH);
 		}else {
-			resultMap.put("result", false);
-			resultMap.put("message", "고객사 양식이 없습니다.\n다시 확인해주세요");
+			printResult = printExcel.printKth(data, KTH_FILE_PATH);
 		}
 
 		if ((boolean) printResult.get("result")) {

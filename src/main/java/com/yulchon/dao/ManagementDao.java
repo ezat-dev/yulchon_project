@@ -49,9 +49,14 @@ public interface ManagementDao {
 	boolean updateI_WH_ONHAND_INVENTORY(Management datas);
 	boolean updateI_MONTHLY_INVENTORY(Management datas);
 	boolean updateI_WH_MONTHLY_INVENTORY(Management datas);
-	Management getI_WH_MONTHY_INVENTORY(Management management);
+	Management getI_WH_MONTHLY_INVENTORY(Management management);
 	boolean updateI_WH_MONTHLY_INVENTORY2(Management datas);
-	Management getI_MONTHY_INVENTORY(Management management);
+	Management getI_MONTHLY_INVENTORY(Management management);
 	boolean updateI_MONTHLY_INVENTORY2(Management datas);
 	boolean updateI_MONTHLY_INVENTORY3(Management datas);
+	boolean insertI_TRANSACTION(Management datas);
+	boolean insertI_TRANSACTION_DETAIL(Management datas);
+	Management getI_TRANSACTION_DETAIL(Management management);
+	boolean updateI_TRANSACTION_DETAIL(Management management);
+	boolean insertI_TRANSACTION_SALES(Management management);
 }
