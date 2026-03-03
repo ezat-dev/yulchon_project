@@ -56,7 +56,14 @@ SELECT
 invoice_no,
 invoice_name,
 invoice_is_shipped,
-CONVERT(VARCHAR(19), insert_date, 120) AS insert_date,
+CASE
+	WHEN invoice_is_shipped IS NULL THEN NULL
+	ELSE CONVERT(VARCHAR(19), insert_date, 120)
+END AS insert_date,
+CASE
+	WHEN invoice_is_shipped IS NULL THEN NULL
+	ELSE CONVERT(VARCHAR(19), update_date, 120)
+END AS update_date,
 invoice_is_moved,
 move_invoice_name
 FROM ez_invoice_name 
@@ -64,6 +71,10 @@ WHERE 1=1
 <if test="invoice_is_shipped != null and invoice_is_shipped != ''">
 AND invoice_is_shipped = #{invoice_is_shipped}
 </if>
+   <![CDATA[
+	AND invoice_name >= 'YC-' + REPLACE(#{startDate}, '-', '')
+	AND invoice_name <= 'YC-' + REPLACE(#{endDate}, '-', '') + '-999'
+	]]>
 ORDER BY invoice_name DESC
 </select>
 
@@ -392,6 +403,16 @@ VALUES(#{invoice_no}, #{lbl_lot_no}, 'n')
 <select id="getNoUpdatedInvoiceList" parameterType="management" resultType="management">
 SELECT * FROM ez_invoice_name 
 WHERE invoice_is_shipped IS NULL
+<if test="startDate != null and startDate != ''">
+   <![CDATA[
+	   AND invoice_name >= 'YC-' + REPLACE(#{startDate}, '-', '')
+	   ]]>
+</if>
+<if test="endDate != null and endDate != ''">
+<![CDATA[
+	AND invoice_name <= 'YC-' + REPLACE(#{endDate}, '-', '') + '-999'
+	]]>
+</if>
 ORDER BY invoice_name DESC
 </select>
 
@@ -550,12 +571,27 @@ SELECT 'N' AS YN_CHECK --선택
       </foreach>
 </delete>
 
-<!-- 초기화 되었거나 처리 안된 인보이스 조회 -->
+<!-- 초기화 되었거나 처리 안된 인보이스 조회(리셋된 인보이스는 품목 있는것만) -->
 <select id="getNoUpdatedOrResetInvoiceList" parameterType="management" resultType="management">
-SELECT * FROM ez_invoice_name ein
-WHERE (invoice_is_shipped IS NULL OR invoice_is_shipped = 'R')
-AND invoice_is_moved IS NULL
-ORDER BY invoice_name DESC
+SELECT 
+    ein.*, 
+    ISNULL(item_counts.item_count, 0) AS item_count
+FROM ez_invoice_name ein
+LEFT JOIN (
+    SELECT 
+        invoice_no, 
+        COUNT(*) AS item_count
+    <!-- FROM ez_invoice_inventory_mapping -->
+    FROM ez_shipping_reset
+    GROUP BY invoice_no
+) item_counts ON ein.invoice_no = item_counts.invoice_no
+WHERE ein.invoice_is_moved IS NULL
+  AND (
+      (ein.invoice_is_shipped IS NULL)
+      OR 
+      (ein.invoice_is_shipped = 'R' AND ISNULL(item_counts.item_count, 0) > 0)
+  )
+ORDER BY ein.invoice_name DESC;
 </select>
 
 <!-- 초기화된 품목 조회 -->
@@ -1204,4 +1240,49 @@ VALUES(
     GETDATE() 
 )
 </insert>
+
+<select id="getProductConfirm" parameterType="management" resultType="management">
+  SELECT 'N' AS YN_CHECK
+     , A.CD_ITEM
+     , C.NM_ITEM
+     , C.SPEC_ITEM
+     , C.KGM_WEIGHT
+     , FLOOR(ISNULL(A.LBL_REAL_LENGTH, 0)) AS LBL_REAL_LENGTH
+     , A.LBL_LOT_NO
+     , A.NO_MFG_ORDER_SERIAL
+     , FLOOR(B.QTY_INVENTORY) AS qty_inventory
+     , (ISNULL(B.QTY_INVENTORY,0) * ISNULL(C.KGM_WEIGHT,0) * ISNULL(A.LBL_REAL_LENGTH,0)) / 1000 AS WGT_INVENTORY
+     , B.CD_WH
+     , (SELECT NM_WH FROM B_WAREHOUSE WHERE CD_WH = B.CD_WH) AS NM_WH
+     , A.LBL_DATE
+     , A.NM_CUSTOMER
+     , A.PO_CUSTOMER
+     , A.NO_RECEIPT
+     , A.REMARKS
+     , A.CD_WC
+     , A.SEQ_MFG_ORDER
+     , A.NM_LOCATION
+     , A.ID_INSERT
+     , A.DT_INSERT
+     , A.ID_UPDATE
+     , A.DT_UPDATE
+     , NULL AS invoice_no
+     , eiim.invoice_no 
+     , ISNULL(ein.invoice_name, '인보이스 부여되지 않음') AS invoice_name
+FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
+INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK)
+    ON A.CD_ITEM = B.CD_ITEM
+   AND A.LBL_LOT_NO = B.NO_LOT
+INNER JOIN B_ITEM C WITH (NOLOCK)
+    ON A.CD_ITEM = C.CD_ITEM
+INNER JOIN ez_inventory_lot_ext AS eile
+    ON A.LBL_LOT_NO = eile.ext_lot_no
+
+LEFT JOIN ez_invoice_inventory_mapping eiim
+    ON eiim.lot_no = A.LBL_LOT_NO
+LEFT JOIN ez_invoice_name ein
+    ON eiim.invoice_no = ein.invoice_no
+WHERE B.QTY_INVENTORY != 0
+AND A.LBL_LOT_NO = #{lbl_lot_no}
+</select>
 </mapper>

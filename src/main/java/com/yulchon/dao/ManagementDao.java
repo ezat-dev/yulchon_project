@@ -59,4 +59,5 @@ public interface ManagementDao {
 	Management getI_TRANSACTION_DETAIL(Management management);
 	boolean updateI_TRANSACTION_DETAIL(Management management);
 	boolean insertI_TRANSACTION_SALES(Management management);
+	Management getProductConfirm(Management management);
 }

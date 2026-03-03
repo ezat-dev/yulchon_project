@@ -389,7 +389,7 @@ button:hover{
                 
                <div class="box1">
 	           <p class="tabP" style="font-size: 20px; margin-left: 40px; color: white; font-weight: 800;"></p>
-	           <label class="daylabel">인보이스 생성날짜 :</label>
+	           <label class="daylabel">인보이스 날짜 :</label>
 				<input type="text" autocomplete="off" class="daySet" id="startDate" style="font-size: 16px; margin-bottom:10px;" placeholder="시작 날짜 선택">
 				
 				 <span class="mid"  style="font-size: 20px; font-weight: bold; margin-botomm:10px;"> ~ </span>
@@ -521,10 +521,13 @@ function initInvoiceTable(){
 	invoiceTable = new Tabulator('#invoiceTable', {
 	  layout: "fitColumns",
 	  headerHozAlign: "center",
-	  ajaxConfig: { method: 'POST' },
+	  ajaxConfig: { method: 'POST'},
 	  ajaxLoader: false,
 	  ajaxURL: "/yulchon/management/getNoUpdatedInvoiceList",
-	  ajaxParams: {},
+	  ajaxParams:{
+		  startDate: $('#startDate').val(),
+          endDate: $('#endDate').val()
+          },
 	  placeholder: "조회된 데이터가 없습니다.",
 	  selectable: 1,
 	  ajaxResponse: function(url, params, response) {
@@ -585,7 +588,7 @@ $(function() {
     
 	initDataTable();
 	initInvoiceTable();
-
+    
   // 출하완료 클릭 시(스캔한 품목들만 출하완료)
   $('#insert-invoice-button').click(function() {
 	  if (!selectedInvoiceRows || selectedInvoiceRows.length === 0) {
@@ -645,6 +648,7 @@ $(function() {
     lotList: selectedProductRows.map(row => row.lbl_lot_no)
   };
 	    console.log("전송 데이타: ", payload);
+	    if(confirm("정말로 삭제하시겠습니까?")){
 	    $.ajax({
 		      url: "/yulchon/management/deleteShippingListInventory",
 		      type: "POST",
@@ -654,17 +658,19 @@ $(function() {
 		      //contentType: false,
 		      success: function(result) {
 		          if(result === true || result === "true"){
-		        	  console.log("출하목록 삭제 성공");
+		        	  console.log("품목 삭제 성공");
 			    	    dataTable.setData("/yulchon/management/getShippingList", 
 			    	    	    { invoice_no: invoice_no });
 		          }else{
 			          console.log("삭제 실패");
+			          console.log("삭제 실패했습니다.");
 		              }
 		        },
 		      error: function() {
-		        alert('저장 중 오류가 발생했습니다.');
+		        alert('삭제 중 오류가 발생했습니다.');
 		      }
 		    });
+	    }
   });
 
   // 출하취소 버튼 클릭 시
@@ -719,33 +725,18 @@ $(function() {
 	    $('#addDeleteInvoiceProduct').removeClass('show').hide();
 	  });
 
-  // 저장 버튼 클릭 시
-  $('#saveCorrStatus').click(function(event) {
-    event.preventDefault();
-    const invoice_datee = $('#invoice_date').val(); 
-    const invoice_date = invoice_datee.replace(/-/g, '');
-    console.log("invoice_date", invoice_date); // 20260101
+  // 조회 버튼 클릭 시
+  $('.select-button').click(function(event) {
+	  var startDate = $('#startDate').val();
+	    var endDate = $('#endDate').val();
 
-    $.ajax({
-      url: "/yulchon/management/insertInvoiceName",
-      type: "POST",
-      data: formData,
-      //processData: false,
-      //contentType: false,
-      success: function(result) {
-        console.log(result);
-        if (result === true) {
-            $('#modalContainer').hide();
-            dataTable.setData("/yulchon/management/getInventoryList", {});
-            selectedRowData = null;
-        } else {
-            alert("오류: " + result.data); 
-        }
-      },
-      error: function() {
-        alert('저장 중 오류가 발생했습니다.');
-      }
-    });
+	    // 서버에 날짜 파라미터를 포함해서 다시 요청
+	    invoiceTable.setData("/yulchon/management/getNoUpdatedInvoiceList", {
+	        startDate: startDate,
+	        endDate: endDate
+	    });
+
+	    dataTable.setData("/yulchon/management/getShippingList", {});
   });
 });
 </script>

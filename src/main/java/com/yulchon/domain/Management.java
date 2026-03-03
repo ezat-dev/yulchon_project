@@ -85,8 +85,29 @@ public class Management {
 	private String no_sales_request;
 	private String cd_partner;
 	private String no_transaction;
+	private String startDate;
+	private String endDate;
+	private String update_date;
 	
 	
+	public String getUpdate_date() {
+		return update_date;
+	}
+	public void setUpdate_date(String update_date) {
+		this.update_date = update_date;
+	}
+	public String getStartDate() {
+		return startDate;
+	}
+	public void setStartDate(String startDate) {
+		this.startDate = startDate;
+	}
+	public String getEndDate() {
+		return endDate;
+	}
+	public void setEndDate(String endDate) {
+		this.endDate = endDate;
+	}
 	public String getNo_transaction() {
 		return no_transaction;
 	}

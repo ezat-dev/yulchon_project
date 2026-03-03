@@ -575,7 +575,10 @@ function initInvoiceTable(){
 	  ajaxConfig: { method: 'POST' },
 	  ajaxLoader: false,
 	  ajaxURL: "/yulchon/management/getInvoiceList",
-	  ajaxParams: {},
+	  ajaxParams: {
+		  startDate: $('#startDate').val(),
+          endDate: $('#endDate').val()
+          },
 	  placeholder: "조회된 데이터가 없습니다.",
 	  variableHeight: true,
 	  ajaxResponse: function(url, params, response) {
@@ -619,7 +622,7 @@ function initInvoiceTable(){
   	   },
   	 { title: "다른 인보이스로 옮겼는지", field: "invoice_is_moved", hozAlign: "center", width: 210, visible: false },
   	{ title: "옮긴 인보이스 이름", field: "move_invoice_name", hozAlign: "center", width: 210, visible: false },
-  	 { title: "처리 날짜", field: "insert_date", hozAlign: "center", width: 200 }
+  	 { title: "처리 날짜", field: "update_date", hozAlign: "center", width: 200 }
 	  ],
 	  rowClick: function(e, row) {
 	    //$('#invoiceTable .tabulator-row').removeClass('row_select');
@@ -656,35 +659,34 @@ $(function() {
 	initDataTable();
 	initInvoiceTable();
 
-  // 조회 버튼 클릭 시
-  $('.select-button').click(function() {
-	  const st_day = $('#startDate').val(); 
-	  const user_name = $('#user_name').val();  
-	  console.log("날짜:", st_day + ", 이름:", user_name);
-
-	    const data = {};
-	    
-	    if (st_day) {
-	        data.st_day = st_day; 
-	    }
-	    if (user_name) {
-	        data.user_name = user_name;
-	    }
-	    
-	  dataTable.setData("/ezPublic/user/selectList", data);
-  });
-
   //유형 선택 시
   $('#category').on('change', function() {
 	    var selectedValue = $(this).val(); // Y, N 또는 ""
+	    var startDate = $('#startDate').val();
+	    var endDate = $('#endDate').val();
 	    
 	    // 테이블의 데이터를 다시 불러옴 (ajaxURL로 파라미터와 함께 요청)
 	    invoiceTable.setData("/yulchon/management/getInvoiceList", { 
-	        invoice_is_shipped: selectedValue 
+	        invoice_is_shipped: selectedValue,
+	        startDate: startDate,
+	        endDate: endDate
 	    });
 	    dataTable.setData("/yulchon/management/getCompleteInventoryList", { 
 	    });
 	});
+
+  $('.select-button').click(function(event) {
+	  var startDate = $('#startDate').val();
+	    var endDate = $('#endDate').val();
+    	var category = $('#category').val();
+
+	    // 서버에 날짜 파라미터를 포함해서 다시 요청
+	    invoiceTable.setData("/yulchon/management/getInvoiceList", {
+	        startDate: startDate,
+	        endDate: endDate,
+	        invoice_is_shipped: category
+	    });
+  });
 	
 });
 </script>

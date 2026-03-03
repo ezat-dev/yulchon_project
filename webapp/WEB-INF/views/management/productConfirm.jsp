@@ -215,12 +215,12 @@
             <td id="qty_inventory"></td>
           </tr>
           <tr>
-            <th>발행일자</th>
-            <td id="lbl_date"></td>
-          </tr>
-          <tr>
             <th>고객명</th>
             <td id="nm_customer"></td>
+          </tr>
+          <tr>
+            <th>인보이스</th>
+            <td id="invoice_name"></td>
           </tr>
         </tbody>
       </table>
@@ -235,11 +235,20 @@
 
   <script>
   $(document).ready(function() {
+	  var dataCheck = "${data}"; 
+      
+      if (!dataCheck || dataCheck === "null" || "${data.lbl_lot_no}" === "") {
+          alert("품목을 조회하지 못했습니다.\n다시 스캔해주세요.");
+          // 스캔 페이지 주소로 직접 이동시키거나 뒤로 가기
+           history.back();
+          return;
+      }
+      
 	  	$('#cd_item').text("${data.cd_item}");
 	    $('#lbl_lot_no').text("${data.lbl_lot_no}");
 	    $('#no_mfg_order_serial').text("${data.no_mfg_order_serial}");
 	    $('#qty_inventory').text("${data.qty_inventory}");
-	    $('#lbl_date').text("${data.lbl_date}");
+	    $('#invoice_name').text("${data.invoice_name}");
 	    $('#nm_customer').text("${data.nm_customer}");
   });
     function handlePrint() {

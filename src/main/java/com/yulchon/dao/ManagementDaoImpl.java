@@ -412,6 +412,11 @@ public class ManagementDaoImpl implements ManagementDao {
 		}
 		return true;
 	}
+	
+	@Override
+	public Management getProductConfirm(Management management) {
+		return sqlSession.selectOne("management.getProductConfirm", management);
+	}
 
 }
 

@@ -11,8 +11,6 @@
     <%@include file="../include/pluginpage.jsp" %>
     <link rel="stylesheet" href="/yulchon/css/management/userinsert2.css">
     <script type="text/javascript" src="https://oss.sheetjs.com/sheetjs/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <style>
 /* =========================
    Global / Theme
@@ -639,7 +637,9 @@ function initInvoiceTable(){
 	  ajaxConfig: { method: 'POST' },
 	  ajaxLoader: false,
 	  ajaxURL: "/yulchon/management/getNoUpdatedOrResetInvoiceList",
-	  ajaxParams: {},
+	  ajaxParams: {
+		  invoice_date: $('#invoice_date').val()
+          },
 	  placeholder: "조회된 데이터가 없습니다.",
 	  ajaxResponse: function(url, params, response) {
 	    return response;
@@ -706,14 +706,7 @@ function initInvoiceTable(){
 	            console.log("추출된 품목 개수: ", allItems.length);
 
 	            if (allItems.length === 0) {
-	          	  Swal.fire({
-	        		  icon: "warning",
-	        		  title: "",
-	        		  html: "추가할 품목이 없습니다.",
-	        		  customClass: {
-	        		        container: 'high-z-index'
-	        		    }
-	        		});
+	          	  alert("추가할 품목이 없습니다.");
 	                return;
 	            }
 
@@ -756,25 +749,11 @@ function initInvoiceTable(){
 			         });
 
 		        } else {
-		        	  Swal.fire({
-		        		  icon: "error",
-		        		  title: "",
-		        		  text: "새로운 인보이스 생성 실패",
-		        		  customClass: {
-		        		        container: 'high-z-index'
-		        		    }
-		        		}); 
+		        	alert("새로운 인보이스 생성 실패"); 
 		        }
 		      },
 		      error: function() {
-	        	  Swal.fire({
-	        		  icon: "error",
-	        		  title: "",
-	        		  html: "서버 오류 발생",
-	        		  customClass: {
-	        		        container: 'high-z-index'
-	        		    }
-	        		});
+		    	  alert("서버 오류 발생");
 		      }
 		    });
 		    return;
@@ -988,40 +967,37 @@ function getRecentInvoice(callback){
 	                    callback(); 
 	                }
 	          }else{
-	        	  Swal.fire({
-	        		  icon: "error",
-	        		  title: "",
-	        		  text: "생성한 인보이스 조회 실패",
-	        		  customClass: {
-	        		        container: 'high-z-index'
-	        		    }
-	        		});
+	        	  alert("생성한 인보이스 조회 실패");
 	              }
 	        },
 	      error: function() {
-        	  Swal.fire({
-        		  icon: "error",
-        		  title: "",
-        		  html: "서버 오류 발생",
-        		  customClass: {
-        		        container: 'high-z-index'
-        		    }
-        		});
+	    	  alert("서버 오류 발생");
 	      }
 	    });
 	  }
 $(function() {
-	initDataTable();
-	initInvoiceTable();
-	initLeftTable();
-	initRightTable();
-	
+
+	//날짜 바꾸면 인보이스 테이블 다시 로딩
+$('.daySet').datepicker({
+    onSelect: function(dateText) {
+        console.log("날짜 선택됨: " + dateText);
+        invoiceTable.setData("/yulchon/management/getNoUpdatedOrResetInvoiceList", {
+            invoice_date: dateText
+        });
+    }
+});
 	//오늘 날짜
 	const today = todayDate();
 	$('#startDate').val(today);
 	$('#endDate').val(today);
 	$('#invoice_date').val(today);
+	
+	initDataTable();
+	initInvoiceTable();
+	initLeftTable();
+	initRightTable();
 
+	
   // 인보이스 생성 모달 닫기
   $('.close, #closeModal').click(function() {
     $('#modalContainer').removeClass('show').hide();
@@ -1070,25 +1046,11 @@ $(function() {
             selectedRowData = null;
             });
         } else {
-      	  Swal.fire({
-    		  icon: "error",
-    		  title: "",
-    		  html: "서버 오류 발생",
-    		  customClass: {
-    		        container: 'high-z-index'
-    		    }
-    		});
+        	alert("서버 오류 발생");
         }
       },
       error: function() {
-      	  Swal.fire({
-    		  icon: "error",
-    		  title: "",
-    		  html: "저장 중 오류 발생",
-    		  customClass: {
-    		        container: 'high-z-index'
-    		    }
-    		});
+    	  alert("저장 중 오류 발생");
       }
     });
   });
@@ -1100,28 +1062,14 @@ $('#insertArrow').click(function() {
 	  //console.log("추가할 인보이스 pk: ", invoice_no);
 	  
 	  if (!selectedRightRows || selectedRightRows.length === 0) {
-      	  Swal.fire({
-    		  icon: "warning",
-    		  title: "",
-    		  text: "선택된 품목이 없습니다.",
-    		  customClass: {
-    		        container: 'high-z-index'
-    		    }
-    		});
+		  alert("선택된 품목이 없습니다.");
 		    return;
 		  }
 
 	    const invalidRow = selectedRightRows.find(row => row.cd_wh !== 'YC_FG3');
 
 	    if (invalidRow) {
-	      	  Swal.fire({
-	    		  icon: "warning",
-	    		  title: "",
-	    		  text: "선택된 품목 중 제품 창고가 아닌 항목이 있습니다.",
-	    		  customClass: {
-	    		        container: 'high-z-index'
-	    		    }
-	    		});
+	    	alert("선택된 품목 중 제품 창고가 아닌 품목이 있습니다.");
 	        return;
 	    }
 
@@ -1155,14 +1103,7 @@ $('#insertArrow').click(function() {
 		              }
 		        },
 		      error: function() {
-		      	  Swal.fire({
-		    		  icon: "error",
-		    		  title: "",
-		    		  text: "저장 중 서버 오류 발생",
-		    		  customClass: {
-		    		        container: 'high-z-index'
-		    		    }
-		    		});
+		    	  alert("저장 중 서버 오류 발생");
 		      }
 		    });
 });
@@ -1174,14 +1115,7 @@ $('#deleteArrow').click(function() {
 	  //console.log("추가할 인보이스 pk: ", invoice_no);
 	  
 	  if (!selectedLeftRows || selectedLeftRows.length === 0) {
-      	  Swal.fire({
-    		  icon: "warning",
-    		  title: "",
-    		  text: "선택된 품목이 없습니다.",
-    		  customClass: {
-    		        container: 'high-z-index'
-    		    }
-    		});
+		  alert("선택된 품목이 없습니다.");
 		    return;
 		  }
 
@@ -1208,43 +1142,23 @@ $('#deleteArrow').click(function() {
 	    	    dataTable.setData("/yulchon/management/getInvoiceInventoryList", 
 	    	    	    { invoice_no: invoice_no });
 		          }else{
-		        	  Swal.fire({
-		        		  icon: "warning",
-		        		  title: "",
-		        		  html: "스캔한 품목이 있는지 확인해주세요<br>스캔한 품목은 출하 완료 처리 페이지에서 삭제 가능합니다.",
-		        		  customClass: {
-		        		        container: 'high-z-index'
-		        		    }
-		        		});
+		        	  alert("스캔한 품목이 있는지 확인해주세요.\n스캔한 품목은 출하 완료 처리 페이지에서 삭제 가능합니다.");
 			          console.log("삭제 실패");
 		              }
 		        },
 		      error: function() {
-		    	  Swal.fire({
-	        		  icon: "error",
-	        		  title: "",
-	        		  text: "삭제 중 오류가 발생했습니다.",
-	        		  customClass: {
-	        		        container: 'high-z-index'
-	        		    }
-	        		});
+		    	  alert("삭제 중 서버 오류 발생");
 		      }
 		    });
 });
+
 });
 
 
 //인보이스에 품목 추가 함수(미처리 인보이스 더블릭해서 새로 추가할 때 사용)
 function insertInvoiceInventoryItems(items) {
   if (!items || items.length === 0) {
-	  Swal.fire({
-		  icon: "error",
-		  title: "",
-		  text: "추가할 품목이 없습니다.",
-		  customClass: {
-		        container: 'high-z-index'
-		    }
-		});
+	  alert("추가할 품목이 없습니다.");
       return;
   }
   const invoiceNo = $('#invoice_no_span').text();
@@ -1270,14 +1184,7 @@ function insertInvoiceInventoryItems(items) {
       success: function(result) {
           if (result === true || result === "true") {
               console.log("인보이스에 품목 추가 성공");
-        	  Swal.fire({
-        		  icon: "success",
-        		  title: "",
-        		  text: "성공적으로 추가되었습니다.",
-        		  customClass: {
-        		        container: 'high-z-index'
-        		    }
-        		});
+              alert("성공적으로 추가되었습니다.");
 
               // 테이블들 새로고침
               if (typeof leftTable !== "undefined") {
@@ -1291,26 +1198,12 @@ function insertInvoiceInventoryItems(items) {
               }
           } else {
               console.log("추가 실패");
-        	  Swal.fire({
-        		  icon: "error",
-        		  title: "",
-        		  html: "추가 실패했습니다.<br>데이터를 확인해주세요.",
-        		  customClass: {
-        		        container: 'high-z-index'
-        		    }
-        		});
+              alert("추가 실패했습니다.\n데이터를 확인해주세요.");
           }
       },
       error: function(xhr, status, error) {
           console.error("에러 상세:", error);
-    	  Swal.fire({
-    		  icon: "error",
-    		  title: "",
-    		  html: "서버 오류 발생",
-    		  customClass: {
-    		        container: 'high-z-index'
-    		    }
-    		});
+          alert("서버 오류 발생");
       }
   });
 }
@@ -1344,14 +1237,7 @@ function updateInvoiceIsMoved(invoiceNo) {
       },
       error: function(xhr, status, error) {
           console.error("에러 상세:", error);
-    	  Swal.fire({
-    		  icon: "error",
-    		  title: "",
-    		  html: "서버 오류 발생",
-    		  customClass: {
-    		        container: 'high-z-index'
-    		    }
-    		});
+          alert("저장 중 서버 오류 발생");
       }
   });
 }

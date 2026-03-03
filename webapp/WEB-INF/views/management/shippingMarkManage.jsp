@@ -248,7 +248,7 @@ dataTable = new Tabulator('#dataTable', {
   },
   columns: [
 	  { title: "No", formatter: "rownum", sorter: false, width: 80, hozAlign: "center" },
-    { title: "고객명", field: "customer_name", sorter: "string", width: 370, hozAlign: "center", headerFilter: "input" },
+    { title: "고객명", field: "customer_name", sorter: "string", width: 450, hozAlign: "center", headerFilter: "input" },
     {
         title: "양식 파일명", 
         field: "customer_shippingmark_file_name", 

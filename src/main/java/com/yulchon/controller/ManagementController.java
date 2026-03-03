@@ -166,15 +166,16 @@ public class ManagementController {
 			Model model, Management management, HttpServletResponse response) throws Exception {
 		management.setLbl_lot_no(lbl_lot_no);
 		System.out.println("조회 Lot No: " + lbl_lot_no);
-		Management data = managementService.getShippingMarkPrintInventory(management);
+		
+		Management data = managementService.getProductConfirm(management);
 		System.out.println("출력 조회 데이터: " + data);
-		if (data == null) {
-			response.setContentType("text/html; charset=UTF-8");
-			PrintWriter out = response.getWriter();
-			out.println("<script>alert('인보이스 부여된 품목이 아닙니다.'); history.back();</script>");
-			out.flush();
-			return null; // 스크립트를 직접 실행하므로 뷰 이름을 반환하지 않음
-		}
+		
+		/*
+		 * if (data == null) { response.setContentType("text/html; charset=UTF-8");
+		 * PrintWriter out = response.getWriter(); out.
+		 * println("<script>alert('품목을 조회하지 못했습니다.\n다시 스캔해주세요.'); history.back();</script>"
+		 * ); out.flush(); return null; // 스크립트를 직접 실행하므로 뷰 이름을 반환하지 않음 }
+		 */
 		model.addAttribute("data", data);
 		return "/management/productConfirm.jsp";
 	}
@@ -258,7 +259,7 @@ public class ManagementController {
 		String file_path = getShippingMarkFilePath(customerName);
 
 		//테스트용으로 해놓음
-		customerName = "PIONEER";
+		//customerName = "PIONEER";
 
 		Map<String, Object> printResult = new HashMap<>();
 		if(customerName.contains("KAB")) {
@@ -401,7 +402,7 @@ public class ManagementController {
 	//인보이스에 품목에 고객사 부여 품번 업데이트
 	@RequestMapping(value = "/management/updateCustomerProductCodeNumber", method = RequestMethod.POST) 
 	@ResponseBody 
-	public boolean updateCustomerProductCodeNumber(@RequestBody Management management) {
+	public boolean updateCustomerProductCodeNumber(Management management) {
 		return managementService.updateCustomerProductCodeNumber(management);
 	}
 
