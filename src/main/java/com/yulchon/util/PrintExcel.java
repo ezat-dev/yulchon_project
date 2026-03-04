@@ -1779,7 +1779,7 @@ public class PrintExcel {
 			putCellValue(sheet, "F8", data.getExtra_invoice_no());
 			putCellValue(sheet, "L8", getTodayFormattedDkk());
 			putCellValue(sheet, "E9", data.getWgt_inventory());
-			putCellValue(sheet, "K9", data.getItem_count());
+			putCellValue(sheet, "K9", data.getQty_inventory());
 
 			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
 			int shapeCount = Dispatch.get(shapes, "Count").toInt();

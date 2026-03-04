@@ -17,7 +17,7 @@ public class JacobDllLoader {
         }
         
         try {
-            String dllPath = "D:/stspjt/yulchon_project/src/main/java/jacob/jacob-1.18-x64.dll";
+            String dllPath = "D:/apache-tomcat-8.5.61/lib/jacob-1.18-x64.dll";
             
             // java.library.path에 DLL 경로 추가
             System.setProperty("jacob.dll.path", dllPath);

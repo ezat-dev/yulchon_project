@@ -30,7 +30,7 @@
         }
         .tab {
             width: 105%;
-            margin-bottom: 37px;
+            margin-bottom: 20px;
             margin-top: 5px;
             height: 45px;
             border-radius: 6px 6px 0px 0px;
@@ -57,7 +57,7 @@
         .button-container {
     		display: flex;
 		    gap: 10px;
-		    margin-top: 40px;
+		    margin-top: 20px;
 		    margin-left: 1320px;
 		}
 		.box1 {
@@ -234,7 +234,7 @@ var selectedRowData = null;
 // 재고현황 조회
 function initDataTable(){
 dataTable = new Tabulator('#dataTable', {
-  height: "705px",
+  height: "750px",
   layout: "fitColumns",
   headerHozAlign: "center",
   ajaxConfig: { method: 'POST' },

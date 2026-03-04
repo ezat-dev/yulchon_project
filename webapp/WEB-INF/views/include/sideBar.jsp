@@ -226,7 +226,7 @@
            onclick="updateHeaderAndNavigate(event, '/yulchon/management/inventoryHistory', '출하 이력 조회 및 관리')">출하 이력 조회 및 관리</a></li>
                                  <li><a href="#" class="collapse__sublink" 
            onclick="updateHeaderAndNavigate(event, '/yulchon/management/shippingMarkManage', '쉬핑마크 관리')">쉬핑마크 관리</a></li>
-                      <li><a href="/yulchon/management/mobile/scan" class="collapse__sublink">스캔</a></li>
+                      <!-- <li><a href="/yulchon/management/mobile/scan" class="collapse__sublink">스캔</a></li> -->
                 </div>
                 <div class="nav__list">
                 

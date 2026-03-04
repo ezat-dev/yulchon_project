@@ -39,7 +39,7 @@
     <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close"> 
         <property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" /> 
 <!--         <property name="url" value="jdbc:sqlserver://211.233.61.253:1433;DataBaseName=HEATDB_EZAT;" />  -->
-		<property name="url" value="jdbc:sqlserver://211.233.61.253:1433;DataBaseName=WISEN_DEV;" />
+		<property name="url" value="jdbc:sqlserver://211.233.61.253:1433;DataBaseName=WISEN;" />
         <property name="username" value="sa" /> 
         <property name="password" value="WISEN"/>
     </bean>
