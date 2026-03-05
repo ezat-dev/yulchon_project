@@ -193,7 +193,7 @@
 </head>
 <body>
   <div class="scan-page">
-    <div class="scan-title">제품 정보</div>
+    <div class="scan-title">품목 정보</div>
     
     <div class="info-table-container">
       <table class="info-table">

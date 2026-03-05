@@ -24,6 +24,8 @@
     font-size: 28px;
     font-weight: bold;
     margin-bottom: 60px;
+    display: flex;
+    justify-content: center;
 }
 
 /* 버튼 영역 */
@@ -136,12 +138,14 @@ display: none;
 <body>
 
 <div class="scan-page">
-    <div class="scan-title">스캔</div>
+    <div class="scan-title">
+                         <a href="#" class="nav__logo"><img class="yulchonLogo" src="/yulchon/css/sideBar/yulchon_logo.png" ></a>
+					    </div>
 
     <div class="scan-button-wrap">
         <button class="scan-btn btn-print">쉬핑마크 출력</button>
         <button type="button" class="scan-btn btn-cancel">출하 취소</button>
-        <button class="scan-btn btn-check">제품 확인</button>
+        <button class="scan-btn btn-check">품목 확인</button>
     </div>
     <input type="file" id="qrInput" accept="image/*" capture="environment" style="display:none;">
 </div>
@@ -343,7 +347,7 @@ $(document).on('click', '.btn-cancel', function(e) {
     input.click();
 });
 
-//제품확인 클릭시
+//품목확인 클릭시
 $(document).on('click', '.btn-check', function(e) {
     const input = document.createElement("input");
     input.type = "file";

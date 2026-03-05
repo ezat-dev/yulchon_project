@@ -320,7 +320,7 @@ dataTable = new Tabulator('#dataTable', {
         }
     },
     { title: "최종수정일", field: "regtime", sorter: "string", width: 160, hozAlign: "center" },
-    { title: "최정수정자", field: "update_user_id", sorter: "string", width: 160, hozAlign: "center" },
+    { title: "최종수정자", field: "update_user_id", sorter: "string", width: 160, hozAlign: "center" },
     { title: "비고", field: "remark", sorter: "string", width: 150, hozAlign: "center", editor: "input" }
   ],
   cellEdited: function(cell) {

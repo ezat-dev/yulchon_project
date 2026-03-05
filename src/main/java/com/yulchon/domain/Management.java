@@ -88,8 +88,15 @@ public class Management {
 	private String startDate;
 	private String endDate;
 	private String update_date;
+	private String steel_grade_item_010;
 	
 	
+	public String getSteel_grade_item_010() {
+		return steel_grade_item_010;
+	}
+	public void setSteel_grade_item_010(String steel_grade_item_010) {
+		this.steel_grade_item_010 = steel_grade_item_010;
+	}
 	public String getUpdate_date() {
 		return update_date;
 	}

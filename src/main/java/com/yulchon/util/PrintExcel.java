@@ -385,13 +385,36 @@ public class PrintExcel {
 			
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
-			Dispatch cellD1 = Dispatch.call(sheet, "Range", "M1").toDispatch();
-			double left = Dispatch.get(cellD1, "Left").toDouble();
-			double top = Dispatch.get(cellD1, "Top").toDouble();
-
 			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			// AddPicture 파라미터: 경로, LinkToFile(false), SaveWithDocument(true), x, y, width, height
-			Dispatch.call(shapes, "AddPicture", qrTempPath, false, true, left+30, top-10, 90, 90);
+			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			Dispatch qrHolder = null;
+
+			// [2] 이름이 "QR_HOLDER"인 도형 찾기
+			for (int i = 1; i <= shapeCount; i++) {
+			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+			    String shapeName = Dispatch.get(shape, "Name").toString();
+			    
+			    if ("QR_HOLDER".equals(shapeName)) {
+			        qrHolder = shape;
+			        break;
+			    }
+			}
+
+			if (qrHolder != null) {
+			    // [3] 찾은 도형의 위치와 크기 정보를 그대로 가져옴
+			    double left = Dispatch.get(qrHolder, "Left").toDouble();
+			    double top = Dispatch.get(qrHolder, "Top").toDouble();
+			    double width = Dispatch.get(qrHolder, "Width").toDouble();
+			    double height = Dispatch.get(qrHolder, "Height").toDouble();
+
+			    // [4] 그 위치 그대로 QR 이미지 삽입 (좌표 계산 필요 없음!)
+			    Dispatch.call(shapes, "AddPicture", qrTempPath, false, true, left, top, width, height);
+			    
+			    // (선택) 원본 홀더 도형은 삭제하거나 보이지 않게 처리
+			    // Dispatch.call(qrHolder, "Delete");
+			} else {
+			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
+			}
 
 			// 인쇄
 			Dispatch.call(workbook, "PrintOut");
@@ -969,7 +992,7 @@ public class PrintExcel {
 
 			int totalLength = Integer.parseInt(data.getLbl_real_length())/1000*(Integer.parseInt(data.getQty_inventory()));
 			// [2] 값 넣기 (Null 방어 로직 추가)
-			putCellValue(sheet, "C4", data.getCd_materail());
+			putCellValue(sheet, "C4", data.getSteel_grade_item_010() + " " + data.getCd_materail());
 			putCellValue(sheet, "B6", "OD " + data.getOut_diameter() + " x ID " + data.getIn_daimeter() + " x WT " + data.getThickness());
 			putCellValue(sheet, "E5", data.getExtra_part_no());
 			putCellValue(sheet, "C6", data.getLbl_real_length() + " mm");
