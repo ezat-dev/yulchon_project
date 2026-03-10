@@ -288,7 +288,7 @@ public class ManagementController {
 			printResult = printExcel.printNok(data, NOK_FILE_PATH);
 		}else if(customerName.contains("NST")) {
 			printResult = printExcel.printNst(data, NST_FILE_PATH);
-		}else if(customerName.contains("PROFENDER")) {
+		}else if(customerName.contains("Profender")) {
 			printResult = printExcel.printProfender(data, PROFENDER_FILE_PATH);
 		}else if(customerName.contains("DKK")) {
 			printResult = printExcel.printDkk(data, DKK_FILE_PATH);
@@ -301,7 +301,7 @@ public class ManagementController {
 		}else if(customerName.contains("THAI AUTO")) {
 			printResult = printExcel.printThaiAuto(data, THAIAUTO_FILE_PATH);
 		}else if(customerName.contains("PIONEER")) {
-			printResult = printExcel.printThaiAuto(data, PIONEER_FILE_PATH);
+			printResult = printExcel.printPioneer(data, PIONEER_FILE_PATH);
 		}else {
 			printResult = printExcel.printKth(data, KTH_FILE_PATH);
 		}

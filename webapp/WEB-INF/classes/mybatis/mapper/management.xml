@@ -238,6 +238,7 @@ SELECT 'N' AS YN_CHECK --선택
 	 ,C.IN_DAIMETER  -- 내경
 	 ,C.THICKNESS   -- 두께
 	 ,C.CD_MATERAIL	-- 재질
+	 ,C.STEEL_GRADE_ITEM_010	-- 강종
 	 ,eiim.customer_product_code_number
      ,eiim.extra_invoice_no
      ,eiim.extra_packing_inspection
@@ -539,6 +540,7 @@ SELECT 'N' AS YN_CHECK --선택
 	 ,C.IN_DAIMETER  -- 내경
 	 ,C.THICKNESS   -- 두께
 	 ,C.CD_MATERAIL	-- 재질
+	 ,C.STEEL_GRADE_ITEM_010	-- 강종
 	 ,eiim.customer_product_code_number
      ,eiim.extra_invoice_no
      ,eiim.extra_packing_inspection
