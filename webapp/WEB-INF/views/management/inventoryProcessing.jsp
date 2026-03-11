@@ -485,9 +485,9 @@ dataTable = new Tabulator('#dataTable', {
 	        headerSort: false,
 	        cellClick: function(e, cell) {
 	            cell.getRow().toggleSelect();
-	        }
+	        }, frozen: true
 	    },
-		{ title: "No", formatter: "rownum", hozAlign: "center", width: 60, headerSort: false},
+		{ title: "No", formatter: "rownum", hozAlign: "center", width: 60, headerSort: false, frozen: true},
 	    { title: "품목코드", field: "cd_item", hozAlign: "center", width: 120, headerFilter: "input"},
 	    { title: "품목명", field: "nm_item", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
 	    { title: "규격", field: "spec_item", sorter: "string", width: 100, hozAlign: "center", headerFilter: "input" },
@@ -501,7 +501,7 @@ dataTable = new Tabulator('#dataTable', {
 	    { title: "창고코드", field: "cd_wh", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
 	    { title: "창고명", field: "nm_wh", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
 	    { title: "발행일자", field: "lbl_date", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
-	    { title: "고객명", field: "nm_customer", sorter: "string", width: 200, hozAlign: "center", headerFilter: "input" },
+	    { title: "고객명", field: "nm_customer", sorter: "string", width: 400, hozAlign: "center", headerFilter: "input" },
 	    { title: "고객PO", field: "po_customer", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
 	    { title: "입하No", field: "no_receipt", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
 	    { title: "비고", field: "remarks", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },

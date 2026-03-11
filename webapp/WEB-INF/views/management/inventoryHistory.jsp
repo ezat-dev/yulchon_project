@@ -266,7 +266,7 @@ select {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 
-  padding: 12px;
+  /*padding: 12px;*/
 }
 #invoiceTable{
   flex:0 0 630px;
@@ -544,8 +544,8 @@ dataTable = new Tabulator('#dataTable', {
     return response;
   },
   columns: [
+		{ title: "No", formatter: "rownum", hozAlign: "center", width: 60, headerSort: false, frozen: true },
 	{ title: "인보이스", field: "invoice_name", hozAlign: "center", width: 120 },
-	{ title: "No", formatter: "rownum", hozAlign: "center", width: 60, headerSort: false },
     { title: "품목코드", field: "cd_item", hozAlign: "center", width: 120 },
     { title: "품목명", field: "nm_item", sorter: "string", width: 120, hozAlign: "center"},
     { title: "규격", field: "spec_item", sorter: "string", width: 100, hozAlign: "center"},
@@ -558,7 +558,7 @@ dataTable = new Tabulator('#dataTable', {
     { title: "창고코드", field: "cd_wh", sorter: "string", width: 120, hozAlign: "center"},
     { title: "창고명", field: "nm_wh", sorter: "string", width: 120, hozAlign: "center"},
     { title: "발행일자", field: "lbl_date", sorter: "string", width: 120, hozAlign: "center"},
-    { title: "고객명", field: "nm_customer", sorter: "string", width: 200, hozAlign: "center"},
+    { title: "고객명", field: "nm_customer", sorter: "string", width: 400, hozAlign: "center"},
     { title: "고객PO", field: "po_customer", sorter: "string", width: 120, hozAlign: "center"},
     { title: "입하No", field: "no_receipt", sorter: "string", width: 120, hozAlign: "center"},
     { title: "비고", field: "remarks", sorter: "string", width: 120, hozAlign: "center"},
