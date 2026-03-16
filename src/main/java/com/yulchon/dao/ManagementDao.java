@@ -60,4 +60,5 @@ public interface ManagementDao {
 	boolean updateI_TRANSACTION_DETAIL(Management management);
 	boolean insertI_TRANSACTION_SALES(Management management);
 	Management getProductConfirm(Management management);
+	boolean updateInvoiceName(Management management);
 }

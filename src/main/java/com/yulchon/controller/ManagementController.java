@@ -119,13 +119,13 @@ public class ManagementController {
 			@RequestParam(value="selectedInvoiceName", required=true) String selectedInvoiceName,
 			Model model, Management management, HttpServletResponse response) throws Exception {
 
-		System.out.println("selectedInvoiceNo: " + selectedInvoiceNo);
-		System.out.println("selectedInvoiceName: " + selectedInvoiceName);
-		System.out.println("조회 Lot No: " + lbl_lot_no);
+		//System.out.println("selectedInvoiceNo: " + selectedInvoiceNo);
+		//System.out.println("selectedInvoiceName: " + selectedInvoiceName);
+		//System.out.println("조회 Lot No: " + lbl_lot_no);
 		management.setLbl_lot_no(lbl_lot_no);
 
 		Management data = managementService.mobileGetShippingMarkPrintInventory(management);
-		System.out.println("출력 조회 데이터: " + data);
+		//System.out.println("출력 조회 데이터: " + data);
 
 		if (data == null) {
 			response.setContentType("text/html; charset=UTF-8");
@@ -146,9 +146,9 @@ public class ManagementController {
 	public String shippingCancelPage(@RequestParam(value="lbl_lot_no", required=false) String lbl_lot_no, 
 			Model model, Management management, HttpServletResponse response) throws Exception {
 		management.setLbl_lot_no(lbl_lot_no);
-		System.out.println("조회 Lot No: " + lbl_lot_no);
+		//System.out.println("조회 Lot No: " + lbl_lot_no);
 		Management data = managementService.getShippingMarkPrintInventory(management);
-		System.out.println("출력 조회 데이터: " + data);
+		//System.out.println("출력 조회 데이터: " + data);
 		if (data == null) {
 			response.setContentType("text/html; charset=UTF-8");
 			PrintWriter out = response.getWriter();
@@ -165,10 +165,10 @@ public class ManagementController {
 	public String productConfirmPage(@RequestParam(value="lbl_lot_no", required=false) String lbl_lot_no, 
 			Model model, Management management, HttpServletResponse response) throws Exception {
 		management.setLbl_lot_no(lbl_lot_no);
-		System.out.println("조회 Lot No: " + lbl_lot_no);
+		//System.out.println("조회 Lot No: " + lbl_lot_no);
 		
 		Management data = managementService.getProductConfirm(management);
-		System.out.println("출력 조회 데이터: " + data);
+		//System.out.println("출력 조회 데이터: " + data);
 		
 		/*
 		 * if (data == null) { response.setContentType("text/html; charset=UTF-8");
@@ -211,9 +211,9 @@ public class ManagementController {
 	public List<Management> getInvoiceInventoryList(Management management) {
 		//미처리 된건 미처리 테이블에서 조회
 		if("R".equals(management.getInvoice_is_shipped())) {
-			System.out.println("리셋 데이터 조회 시작");
+			//System.out.println("리셋 데이터 조회 시작");
 			List<Management> datas = managementService.getResetDatas(management);
-			System.out.println("리셋 데이터 개수: " + datas.size());
+			//System.out.println("리셋 데이터 개수: " + datas.size());
 			return datas;
 		}
 		return managementService.getInvoiceInventoryList(management);
@@ -232,7 +232,7 @@ public class ManagementController {
 	@ResponseBody 
 	public boolean deleteInvoiceInventory(@RequestBody Management management) {
 		List<Management> datas = managementService.getShippingDatas(management);
-		System.out.println("스캔한거 있는지: " + datas.size());
+		//System.out.println("스캔한거 있는지: " + datas.size());
 		if(datas.size() > 0) {
 			return false;
 		}
@@ -288,7 +288,7 @@ public class ManagementController {
 			printResult = printExcel.printNok(data, NOK_FILE_PATH);
 		}else if(customerName.contains("NST")) {
 			printResult = printExcel.printNst(data, NST_FILE_PATH);
-		}else if(customerName.contains("Profender")) {
+		}else if(customerName.contains("Profender") || customerName.contains("PROFENDER")) {
 			printResult = printExcel.printProfender(data, PROFENDER_FILE_PATH);
 		}else if(customerName.contains("DKK")) {
 			printResult = printExcel.printDkk(data, DKK_FILE_PATH);
@@ -357,8 +357,8 @@ public class ManagementController {
 		try {
 			boolean flag1 = managementService.deleteInvoiceInventory(management);
 			boolean flag2 = managementService.deleteShippingListInventory(management);
-			System.out.println("flag1: " + flag1);
-			System.out.println("flag2: " + flag2);
+			//System.out.println("flag1: " + flag1);
+			//System.out.println("flag2: " + flag2);
 			return true;
 		}catch(Exception e) {
 			e.printStackTrace();
@@ -380,10 +380,10 @@ public class ManagementController {
 			//매핑테이블 삭제
 			boolean flag3 = managementService.cancelInvoiceInventory(management);
 
-			System.out.println("취소테이블 저장: " + flag0);
-			System.out.println("취소테이블 저장: " + flag1);
-			System.out.println("취소테이블 저장: " + flag2);
-			System.out.println("취소테이블 저장: " + flag3);
+			//System.out.println("취소테이블 저장: " + flag0);
+			//System.out.println("취소테이블 저장: " + flag1);
+			//System.out.println("취소테이블 저장: " + flag2);
+			//System.out.println("취소테이블 저장: " + flag3);
 
 			return true;
 		}catch(Exception e) {
@@ -402,7 +402,7 @@ public class ManagementController {
 	//인보이스에 품목에 고객사 부여 품번 업데이트
 	@RequestMapping(value = "/management/updateCustomerProductCodeNumber", method = RequestMethod.POST) 
 	@ResponseBody 
-	public boolean updateCustomerProductCodeNumber(Management management) {
+	public boolean updateCustomerProductCodeNumber(@RequestBody Management management) {
 		return managementService.updateCustomerProductCodeNumber(management);
 	}
 
@@ -629,6 +629,13 @@ public class ManagementController {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	//인보이스 이름 업데이트
+	@RequestMapping(value = "/management/updateInvoiceName", method = RequestMethod.POST) 
+	@ResponseBody 
+	public boolean updateInvoiceName(@RequestBody Management management) {
+		return managementService.updateInvoiceName(management);
 	}
 
 }

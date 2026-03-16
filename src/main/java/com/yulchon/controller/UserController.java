@@ -58,8 +58,8 @@ public class UserController {
 			HttpSession session) {
 
 		Map<String, Object> rtnMap = new HashMap<String, Object>();
-		System.out.println("로그인 아이디: " + users.getID_LOGIN());
-		System.out.println("로그인 비밀번호: " + users.getNO_PASSWORD());
+		//System.out.println("로그인 아이디: " + users.getID_LOGIN());
+		//System.out.println("로그인 비밀번호: " + users.getNO_PASSWORD());
 		if("".equals(users.getID_LOGIN()) || users.getID_LOGIN() == null){
 			rtnMap.put("data","아이디를 입력해주십시오!");
 			rtnMap.put("status","NG");

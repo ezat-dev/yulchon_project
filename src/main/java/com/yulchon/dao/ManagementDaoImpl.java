@@ -417,6 +417,15 @@ public class ManagementDaoImpl implements ManagementDao {
 	public Management getProductConfirm(Management management) {
 		return sqlSession.selectOne("management.getProductConfirm", management);
 	}
+	
+	@Override
+	public boolean updateInvoiceName(Management management) {
+		int result =  sqlSession.update("management.updateInvoiceName", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
 
 }
 

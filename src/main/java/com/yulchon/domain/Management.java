@@ -89,8 +89,15 @@ public class Management {
 	private String endDate;
 	private String update_date;
 	private String steel_grade_item_010;
+	private String extra_bundle_no;
 	
 	
+	public String getExtra_bundle_no() {
+		return extra_bundle_no;
+	}
+	public void setExtra_bundle_no(String extra_bundle_no) {
+		this.extra_bundle_no = extra_bundle_no;
+	}
 	public String getSteel_grade_item_010() {
 		return steel_grade_item_010;
 	}
@@ -589,22 +596,5 @@ public class Management {
 	public void setLbl_lot_no(String lbl_lot_no) {
 		this.lbl_lot_no = lbl_lot_no;
 	}
-	@Override
-	public String toString() {
-		return "Management [cd_item=" + cd_item + ", nm_item=" + nm_item + ", spec_item=" + spec_item + ", kgm_weight="
-				+ kgm_weight + ", lbl_real_length=" + lbl_real_length + ", lbl_lot_no=" + lbl_lot_no
-				+ ", no_mfg_order_serial=" + no_mfg_order_serial + ", qty_inventory=" + qty_inventory
-				+ ", wgt_inventory=" + wgt_inventory + ", cd_wh=" + cd_wh + ", nm_wh=" + nm_wh + ", lbl_date="
-				+ lbl_date + ", nm_customer=" + nm_customer + ", po_customer=" + po_customer + ", no_receipt="
-				+ no_receipt + ", remarks=" + remarks + ", nm_location=" + nm_location + ", invoice_no=" + invoice_no
-				+ ", invoice_name=" + invoice_name + ", invoice_date=" + invoice_date + ", invoice_name_base="
-				+ invoice_name_base + ", lotList=" + lotList + ", is_shipped=" + is_shipped + ", shipping_list_no="
-				+ shipping_list_no + ", invoiceList=" + invoiceList + ", invoice_is_shipped=" + invoice_is_shipped
-				+ ", out_diameter=" + out_diameter + ", in_daimeter=" + in_daimeter + ", thickness=" + thickness
-				+ ", cd_materail=" + cd_materail + ", customer_product_code_number=" + customer_product_code_number
-				+ ", addList=" + addList + ", item_count=" + item_count + ", invoice_inventory_no="
-				+ invoice_inventory_no + ", insert_date=" + insert_date + "]";
-	}
-
 	
 }

@@ -300,7 +300,29 @@ function openCamera() {
                     + encodeURIComponent(selectedInvoiceName);
           window.location.href = url;
             } else {
-                alert("인식 실패. 선명하게 다시 촬영해주세요.");
+                //alert("인식 실패. 선명하게 다시 촬영해주세요.");
+            	// 2. 스캔 실패 시: 직접 입력창 띄우고 입력값으로 이동
+                hideLoading(); // 입력창을 띄우기 위해 로딩바 숨김
+                
+                const userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.");
+                
+                // 취소를 눌렀거나 아무것도 입력 안 했을 때 처리
+                if (userInput === null) return; 
+                if (userInput.trim() === "") {
+                    alert("번호를 입력해야 합니다.");
+                    return;
+                }
+
+                console.log("직접 입력 완료:", userInput);
+
+                var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" 
+                        + encodeURIComponent(userInput.trim()) 
+                        + "&selectedInvoiceNo=" 
+                        + encodeURIComponent(selectedInvoiceNo)
+                        + "&selectedInvoiceName=" 
+                        + encodeURIComponent(selectedInvoiceName);
+                
+                window.location.href = url;
             }
         } catch (err) {
             alert("스캔 중 오류 발생");
@@ -334,7 +356,21 @@ $(document).on('click', '.btn-cancel', function(e) {
             if (decoded) {
                 window.location.href = "/yulchon/management/mobile/shippingCancel?lbl_lot_no=" + encodeURIComponent(decoded.text);
             } else {
-                alert("바코드나 QR코드를 인식하지 못했습니다. 선명하게 다시 촬영해주세요.");
+                //alert("바코드나 QR코드를 인식하지 못했습니다. 선명하게 다시 촬영해주세요.");
+                hideLoading(); // 입력창을 띄우기 위해 로딩바 숨김
+                
+                const userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.");
+                
+                // 취소를 눌렀거나 아무것도 입력 안 했을 때 처리
+                if (userInput === null) return; 
+                if (userInput.trim() === "") {
+                    alert("번호를 입력해야 합니다.");
+                    return;
+                }
+
+                console.log("직접 입력 완료:", userInput);
+                
+                window.location.href = "/yulchon/management/mobile/shippingCancel?lbl_lot_no=" + encodeURIComponent(userInput.trim());
             }
         } catch (err) {
             console.error("[scan fatal error]", err);
@@ -370,7 +406,20 @@ $(document).on('click', '.btn-check', function(e) {
             if (decoded) {
                 window.location.href = "/yulchon/management/mobile/productConfirm?lbl_lot_no=" + encodeURIComponent(decoded.text);
             } else {
-                alert("바코드나 QR코드를 인식하지 못했습니다. 선명하게 다시 촬영해주세요.");
+                hideLoading(); // 입력창을 띄우기 위해 로딩바 숨김
+                
+                const userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.");
+                
+                // 취소를 눌렀거나 아무것도 입력 안 했을 때 처리
+                if (userInput === null) return; 
+                if (userInput.trim() === "") {
+                    alert("번호를 입력해야 합니다.");
+                    return;
+                }
+
+                console.log("직접 입력 완료:", userInput);
+                
+                window.location.href = "/yulchon/management/mobile/productConfirm?lbl_lot_no=" + encodeURIComponent(userInput.trim());
             }
         } catch (err) {
             console.error("[scan fatal error]", err);

@@ -189,9 +189,9 @@ public class ManagementServiceImpl implements ManagementService{
 	@Transactional(rollbackFor = Exception.class) // 에러 발생 시 전체 롤백
 	public boolean processShippingComplete(Management management, String loginUserID) {
 		try {
-			System.out.println(">>> 출하 완료 프로세스 시작 (사용자: " + loginUserID + ")");
+			//System.out.println(">>> 출하 완료 프로세스 시작 (사용자: " + loginUserID + ")");
 			String invoice_no = management.getInvoiceList().get(0);
-			System.out.println("인보이스 번호: " + invoice_no);
+			//System.out.println("인보이스 번호: " + invoice_no);
 			management.setInvoice_no(invoice_no);
 
 			//기초데이터(뒤쪽에서 하면 조회 안되서 insert 안됨. 먼저 실행해야함)
@@ -200,22 +200,22 @@ public class ManagementServiceImpl implements ManagementService{
 
 			// 2. 차감 데이터 조회
 			List<Management> datas1 = managementDao.getRealDeductInventoryList(management);
-			System.out.println("차감할 데이터 개수: " + datas1.size());
+			//System.out.println("차감할 데이터 개수: " + datas1.size());
 
 			if(datas1 == null || datas1.size() == 0 || datas1.isEmpty()) {
-				System.out.println("알림: 차감할 데이터가 없습니다.");
+				//System.out.println("알림: 차감할 데이터가 없습니다.");
 				throw new RuntimeException("차감할 재고 데이터가 존재하지 않아 출하 완료를 취소합니다.");
 			}
 			String no_sales_request_serial = datas1.get(0).getNo_sales_request_serial();
-			System.out.println("no_sales_request_serial: " + no_sales_request_serial);
+			//System.out.println("no_sales_request_serial: " + no_sales_request_serial);
 
 			if (datas1 == null || datas1.isEmpty()) {
-				System.out.println("알림: 차감할 데이터가 없습니다.");
+				//System.out.println("알림: 차감할 데이터가 없습니다.");
 				throw new RuntimeException("차감할 재고 데이터가 존재하지 않아 출하 완료를 취소합니다.");
 			}
 
 			for(Management v : datas1) { v.setUser_id(loginUserID); }
-			System.out.println("2단계: 차감 대상 조회 완료 (건수: " + datas1.size() + ")");
+			//System.out.println("2단계: 차감 대상 조회 완료 (건수: " + datas1.size() + ")");
 
 			// 3. S_SALES_REQUEST 업데이트
 			managementDao.updateS_SALES_REQUEST_PROCESS(datas1);
@@ -227,12 +227,12 @@ public class ManagementServiceImpl implements ManagementService{
 					data.setUser_id(loginUserID);
 					data.setNo_sales_request_serial(no_sales_request_serial);
 					data.setSeq_sales_request(seq_sales_request);
-					System.out.println(data);
+					//System.out.println(data);
 					managementDao.updateS_SALES_REQUEST_DETAIL(data);
 				}
 			}
 			managementDao.updateS_SALES_REQUEST_LOT(datas1);
-			System.out.println("3단계: S_SALES_REQUEST 관련 업데이트 완료");
+			//System.out.println("3단계: S_SALES_REQUEST 관련 업데이트 완료");
 
 			// 4. 재고(Inventory) 루프 업데이트
 			int count = 0;
@@ -258,7 +258,7 @@ public class ManagementServiceImpl implements ManagementService{
 				int sequencePart = Integer.parseInt(parts[2]); // 1 (숫자로 변환)
 
 				String noTransaction = String.format("ISS%s%05d", datePart, sequencePart);
-				System.out.println("만든 수불번호: " + noTransaction);
+				//System.out.println("만든 수불번호: " + noTransaction);
 				v.setNo_transaction(noTransaction);
 				managementDao.insertI_TRANSACTION(v);
 
@@ -280,7 +280,7 @@ public class ManagementServiceImpl implements ManagementService{
 
 				String seq_transaction = "";
 				//I_TRANSACTION에서 SEQ_TRANSACTION 조회
-				System.out.println("SEQ_TRANSACTION 조회할 로트번호: " + v.getLbl_lot_no());
+				//System.out.println("SEQ_TRANSACTION 조회할 로트번호: " + v.getLbl_lot_no());
 				Management seqTransactionData = managementDao.getI_TRANSACTION_DETAIL(v);
 				seq_transaction = seqTransactionData.getSeq_transaction();
 
@@ -298,15 +298,15 @@ public class ManagementServiceImpl implements ManagementService{
 				managementDao.insertI_TRANSACTION_SALES(v);
 				count++;
 			}
-			System.out.println("4단계: 상세 재고 차감 루프 완료 (처리건수: " + count + ")");
+			//System.out.println("4단계: 상세 재고 차감 루프 완료 (처리건수: " + count + ")");
 
 			// 기초 데이터 처리
 			managementDao.updateCompleteInvoiceList(management);
 			managementDao.deleteNoScanInventory(management);
 
-			System.out.println("기초 데이터 처리 완료(update, delete 뒤로 뺌)");
+			//System.out.println("기초 데이터 처리 완료(update, delete 뒤로 뺌)");
 
-			System.out.println(">>> 모든 프로세스 성공적으로 완료");
+			//System.out.println(">>> 모든 프로세스 성공적으로 완료");
 			//System.out.println("일부러 롤백 시작");
 			//if(true) throw new RuntimeException("테스트를 위한 강제 롤백!");
 			return true;
@@ -325,5 +325,10 @@ public class ManagementServiceImpl implements ManagementService{
 	@Override
 	public Management getProductConfirm(Management management) {
 		return managementDao.getProductConfirm(management);
+	}
+	
+	@Override
+	public boolean updateInvoiceName(Management management) {
+		return managementDao.updateInvoiceName(management);
 	}
 }

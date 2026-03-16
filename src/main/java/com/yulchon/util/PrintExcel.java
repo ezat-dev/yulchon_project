@@ -69,7 +69,7 @@ public class PrintExcel {
 			sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
-			putCellValue(sheet, "F4", data.getItem_count());
+			putCellValue(sheet, "F4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCustomer_product_code_number());
 			putCellValue(sheet, "F6", data.getOut_diameter());
 			putCellValue(sheet, "I6", data.getIn_daimeter());
@@ -169,7 +169,7 @@ public class PrintExcel {
 			sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
-			putCellValue(sheet, "H5", data.getItem_count());
+			putCellValue(sheet, "H5", data.getExtra_bundle_no());
 			putCellValue(sheet, "E6", data.getCustomer_product_code_number());
 			putCellValue(sheet, "J6", data.getCd_materail());
 			putCellValue(sheet, "F7", data.getOut_diameter());
@@ -270,7 +270,7 @@ public class PrintExcel {
 			sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
-			putCellValue(sheet, "H5", data.getItem_count());
+			putCellValue(sheet, "H5", data.getExtra_bundle_no());
 			putCellValue(sheet, "E6", data.getCustomer_product_code_number());
 			putCellValue(sheet, "J6", data.getCd_materail());
 			putCellValue(sheet, "F7", data.getOut_diameter());
@@ -371,7 +371,7 @@ public class PrintExcel {
 			sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
-			putCellValue(sheet, "F4", data.getItem_count());
+			putCellValue(sheet, "F4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCd_materail());
 			putCellValue(sheet, "F6", data.getOut_diameter());
 			putCellValue(sheet, "I6", data.getIn_daimeter());
@@ -480,7 +480,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B8", data.getQty_inventory());
 			putCellValue(sheet, "B9", data.getWgt_inventory());
 			putCellValue(sheet, "B10", data.getExtra_packing_inspection());
-			putCellValue(sheet, "B12", data.getItem_count());	
+			putCellValue(sheet, "B12", data.getExtra_bundle_no());	
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
@@ -577,7 +577,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B8", data.getQty_inventory() + " PCS");
 			putCellValue(sheet, "B9", data.getWgt_inventory() + " KG");
 			putCellValue(sheet, "B10", data.getExtra_packing_inspection());
-			putCellValue(sheet, "B12", data.getItem_count());
+			putCellValue(sheet, "B12", data.getExtra_bundle_no());
 			
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
@@ -685,7 +685,7 @@ public class PrintExcel {
 			putCellValue(sheet, "E7", formattedDate);
 			putCellValue(sheet, "C8", data.getWgt_inventory() + " kg");
 			//putCellValue(sheet, "E8", data.getLbl_real_length());
-			putCellValue(sheet, "E10", data.getItem_count());
+			putCellValue(sheet, "E10", data.getExtra_bundle_no());
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			/*
@@ -794,19 +794,20 @@ public class PrintExcel {
 			}
 			int realLength = Integer.parseInt(data.getLbl_real_length());
 			int count = Integer.parseInt(data.getQty_inventory());
+			int weight = Integer.parseInt(data.getWgt_inventory());
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "A4", data.getExtra_invoice_no());
 			putCellValue(sheet, "A6", "*N" + data.getExtra_invoice_no() + "*");
 			putCellValue(sheet, "G7", data.getWgt_inventory());
-			putCellValue(sheet, "I7", data.getWgt_inventory() + 1);
+			putCellValue(sheet, "I7", weight + 1);
 			putCellValue(sheet, "K7", data.getQty_inventory());
 			putCellValue(sheet, "A9", data.getExtra_part_no());
 			putCellValue(sheet, "A10", "*P" + data.getExtra_part_no() + "*");
 			putCellValue(sheet, "A12", realLength/1000*count);
 			putCellValue(sheet, "A13", "*Q" + realLength/1000*count + "*");
 			putCellValue(sheet, "G12", data.getOut_diameter() + " OD x " + data.getIn_daimeter()  + " ID " +data.getLbl_real_length() + "L");
-			putCellValue(sheet, "A19", data.getItem_count());
-			putCellValue(sheet, "A20", "*" + data.getItem_count() + "*");
+			putCellValue(sheet, "A19", data.getExtra_bundle_no());
+			putCellValue(sheet, "A20", "*" + data.getExtra_bundle_no() + "*");
 
 			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
 			int shapeCount = Dispatch.get(shapes, "Count").toInt();
@@ -902,7 +903,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B7", data.getLbl_real_length());
 			putCellValue(sheet, "B8", data.getQty_inventory());
 			putCellValue(sheet, "B9", data.getWgt_inventory());
-			putCellValue(sheet, "B11", data.getItem_count());
+			putCellValue(sheet, "B11", data.getExtra_bundle_no());
 
 			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
 			int shapeCount = Dispatch.get(shapes, "Count").toInt();
@@ -1001,7 +1002,7 @@ public class PrintExcel {
 			putCellValue(sheet, "E7", getTodayDate());
 			putCellValue(sheet, "C8", data.getWgt_inventory());
 			putCellValue(sheet, "E8", totalLength + " m");
-			putCellValue(sheet, "E10", data.getItem_count());
+			putCellValue(sheet, "E10", data.getExtra_bundle_no());
 
 			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
 			int shapeCount = Dispatch.get(shapes, "Count").toInt();
@@ -1193,7 +1194,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B7", data.getQty_inventory() + " PCS");
 			putCellValue(sheet, "B8", totalLength + " MTR");
 			putCellValue(sheet, "B9", data.getWgt_inventory() + " KG");
-			putCellValue(sheet, "B12", data.getItem_count());
+			putCellValue(sheet, "B12", data.getExtra_bundle_no());
 
 			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
 			int shapeCount = Dispatch.get(shapes, "Count").toInt();
@@ -1227,7 +1228,7 @@ public class PrintExcel {
 			}
 
 			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			Dispatch.call(workbook, "PrintOut", new Variant(1), new Variant(1), new Variant(2));
 
 			//결과만 반환하고 서비스는 컨트롤러에서
 			resultMap.put("result", true);
@@ -1287,7 +1288,7 @@ public class PrintExcel {
 			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getExtra_part_no());
-			putCellValue(sheet, "B4", data.getItem_count());
+			putCellValue(sheet, "B4", data.getExtra_bundle_no());
 			putCellValue(sheet, "B7", material1);
 			putCellValue(sheet, "B8", material2);
 			putCellValue(sheet, "B9", data.getOut_diameter() + " OD X " + data.getIn_daimeter() + " ID X " + data.getLbl_real_length() + "mm");
@@ -1382,12 +1383,12 @@ public class PrintExcel {
 			sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
 			
 			// [2] 값 넣기 (Null 방어 로직 추가)
-			putCellValue(sheet, "B9", data.getItem_count());
+			putCellValue(sheet, "B9", data.getExtra_bundle_no());
 			putCellValue(sheet, "D4", "P/O No.: " + data.getCustomer_product_code_number());
 			putCellValue(sheet, "E6", data.getWgt_inventory() + " KG");
 			putCellValue(sheet, "E8", data.getQty_inventory());
 			putCellValue(sheet, "E10", data.getExtra_invoice_no());
-			putCellValue(sheet, "E12", data.getItem_count());
+			putCellValue(sheet, "E12", data.getExtra_bundle_no());
 
 			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
 			int shapeCount = Dispatch.get(shapes, "Count").toInt();
@@ -1476,7 +1477,7 @@ public class PrintExcel {
 			sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
 			
 			// [2] 값 넣기 (Null 방어 로직 추가)
-			putCellValue(sheet, "H4", data.getItem_count());
+			putCellValue(sheet, "H4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCustomer_product_code_number());
 			putCellValue(sheet, "L5", data.getCd_materail());
 			putCellValue(sheet, "F6", data.getOut_diameter());
@@ -1582,7 +1583,7 @@ public class PrintExcel {
 			sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
 			
 			// [2] 값 넣기 (Null 방어 로직 추가)
-			putCellValue(sheet, "H4", data.getItem_count());
+			putCellValue(sheet, "H4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCustomer_product_code_number());
 			putCellValue(sheet, "J5", data.getCd_materail());
 			putCellValue(sheet, "F6", data.getOut_diameter());
@@ -1627,7 +1628,7 @@ public class PrintExcel {
 			}
 
 			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			Dispatch.call(workbook, "PrintOut", new Variant(1), new Variant(1), new Variant(2));
 
 			//결과만 반환하고 서비스는 컨트롤러에서
 			resultMap.put("result", true);
@@ -1697,7 +1698,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B8", data.getQty_inventory());
 			putCellValue(sheet, "B9", data.getWgt_inventory());
 			putCellValue(sheet, "B10", data.getExtra_packing_inspection());
-			putCellValue(sheet, "B12", data.getItem_count());
+			putCellValue(sheet, "B12", data.getExtra_bundle_no());
 
 			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
 			int shapeCount = Dispatch.get(shapes, "Count").toInt();
@@ -1792,7 +1793,7 @@ public class PrintExcel {
 			sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
 			
 			// [2] 값 넣기 (Null 방어 로직 추가)
-			putCellValue(sheet, "F4", data.getItem_count());
+			putCellValue(sheet, "F4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCustomer_product_code_number());
 			putCellValue(sheet, "K5", data.getCd_materail());
 			putCellValue(sheet, "F6", data.getOut_diameter());
@@ -1908,7 +1909,7 @@ public class PrintExcel {
 			putCellValue(sheet, "E7", formattedDate);
 			putCellValue(sheet, "C8", data.getWgt_inventory() + " kg");
 			//putCellValue(sheet, "E8", data.getLbl_real_length());
-			putCellValue(sheet, "E10", data.getItem_count());
+			putCellValue(sheet, "E10", data.getExtra_bundle_no());
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			/*
@@ -2025,7 +2026,7 @@ public class PrintExcel {
 			putCellValue(sheet, "E7", formattedDate);
 			putCellValue(sheet, "C8", data.getWgt_inventory() + " kg");
 			//putCellValue(sheet, "E8", data.getLbl_real_length());
-			putCellValue(sheet, "E10", data.getItem_count());
+			putCellValue(sheet, "E10", data.getExtra_bundle_no());
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			/*

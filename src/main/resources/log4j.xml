@@ -13,7 +13,7 @@
 	<!-- Appenders 파일-->
     <appender name="rollingFile"
         class="org.apache.log4j.DailyRollingFileAppender">
-        <param name="File" value="D:/TKHEATLOG/dataLog.log" /> 
+        <param name="File" value="D:/YULCHONLOG/dataLog.log" /> 
         <param name="Append" value="true" />
         <param name="DatePattern" value=".yyyy-MM-dd" />
         <layout class="org.apache.log4j.PatternLayout">
@@ -25,7 +25,7 @@
     <appender name="errFile"
         class="org.apache.log4j.DailyRollingFileAppender">
         <param name="Threshold" value="error"/>
-        <param name="File" value="D:/TKHEATLOG/errorLog.log" /> 
+        <param name="File" value="D:/YULCHONLOG/errorLog.log" /> 
         <param name="Append" value="true" />
         <param name="DatePattern" value=".yyyy-MM-dd" />
         <layout class="org.apache.log4j.PatternLayout">
@@ -38,11 +38,11 @@
 		<level value="info" />
 	</logger> -->
 
-	<logger name="com.transys.controller">
+	<logger name="com.yulchon.controller">
 		<level value="info" />
 	</logger>
 
-	<logger name="com.transys.service">
+	<logger name="com.yulchon.service">
 		<level value="info" />
 	</logger>
 	
@@ -65,7 +65,7 @@
 
 	<!-- Root Logger -->
 	<root>
-		<priority value="warn" />
+		<priority value="info" />
 <!-- 		<appender-ref ref="console" />-->
 		<appender-ref ref="rollingFile" />
 		<appender-ref ref="errFile" />

@@ -41,4 +41,5 @@ public interface ManagementService {
 	List<Management> getShippingDatas(Management management);
 	boolean processShippingComplete(Management manegement, String loginUserId);
 	Management getProductConfirm(Management management);
+	boolean updateInvoiceName(Management management);
 }

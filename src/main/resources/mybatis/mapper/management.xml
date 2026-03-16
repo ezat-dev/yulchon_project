@@ -146,6 +146,8 @@ SELECT 'N' AS YN_CHECK --선택
   WHERE 1=1
       AND B.QTY_INVENTORY != 0
       AND ein.invoice_no = #{invoice_no}
+      <!-- 여기 추가 -->
+      AND B.CD_WH = 'YC_FG3'
 </select>
 
 <!-- 재고 로트번호 동기화 프로시저 -->
@@ -248,10 +250,9 @@ SELECT 'N' AS YN_CHECK --선택
 	 ,eiim.extra_spec
 	 ,eiim.extra_order_no
      , (
-         SELECT CAST(eiim.item_count AS VARCHAR) + '/' + CAST(COUNT(*) AS VARCHAR)
-         FROM ez_invoice_inventory_mapping sub_eiim
-         WHERE sub_eiim.invoice_no = eiim.invoice_no
-           AND sub_eiim.cd_item = eiim.cd_item
+		SELECT CAST(eiim.extra_bundle_no AS VARCHAR) + '/' + CAST(COUNT(*) AS VARCHAR)
+		    FROM ez_invoice_inventory_mapping sub_eiim
+		    WHERE sub_eiim.invoice_no = eiim.invoice_no
        ) AS item_seq_total
   FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
        INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
@@ -405,14 +406,21 @@ VALUES(#{invoice_no}, #{lbl_lot_no}, 'n')
 SELECT * FROM ez_invoice_name 
 WHERE invoice_is_shipped IS NULL
 <if test="startDate != null and startDate != ''">
-   <![CDATA[
-	   AND invoice_name >= 'YC-' + REPLACE(#{startDate}, '-', '')
-	   ]]>
+<![CDATA[
+AND (
+       SUBSTRING(invoice_name,4,8) >= REPLACE(#{startDate}, '-', '')
+    OR SUBSTRING(invoice_name,4,6) >= RIGHT(REPLACE(#{startDate}, '-', ''),6)
+)
+]]>
 </if>
+
 <if test="endDate != null and endDate != ''">
 <![CDATA[
-	AND invoice_name <= 'YC-' + REPLACE(#{endDate}, '-', '') + '-999'
-	]]>
+AND (
+       SUBSTRING(invoice_name,4,8) <= REPLACE(#{endDate}, '-', '')
+    OR SUBSTRING(invoice_name,4,6) <= RIGHT(REPLACE(#{endDate}, '-', ''),6)
+)
+]]>
 </if>
 ORDER BY invoice_name DESC
 </select>
@@ -1286,5 +1294,15 @@ LEFT JOIN ez_invoice_name ein
     ON eiim.invoice_no = ein.invoice_no
 WHERE B.QTY_INVENTORY != 0
 AND A.LBL_LOT_NO = #{lbl_lot_no}
+<!-- 이거 추가 -->
+AND B.CD_WH = 'YC_FG3'
 </select>
+
+<!-- 인보이스 이름 업데이트 -->
+<update id="updateInvoiceName">
+  UPDATE ez_invoice_name
+  SET ${targetField} = #{newValue}
+  WHERE 1=1
+    AND invoice_no = #{invoice_no}
+</update>
 </mapper>

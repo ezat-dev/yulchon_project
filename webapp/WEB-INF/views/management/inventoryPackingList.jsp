@@ -455,6 +455,46 @@ button:hover {
 .left-table-summary strong {
     color: #333;
 }
+/* 인보이스 이름 변경 버튼 */
+.update-invoice-name-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;          /* ← button-container 기준 우측 끝 */
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(37, 99, 235, 0.35);
+  color: var(--primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.update-invoice-name-button .button-image {
+  width: 16px;
+  height: 16px;
+  /* 흰 배경이므로 파란색 필터 */
+  filter: invert(30%) sepia(90%) saturate(500%) hue-rotate(200deg);
+}
+
+.update-invoice-name-button:hover {
+  background: var(--primary-weak);
+  border-color: var(--primary);
+}
+.update-modal-content {
+  background: var(--panel);
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, 94vw);   /* ← 원하는 폭으로 조정 */
+  max-height: 95vh;
+  overflow: auto;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+}
     </style>
 </head>
 
@@ -484,6 +524,10 @@ button:hover {
 				        <span class="legend-text">대기</span>
 				</div>
 				</div>
+								
+				<button class="update-invoice-name-button">
+                    <img src="/yulchon/css/image/insert-icon.png" alt="insert" class="button-image">인보이스 이름 변경
+                </button>
             </div>
         </div>
 
@@ -532,6 +576,17 @@ button:hover {
 	            <button type="button" id="closeAddDeleteInvoiceProduct">닫기</button>
 	    </div>
 	</div>
+	
+	<!-- 인보이스 이름 업데이트 모달 -->
+	<div class="modal" id="updateInvoiceNameModal">
+  <div class="update-modal-content">
+    <span class="addDeleteInvoiceModalText">인보이스 이름 변경</span>
+    <div id="updateInvoiceNameTable"></div>
+    <div style="display:flex;justify-content:flex-end;padding-top:12px;border-top:1px solid #e6eaf2;margin-top:12px">
+      <button onclick="$('#updateInvoiceNameModal').removeClass('show')">닫기</button>
+    </div>
+  </div>
+</div>
 
 
 <script>
@@ -545,6 +600,8 @@ var selectedLeftRows = [];
 var selectedRightRows = [];
 var clickedInvoiceNo = "";
 var clickedInvoiceIsReset = "";
+var updateInvoiceNameTable;
+var selectedCell = null;
 
 // 재고현황 조회
 function initDataTable(){
@@ -556,6 +613,9 @@ dataTable = new Tabulator('#dataTable', {
   ajaxLoader: false,
   ajaxURL: "/yulchon/management/getInvoiceInventoryList",
   ajaxParams: {},
+  movableColumns: true,
+  clipboard: true,
+
   placeholder: "좌측 인보이스를 클릭하면 인보이스에 해당하는 품목이 조회됩니다.",
   ajaxResponse: function(url, params, response) {
    // console.log("서버 응답 데이터 확인:", response);
@@ -573,7 +633,8 @@ dataTable = new Tabulator('#dataTable', {
     { title: "출력용 Packinglist No/Inspection No", field: "extra_packing_inspection", width: 300, hozAlign: "center", headerFilter: "input", editor: "input" },
     { title: "출력용 Order No", field: "extra_order_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
     { title: "출력용 Part No", field: "extra_part_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
-    { title: "출력용 Spec", field: "extra_spec", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
+    { title: "Bundle No", field: "extra_bundle_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
+    //{ title: "출력용 Spec", field: "extra_spec", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
     { title: "단중", field: "kgm_weight", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
     { title: "실길이", field: "lbl_real_length", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
     { title: "재고수량", field: "qty_inventory", sorter: "string", width: 100, hozAlign: "center", headerFilter: "input"},
@@ -589,6 +650,7 @@ dataTable = new Tabulator('#dataTable', {
     { title: "invoice_inventory_no", field: "invoice_inventory_no", visible: false }
   ],
   cellEdited: function(cell) {
+	  cell.getElement().focus();
       // cell : 수정된 셀 객체
       var rowData = cell.getRow().getData(); // 수정된 행 전체 데이터
       var field = cell.getField();           // 수정된 필드명 (customer_product_code_number)
@@ -626,8 +688,50 @@ dataTable = new Tabulator('#dataTable', {
       });
       
   },
+  cellClick:function(e, cell){
+	    selectedCell = cell;
+	},
 });
 }
+
+document.querySelector("#dataTable").addEventListener("paste", function(e) {
+    if (!selectedCell) {
+        return;
+    }
+
+    // 기본 붙여넣기 동작 방지 (셀 하나에 다 들어가는 것 막음)
+    e.preventDefault();
+
+    var startRow = selectedCell.getRow();
+    var startIndex = startRow.getPosition(true);
+    var field = selectedCell.getField();
+
+    // 클립보드 데이터 가져오기
+    var paste = (e.clipboardData || window.clipboardData).getData("text");
+    var values = paste.split(/\r?\n/).filter(function(v) {
+        return v.trim() !== "";
+    });
+
+    // 핵심: 붙여넣기 시작 전 현재 편집 중인 셀이 있다면 편집 모드 종료
+    // (이게 없으면 'innerHTML' 에러가 발생할 확률이 높습니다)
+    if (selectedCell.getElement().classList.contains("tabulator-editing")) {
+         selectedCell.cancelEdit(); 
+    }
+
+    values.forEach(function(value, i) {
+        // 현재 인덱스로부터 i번째 아래에 있는 행을 찾음
+        var row = dataTable.getRowFromPosition(startIndex + i, true);
+
+        if (row) {
+            // 해당 행의 특정 컬럼(field) 셀을 찾아서 값을 세팅
+            var targetCell = row.getCell(field);
+            if (targetCell) {
+                // setValue를 사용하면 cellEdited 이벤트가 자동으로 발생하여 AJAX가 실행됩니다.
+                targetCell.setValue(value.trim());
+            }
+        }
+    });
+});
 
 //인보이스 조회
 function initInvoiceTable(){
@@ -713,7 +817,9 @@ function initInvoiceTable(){
 	            //일단 새로운 인보이스 생성
 			const date = $('#invoice_date').val(); 
 		    const formattedDate = date.replace(/-/g, '');
-		    const invoice_name_base = 'YC-' + formattedDate;
+		    //앞에 20 빼기
+		    const shortDate = formattedDate.slice(2);
+		    const invoice_name_base = 'YC-' + shortDate;
 		    console.log("invoice_name_base: ", invoice_name_base); // 20260101
 		    $.ajax({
 		      url: "/yulchon/management/insertInvoiceName",
@@ -769,6 +875,76 @@ function initInvoiceTable(){
 	    rightTable.setData("/yulchon/management/getInventoryList", {});
 	    
 	    $('#addDeleteInvoiceProduct').show().addClass('show');
+	  }
+	});
+	}
+
+//인보이스 이름 수정 테이블
+function initUpdateInvoiceNameTable(){
+	updateInvoiceNameTable = new Tabulator('#updateInvoiceNameTable', {
+	  layout: "fitColumns",
+	  headerHozAlign: "center",
+	  ajaxConfig: { method: 'POST' },
+	  ajaxLoader: false,
+	  ajaxURL: "/yulchon/management/getNoUpdatedOrResetInvoiceList",
+	  ajaxParams: {
+		  invoice_date: $('#invoice_date').val()
+          },
+      initialFilter: [
+    	  {field: "invoice_is_shipped", type: "regex", value: "^(?!.*R).*$"}
+      ],
+	  placeholder: "조회된 데이터가 없습니다.",
+	  ajaxResponse: function(url, params, response) {
+	    return response;
+	  },
+	  columns: [
+		  { title: "NO", formatter: "rownum", hozAlign: "center", width: 80, frozen: true },
+		  {title: "인보이스", 
+	        field: "invoice_name", 
+	        hozAlign: "center", 
+	        width: 300, 
+	        headerFilter: "input",
+	        editor: "input" 
+		  },
+		  { title: "invoice_no", formatter: "invoice_no", hozAlign: "center", width: 80, visible:false},
+		  { title: "invoice_is_shipped", field: "invoice_is_shipped", hozAlign: "center", width: 80, visible:false}
+	  ],
+	  cellEdited: function(cell) {
+	      // cell : 수정된 셀 객체
+	      var rowData = cell.getRow().getData(); // 수정된 행 전체 데이터
+	      var field = cell.getField();           // 수정된 필드명 
+	      var newValue = cell.getValue();        // 바뀐 값
+	      var invoice_no = rowData.invoice_no;	//바꿀 invoice_no
+	      
+	      console.log("수정할 필드: ", field);
+	      console.log("새로운 데이터: ", newValue);
+	      console.log("수정할 데이터: ", rowData);
+	      console.log("수정할 invoice_no: ", invoice_no);
+
+	      var updateData = {
+	    		  "targetField": field,
+	    	        "newValue": newValue,
+	    	        "invoice_no": invoice_no
+	    	      }
+
+	      $.ajax({
+	          url: "/yulchon/management/updateInvoiceName",
+	          method: "POST",
+	          data: JSON.stringify(updateData),
+	          contentType: "application/json",
+	          success: function(res) {
+				if(res === true || res === "true"){
+					console.log("인보이스 이름 수정 완료");
+			        invoiceTable.setData("/yulchon/management/getNoUpdatedOrResetInvoiceList", {});
+					}else{
+						console.log("인보이스 이름 수정 실패")
+						}
+	  			},
+			      error: function() {
+			    	  console.log("인보이스 이름 수정 중 에러 발생");
+			      }
+	      });
+	      
 	  }
 	});
 	}
@@ -1241,6 +1417,12 @@ function updateInvoiceIsMoved(invoiceNo) {
       }
   });
 }
+
+//인보이스 이름 업데이트 모달 열기
+$('.update-invoice-name-button').on('click', function() {
+  $('#updateInvoiceNameModal').addClass('show');
+  initUpdateInvoiceNameTable();
+});
 </script>
 
 
