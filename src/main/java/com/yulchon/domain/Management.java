@@ -90,8 +90,43 @@ public class Management {
 	private String update_date;
 	private String steel_grade_item_010;
 	private String extra_bundle_no;
+	private String id_login;
+	private String table_name;
+	private String field_name;
+	private String is_visible;
+	private String extra_weight;
+
 	
-	
+	public String getExtra_weight() {
+		return extra_weight;
+	}
+	public void setExtra_weight(String extra_weight) {
+		this.extra_weight = extra_weight;
+	}
+	public String getTable_name() {
+		return table_name;
+	}
+	public void setTable_name(String table_name) {
+		this.table_name = table_name;
+	}
+	public String getField_name() {
+		return field_name;
+	}
+	public void setField_name(String field_name) {
+		this.field_name = field_name;
+	}
+	public String getIs_visible() {
+		return is_visible;
+	}
+	public void setIs_visible(String is_visible) {
+		this.is_visible = is_visible;
+	}
+	public String getId_login() {
+		return id_login;
+	}
+	public void setId_login(String id_login) {
+		this.id_login = id_login;
+	}
 	public String getExtra_bundle_no() {
 		return extra_bundle_no;
 	}

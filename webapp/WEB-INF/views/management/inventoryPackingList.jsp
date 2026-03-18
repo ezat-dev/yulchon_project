@@ -528,6 +528,21 @@ button:hover {
 				<button class="update-invoice-name-button">
                     <img src="/yulchon/css/image/insert-icon.png" alt="insert" class="button-image">인보이스 이름 변경
                 </button>
+                
+                
+<!-- 칼럼 숨기기 -->
+<button onclick="toggleColumnPanel()" 
+        style="padding:4px 12px; cursor:pointer;">
+    ⚙️ 열 숨기기
+</button>
+
+<div id="columnPanel" style="display:none; position:fixed; z-index:9999;
+     background:#fff; border:1px solid #ddd; border-radius:4px;
+     padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.15); min-width:200px;
+     max-height:400px; overflow-y:auto; margin-top: 26%; margin-left: 74%;">
+    <div style="font-weight:bold; margin-bottom:8px; font-size:13px;">열 보이기/숨기기</div>
+    <div id="columnCheckboxes" style="display:flex; flex-direction:column; gap:6px;"></div>
+</div>
             </div>
         </div>
 
@@ -589,6 +604,36 @@ button:hover {
 </div>
 
 
+<!-- 쉬핑마크 미리보기 모달 -->
+<div id="previewModal" style="display:none; position:fixed; inset:0;
+     background:rgba(0,0,0,0.65); z-index:9999; overflow:auto;">
+  <div style="background:#fff; margin:40px auto; padding:24px; width:700px;
+              max-width:95%; border-radius:8px; position:relative;">
+
+    <h3 style="margin:0 0 16px;">📄 쉬핑마크 미리보기</h3>
+
+    <div id="previewLoading" style="text-align:center; padding:60px; font-size:16px;">
+      ⏳ 이미지 생성 중...
+    </div>
+
+    <img id="previewImage"
+         style="display:none; width:100%; border:1px solid #ddd;
+                box-shadow:0 2px 8px rgba(0,0,0,0.15);" />
+
+    <div id="previewError"
+         style="display:none; text-align:center; padding:40px; color:red;"></div>
+
+    <div style="margin-top:16px; text-align:right;">
+      <button onclick="closePreviewModal()"
+              style="padding:8px 20px; background:#888; color:#fff;
+                     border:none; border-radius:4px; cursor:pointer;">
+        닫기
+      </button>
+    </div>
+  </div>
+</div>
+
+
 <script>
 let now_page_code = "h03";
 var dataTable;
@@ -614,6 +659,11 @@ dataTable = new Tabulator('#dataTable', {
   ajaxURL: "/yulchon/management/getInvoiceInventoryList",
   ajaxParams: {},
   movableColumns: true,
+  persistence: {
+	    columns: true,
+	},
+	persistenceMode: "local",
+	persistenceID: "invoice-table",
   clipboard: true,
 
   placeholder: "좌측 인보이스를 클릭하면 인보이스에 해당하는 품목이 조회됩니다.",
@@ -634,6 +684,7 @@ dataTable = new Tabulator('#dataTable', {
     { title: "출력용 Order No", field: "extra_order_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
     { title: "출력용 Part No", field: "extra_part_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
     { title: "Bundle No", field: "extra_bundle_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
+    { title: "출력용 중량", field: "extra_weight", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
     //{ title: "출력용 Spec", field: "extra_spec", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
     { title: "단중", field: "kgm_weight", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
     { title: "실길이", field: "lbl_real_length", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
@@ -647,7 +698,36 @@ dataTable = new Tabulator('#dataTable', {
     { title: "입하No", field: "no_receipt", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
     { title: "비고", field: "remarks", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
     { title: "위치", field: "nm_location", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
-    { title: "invoice_inventory_no", field: "invoice_inventory_no", visible: false }
+    { title: "invoice_inventory_no", field: "invoice_inventory_no", visible: false },
+    { title: "invoice_no", field: "invoice_no", visible: false },
+    {
+        title: "미리보기",
+        field: "preview",
+        hozAlign: "center",
+        width: 100,
+        headerSort: false,
+        formatter: function(cell) {
+        	 return '<span style="color:#1976d2; cursor:pointer; font-size:12px; text-decoration:underline;">미리보기</span>';
+        },
+        cellClick: function(e, cell) {
+            e.stopPropagation(); // 다른 cellClick 이벤트 방지
+
+            var rowData = cell.getRow().getData();
+            var lbl_lot_no = rowData.lbl_lot_no;
+            var invoice_no = rowData.invoice_no; 
+
+            if (!lbl_lot_no) {
+                alert("Lot No. 정보가 없습니다.");
+                return;
+            }
+            if (!invoice_no) {
+                alert("invoice_no 정보가 없습니다.");
+                return;
+            }
+
+            openPreviewModal(lbl_lot_no, invoice_no);
+        }
+    }
   ],
   cellEdited: function(cell) {
 	  cell.getElement().focus();
@@ -691,6 +771,9 @@ dataTable = new Tabulator('#dataTable', {
   cellClick:function(e, cell){
 	    selectedCell = cell;
 	},
+    tableBuilt: function() {
+        loadColumnSettings();
+    }
 });
 }
 
@@ -824,7 +907,7 @@ function initInvoiceTable(){
 		    $.ajax({
 		      url: "/yulchon/management/insertInvoiceName",
 		      type: "POST",
-		      data: {invoice_name_base: invoice_name_base},
+		      data: {invoice_name_base: invoice_name_base, invoice_date: date},
 		      //processData: false,
 		      //contentType: false,
 		      success: function(result) {
@@ -1194,7 +1277,7 @@ $('.daySet').datepicker({
     $.ajax({
       url: "/yulchon/management/insertInvoiceName",
       type: "POST",
-      data: {invoice_name_base: invoice_name_base},
+      data: {invoice_name_base: invoice_name_base, invoice_date: date},
       //processData: false,
       //contentType: false,
       success: function(result) {
@@ -1423,6 +1506,157 @@ $('.update-invoice-name-button').on('click', function() {
   $('#updateInvoiceNameModal').addClass('show');
   initUpdateInvoiceNameTable();
 });
+
+//쉬핑마크 미리보기
+function openPreviewModal(lbl_lot_no, invoice_no) {
+    // 모달 초기화 & 열기
+    document.getElementById('previewImage').style.display = 'none';
+    document.getElementById('previewError').style.display = 'none';
+    document.getElementById('previewLoading').style.display = 'block';
+    document.getElementById('previewModal').style.display = 'block';
+
+    $.ajax({
+        url: "/yulchon/management/previewShippingMark",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({
+            lbl_lot_no: lbl_lot_no,
+            invoice_no: invoice_no
+        }),
+        xhrFields: { responseType: 'blob' }, // ✅ 이미지 blob으로 받기
+        success: function(blob) {
+            
+            if (blob.size === 0) {
+                document.getElementById('previewLoading').style.display = 'none';
+                document.getElementById('previewError').style.display = 'block';
+                document.getElementById('previewError').innerText = '❌ 미리보기 생성 실패';
+                return;
+            }
+            
+            var imageUrl = URL.createObjectURL(blob);
+            var img = document.getElementById('previewImage');
+
+            // 이전 URL 메모리 해제
+            if (img.dataset.objectUrl) {
+                URL.revokeObjectURL(img.dataset.objectUrl);
+            }
+
+            img.src = imageUrl;
+            img.dataset.objectUrl = imageUrl;
+            img.style.display = 'block';
+            document.getElementById('previewLoading').style.display = 'none';
+        },
+        error: function(xhr) {
+            document.getElementById('previewLoading').style.display = 'none';
+            document.getElementById('previewError').style.display = 'block';
+            document.getElementById('previewError').innerText =
+                '❌ 미리보기 생성 실패 (status: ' + xhr.status + ')';
+        }
+    });
+}
+
+function closePreviewModal() {
+    document.getElementById('previewModal').style.display = 'none';
+}
+
+// 미리보기 모달 바깥 클릭 시 닫기
+document.getElementById('previewModal').addEventListener('click', function(e) {
+    if (e.target === this) closePreviewModal();
+});
+
+//칼럼 숨기기
+const TABLE_NAME = 'dataTable';
+
+// 제외할 컬럼 (숨기기 대상에서 제외)
+const EXCLUDE_FIELDS = ['invoice_inventory_no', 'invoice_no', 'preview'];
+
+function toggleColumnPanel() {
+    var panel = document.getElementById('columnPanel');
+    if (panel.style.display === 'none') {
+        renderColumnCheckboxes();
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+// 패널 바깥 클릭 시 닫기
+document.addEventListener('click', function(e) {
+    var panel = document.getElementById('columnPanel');
+    var btn = document.querySelector('[onclick="toggleColumnPanel()"]');
+    if (!panel.contains(e.target) && !btn.contains(e.target)) {
+        panel.style.display = 'none';
+    }
+});
+
+function renderColumnCheckboxes() {
+    var container = document.getElementById('columnCheckboxes');
+    container.innerHTML = '';
+
+    dataTable.getColumns().forEach(function(col) {
+        var def = col.getDefinition();
+        if (!def.field || !def.title || EXCLUDE_FIELDS.includes(def.field)) return;
+
+        var label = document.createElement('label');
+        label.style.cssText = 'display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;';
+
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = col.isVisible();
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                // 보이게 → DB에서 삭제
+                dataTable.showColumn(def.field);
+                deleteColumnSetting(def.field);
+            } else {
+                // 숨기기 → DB에 insert
+                dataTable.hideColumn(def.field);
+                insertColumnSetting(def.field);
+            }
+        });
+
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(def.title));
+        container.appendChild(label);
+    });
+}
+
+//체크박스 해제(db 저장)
+function insertColumnSetting(fieldName) {
+    $.ajax({
+        url: "/yulchon/management/insertColumnSetting",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ table_name: TABLE_NAME, field_name: fieldName }),
+        success: function() { console.log("숨김 저장: " + fieldName); }
+    });
+}
+
+//체크(db 삭제)
+function deleteColumnSetting(fieldName) {
+    $.ajax({
+        url: "/yulchon/management/deleteColumnSetting",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ table_name: TABLE_NAME, field_name: fieldName }),
+        success: function() { console.log("숨김 해제: " + fieldName); }
+    });
+}
+
+function loadColumnSettings() {
+    $.ajax({
+        url: "/yulchon/management/getColumnSettingList",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ table_name: TABLE_NAME }),
+        success: function(settings) {
+            if (!settings || settings.length === 0) return;
+            settings.forEach(function(s) {
+                dataTable.hideColumn(s.field_name);
+            });
+        }
+    });
+}
 </script>
 
 

@@ -14,6 +14,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.yulchon.domain.Management;
 import com.yulchon.service.ManagementService;
+import com.yulchon.util.PreviewExcel;
 import com.yulchon.util.PrintExcel;
 
 @Controller
@@ -636,6 +641,106 @@ public class ManagementController {
 	@ResponseBody 
 	public boolean updateInvoiceName(@RequestBody Management management) {
 		return managementService.updateInvoiceName(management);
+	}
+	
+	//쉬핑마크 미리보기
+	@RequestMapping(value="/management/previewShippingMark", method=RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<byte[]> previewShippingMark(@RequestBody Management management) {
+		System.out.println("미리보기 함수");
+		
+		long start = System.nanoTime();
+		
+		Management data = managementService.getShippingMarkPrintInventory(management);
+	    if (data == null) {
+	    	return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+	    }
+	    
+		String customerName = data.getNm_customer();
+		PreviewExcel previewExcel = new PreviewExcel();
+		byte[] imageBytes = null;
+
+		if(customerName.contains("KAB")) {
+			imageBytes = previewExcel.previewKoideKab(data, KAB_FILE_PATH);
+		}else if(customerName.contains("KCB")) {
+			imageBytes = previewExcel.previewKoideKcb(data, KCB_FILE_PATH);
+		}else if(customerName.contains("KKB")) {
+			imageBytes = previewExcel.previewKoideKkb(data, KKB_FILE_PATH);
+		}else if(customerName.contains("SANKIN")) {
+			imageBytes = previewExcel.previewKoideSankin(data, SANKIN_FILE_PATH);
+		}else if(customerName.contains("KKM")) {
+			imageBytes = previewExcel.previewKkm(data, KKM_FILE_PATH);
+		}else if(customerName.contains("KOB")) {
+			imageBytes = previewExcel.previewKob(data, KOB_FILE_PATH);
+		}else if(customerName.contains("CASH")) {
+			imageBytes = previewExcel.previewCash(data, CASH_FILE_PATH);
+		}else if(customerName.contains("ELM2")) {
+			imageBytes = previewExcel.previewElm2(data, ELM2_FILE_PATH);
+		}else if(customerName.contains("KEEPRO")) {
+			imageBytes = previewExcel.previewKeepro(data, KEEPRO_FILE_PATH);
+		}else if(customerName.contains("MBI")) {
+			imageBytes = previewExcel.previewMbi(data, MBI_FILE_PATH);
+		}else if(customerName.contains("MMP")) {
+			imageBytes = previewExcel.previewMmp(data, MMP_FILE_PATH);
+		}else if(customerName.contains("NOK")) {
+			imageBytes = previewExcel.previewNok(data, NOK_FILE_PATH);
+		}else if(customerName.contains("NST")) {
+			imageBytes = previewExcel.previewNst(data, NST_FILE_PATH);
+		}else if(customerName.contains("Profender") || customerName.contains("PROFENDER")) {
+			imageBytes = previewExcel.previewProfender(data, PROFENDER_FILE_PATH);
+		}else if(customerName.contains("DKK")) {
+			imageBytes = previewExcel.previewDkk(data, DKK_FILE_PATH);
+		}else if(customerName.contains("KTH")) {
+			imageBytes = previewExcel.previewKth(data, KTH_FILE_PATH);
+		}else if(customerName.contains("KPS")) {
+			imageBytes = previewExcel.previewKps(data, KPS_FILE_PATH);
+		}else if(customerName.contains("KMEX")) {
+			imageBytes = previewExcel.previewKmex(data, KMEX_FILE_PATH);
+		}else if(customerName.contains("THAI AUTO")) {
+			imageBytes = previewExcel.previewThaiAuto(data, THAIAUTO_FILE_PATH);
+		}else if(customerName.contains("PIONEER")) {
+			imageBytes = previewExcel.previewPioneer(data, PIONEER_FILE_PATH);
+		}else {
+			imageBytes = previewExcel.previewKth(data, KTH_FILE_PATH);
+		}
+
+	    if (imageBytes == null) {
+	    	return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new byte[0]);
+	    }
+
+		long end = System.nanoTime();   // 끝 시간
+		System.out.println("⏱ 실행시간(ms): " + (end - start));
+		
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.IMAGE_PNG);
+	    return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
+	}
+	
+	//인보이스 생성 및 조회 페이지 칼럼 조회
+	@RequestMapping(value="/management/getColumnSettingList", method=RequestMethod.POST)
+	@ResponseBody
+	public List<Management> getColumnSetting(@RequestBody Management management, HttpSession session) {
+	    String userId = (String) session.getAttribute("loginUserId");
+	    management.setUser_id(userId);
+	    return managementService.getColumnSettingList(management);
+	}
+	
+	//dataTable 칼럼 숨기기
+	@RequestMapping(value = "/management/insertColumnSetting", method = RequestMethod.POST) 
+	@ResponseBody 
+	public boolean insertColumnSetting(@RequestBody Management management, HttpSession session) {
+		String userId = (String) session.getAttribute("loginUserId");
+	    management.setUser_id(userId);
+		return managementService.insertColumnSetting(management);
+	}
+	
+	//dataTable 칼럼 보이게
+	@RequestMapping(value = "/management/deleteColumnSetting", method = RequestMethod.POST) 
+	@ResponseBody 
+	public boolean deleteColumnSetting(@RequestBody Management management, HttpSession session) {
+		String userId = (String) session.getAttribute("loginUserId");
+	    management.setUser_id(userId);
+		return managementService.deleteColumnSetting(management);
 	}
 
 }

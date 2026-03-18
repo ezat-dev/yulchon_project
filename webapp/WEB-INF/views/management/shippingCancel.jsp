@@ -199,8 +199,8 @@
       <table class="info-table">
         <tbody>
           <tr>
-            <th>품목코드</th>
-            <td id="cd_item"></td>
+            <th>품목명</th>
+            <td id="nm_item"></td>
           </tr>
           <tr>
             <th>Lot No.</th>
@@ -213,10 +213,6 @@
           <tr>
             <th>재고수량</th>
             <td id="qty_inventory"></td>
-          </tr>
-          <tr>
-            <th>발행일자</th>
-            <td id="lbl_date"></td>
           </tr>
           <tr>
             <th>고객명</th>
@@ -242,11 +238,10 @@
 
   <script>
   $(document).ready(function() {
-	  	$('#cd_item').text("${data.cd_item}");
+	  	$('#nm_item').text("${data.nm_item}");
 	    $('#lbl_lot_no').text("${data.lbl_lot_no}");
 	    $('#no_mfg_order_serial').text("${data.no_mfg_order_serial}");
 	    $('#qty_inventory').text("${data.qty_inventory}");
-	    $('#lbl_date').text("${data.lbl_date}");
 	    $('#nm_customer').text("${data.nm_customer}");
 	    $('#invoice_no').text("${data.invoice_no}");
 });

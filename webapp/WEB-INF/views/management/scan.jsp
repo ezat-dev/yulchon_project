@@ -143,8 +143,8 @@ display: none;
 					    </div>
 
     <div class="scan-button-wrap">
-        <button class="scan-btn btn-print">쉬핑마크 출력</button>
         <button type="button" class="scan-btn btn-cancel">출하 취소</button>
+        <button class="scan-btn btn-print">쉬핑마크 출력</button>
         <button class="scan-btn btn-check">품목 확인</button>
     </div>
     <input type="file" id="qrInput" accept="image/*" capture="environment" style="display:none;">

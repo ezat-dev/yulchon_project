@@ -427,5 +427,27 @@ public class ManagementDaoImpl implements ManagementDao {
 		return true;
 	}
 
+	@Override
+	public List<Management> getColumnSettingList(Management management) {
+		return sqlSession.selectList("management.getColumnSettingList", management);
+	}
+	
+	@Override
+	public boolean insertColumnSetting(Management management) {
+		int result =  sqlSession.insert("management.insertColumnSetting", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean deleteColumnSetting(Management management) {
+		int result =  sqlSession.delete("management.deleteColumnSetting", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
 }
 

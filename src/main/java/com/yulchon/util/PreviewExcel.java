@@ -1,5 +1,14 @@
 package com.yulchon.util;
 
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -9,7 +18,7 @@ import java.util.Hashtable;
 import java.util.Locale;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import javax.imageio.ImageIO;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
@@ -20,12 +29,8 @@ import com.jacob.activeX.ActiveXComponent;
 import com.jacob.com.Dispatch;
 import com.jacob.com.Variant;
 import com.yulchon.domain.Management;
-import com.yulchon.service.ManagementService;
 
-public class PrintExcel {
-	@Autowired
-	ManagementService managementService;
-	
+public class PreviewExcel {
 	private void putCellValue(Dispatch sheet, String cellAddress, Object value) {
 		if (value == null) value = ""; // Null 방어
 
@@ -37,7 +42,7 @@ public class PrintExcel {
 	}
 	
 	//고이데 KAB
-	public Map<String, Object> printKoideKab(Management data, String file_path) {
+	public byte[] previewKoideKab(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
 		
 		ActiveXComponent excel = null;
@@ -48,11 +53,9 @@ public class PrintExcel {
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -68,11 +71,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -124,52 +125,64 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-	    }
-		return resultMap;
+
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//고이데 KCB
-	public Map<String, Object> printKoideKcb(Management data, String file_path) {
+	public byte[] previewKoideKcb(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
+
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -185,11 +198,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -241,53 +252,64 @@ public class PrintExcel {
 			} else {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//고이데 KKB
-	public Map<String, Object> printKoideKkb(Management data, String file_path) {
+	public byte[] previewKoideKkb(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
+
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -303,11 +325,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -360,52 +380,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//SANKIN
-	public Map<String, Object> printKoideSankin(Management data, String file_path) {
+	public byte[] previewKoideSankin(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
+
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -421,11 +452,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -477,52 +506,64 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//KKM
-	public Map<String, Object> printKkm(Management data, String file_path) {
+	public byte[] previewKkm(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
+
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -538,11 +579,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -558,7 +597,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B8", data.getQty_inventory());
 			putCellValue(sheet, "B9", data.getWgt_inventory());
 			putCellValue(sheet, "B10", data.getExtra_packing_inspection());
-			putCellValue(sheet, "B12", data.getExtra_bundle_no());	
+			putCellValue(sheet, "B12", data.getExtra_bundle_no());
 			if(data.getOut_diameter().contains("48.6")) {
 				putCellValue(sheet, "E11", "yellow");	
 			}
@@ -595,52 +634,64 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//KOB
-	public Map<String, Object> printKob(Management data, String file_path) {
+	public byte[] previewKob(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
 		
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
+
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -656,11 +707,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -710,52 +759,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//CASH
-	public Map<String, Object> printCash(Management data, String file_path) {
+	public byte[] previewCash(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
+
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -771,11 +831,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -844,52 +902,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//ELM2
-	public Map<String, Object> printElm2(Management data, String file_path) {
+	public byte[] previewElm2(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
+
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -905,11 +974,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -972,53 +1039,64 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//KEEPRO
-	public Map<String, Object> printKeepro(Management data, String file_path) {
+	public byte[] previewKeepro(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
+
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -1034,11 +1112,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1085,53 +1161,64 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//MBI
-	public Map<String, Object> printMbi(Management data, String file_path) {
+	public byte[] previewMbi(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
+
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -1147,11 +1234,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1201,53 +1286,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//MMP
-	public Map<String, Object> printMmp(Management data, String file_path) {
+	public byte[] previewMmp(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -1263,11 +1358,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1312,53 +1405,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//NOK
-	public Map<String, Object> printNok(Management data, String file_path) {
+	public byte[] previewNok(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -1374,11 +1477,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1427,53 +1528,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut", new Variant(1), new Variant(1), new Variant(2));
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//NST
-	public Map<String, Object> printNst(Management data, String file_path) {
+	public byte[] previewNst(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -1489,11 +1600,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1544,53 +1653,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//PROFENDER
-	public Map<String, Object> printProfender(Management data, String file_path) {
+	public byte[] previewProfender(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -1606,11 +1725,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1655,53 +1772,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//DKK
-	public Map<String, Object> printDkk(Management data, String file_path) {
+	public byte[] previewDkk(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -1717,11 +1844,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1772,53 +1897,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//KTH
-	public Map<String, Object> printKth(Management data, String file_path) {
+	public byte[] previewKth(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -1834,11 +1969,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -1854,7 +1987,7 @@ public class PrintExcel {
 			putCellValue(sheet, "G7", data.getExtra_packing_inspection());
 			putCellValue(sheet, "F8", data.getExtra_invoice_no());
 			putCellValue(sheet, "L8", getTodayFormattedDkk());
-			putCellValue(sheet, "E9", data.getExtra_weight());
+			putCellValue(sheet, "E9", data.getWgt_inventory());
 			putCellValue(sheet, "K9", data.getQty_inventory());
 			putCellValue(sheet, "K7", data.getRemarks()); //비고
 
@@ -1889,53 +2022,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut", new Variant(1), new Variant(1), new Variant(2));
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//KPS
-	public Map<String, Object> printKps(Management data, String file_path) {
+	public byte[] previewKps(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -1951,11 +2094,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -2004,53 +2145,63 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//KMEX
-	public Map<String, Object> printKmex(Management data, String file_path) {
+	public byte[] previewKmex(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -2066,11 +2217,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -2120,52 +2269,62 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//THAI AUTO
-	public Map<String, Object> printThaiAuto(Management data, String file_path) {
+	public byte[] previewThaiAuto(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
-	    
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -2181,11 +2340,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -2254,40 +2411,53 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//PIONEER
-	public Map<String, Object> printPioneer(Management data, String file_path) {
+	public byte[] previewPioneer(Management data, String file_path) {
 		Map<String, Object> resultMap = new HashMap<>();
-
-		// [변경 1] 변수 선언 위치 변경 및 초기화
-	    ActiveXComponent excel = null;
+		
+		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
@@ -2295,11 +2465,9 @@ public class PrintExcel {
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
-			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
+			// [1] 풀에서 엑셀 인스턴스 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
-	        if (excel == null) {
-	            throw new Exception("사용 가능한 엑셀 인스턴스가 없습니다. 잠시 후 다시 시도해주세요.");
-	        }
+	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
 			String qrContent = data.getLbl_lot_no(); 
@@ -2315,11 +2483,9 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
+			// [2] 워크북 열기 및 설정
 	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
 	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
-
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
@@ -2388,32 +2554,46 @@ public class PrintExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
-			// 인쇄
-			Dispatch.call(workbook, "PrintOut");
+			// 캡처 직전에 화면 업데이트 활성화
+			excel.setProperty("ScreenUpdating", true);
 
-			//결과만 반환하고 서비스는 컨트롤러에서
-			resultMap.put("result", true);
+			// 잠깐 대기 (엑셀 렌더링 시간)
+			Thread.sleep(500);
+			
+			// 이미지 캡쳐
+			synchronized (ExcelManager.class) { 
+	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
+	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
+	                : Dispatch.get(sheet, "UsedRange").toDispatch();
 
-		} catch (Exception e) {
-			e.printStackTrace();
-			resultMap.put("result", false);
-			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
-		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
+	            // 엑셀에서 클립보드로 복사
+	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+
+	            // 클립보드에서 데이터 읽기
+	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+	            Transferable contents = clipboard.getContents(null);
+	            
+	            if (contents != null && contents.isDataFlavorSupported(DataFlavor.imageFlavor)) {
+	                Image image = (Image) contents.getTransferData(DataFlavor.imageFlavor);
+	                BufferedImage buffered = toBufferedImage(image);
+	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+	                ImageIO.write(buffered, "png", baos);
+	                return baos.toByteArray(); 
 	            }
-	        } catch (Exception ignore) {}
-	        
-	        if (excel != null) {
-	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
-	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
-	            ExcelManager.getInstance().returnExcel(excel);
 	        }
-		}
-		return resultMap;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        } finally {
+	        	// [6] 자원 반납
+	            if (workbook != null) {
+	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+	            }
+	            if (excel != null) {
+	                ExcelManager.getInstance().returnExcel(excel);
+	            }
+	        }
+	        return null;
 	}
 	
 	//고이데 양식에서 오늘 날짜(OCT.16,2025 형식)
@@ -2453,4 +2633,15 @@ public class PrintExcel {
         // 3. 포맷 적용 및 대문자 변환 (.toUpperCase())
         return today.format(formatter).toUpperCase();
     }
+	
+	private BufferedImage toBufferedImage(Image img) {
+	    BufferedImage bi = new BufferedImage(
+	        img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_RGB);
+	    Graphics2D g = bi.createGraphics();
+	    g.setColor(Color.WHITE);
+	    g.fillRect(0, 0, img.getWidth(null), img.getHeight(null));
+	    g.drawImage(img, 0, 0, null);
+	    g.dispose();
+	    return bi;
+	}
 }

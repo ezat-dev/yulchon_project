@@ -2,11 +2,16 @@ package com.yulchon.util;
 
 import java.util.Arrays;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import org.apache.log4j.Logger;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +31,23 @@ public class LogAspect {
     // com.yulchon.controller 패키지 하위의 모든 클래스 및 메서드에 적용
     @Around("execution(* com.yulchon.controller..*.*(..))")
     public Object logPrint(ProceedingJoinPoint joinPoint) throws Throwable {
+    	
+    	// 세션에서 사용자 정보 가져오기
+        String loginUserId = "Guest"; // 기본값
+        String loginUserName = "GuestName";
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes != null) {
+                HttpServletRequest request = attributes.getRequest();
+                HttpSession session = request.getSession(false);
+                if (session != null && session.getAttribute("loginUserId") != null) { 
+                    loginUserId = session.getAttribute("loginUserId").toString();
+                    loginUserName = session.getAttribute("loginUserName").toString();
+                }
+            }
+        } catch (Exception e) {
+            loginUserId = "Unknown";
+        }
         
         String type = joinPoint.getSignature().getDeclaringTypeName();
         String methodName = joinPoint.getSignature().getName();
@@ -64,7 +86,7 @@ public class LogAspect {
 		}
 
         // 메서드 실행 전 로그
-        logger.info("[시작] " + type + "." + methodName + "() | 인자: " + args);
+        logger.info("[시작] [" + loginUserId + "(" + loginUserName + ")]" + type + "." + methodName + "() | 인자: " + args);
 
         try {
         	// 실제 컨트롤러 메서드 실행
@@ -90,7 +112,7 @@ public class LogAspect {
                 resultStr = String.valueOf(result); // 변환 실패 시 기본 toString
             }
 
-            logger.info("[종료] " + type + "." + methodName + "() | 반환: " + resultStr);
+            logger.info("[종료] [" + loginUserId + "(" + loginUserName + ")]" + type + "." + methodName + "() | 반환: " + resultStr);
             return result;
 
         } catch (Exception e) {

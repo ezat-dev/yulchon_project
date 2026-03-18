@@ -331,4 +331,19 @@ public class ManagementServiceImpl implements ManagementService{
 	public boolean updateInvoiceName(Management management) {
 		return managementDao.updateInvoiceName(management);
 	}
+	
+	@Override
+	public List<Management> getColumnSettingList(Management management) {
+		return managementDao.getColumnSettingList(management);
+	}
+
+	@Override
+	public boolean insertColumnSetting(Management management) {
+		return managementDao.insertColumnSetting(management);
+	}
+
+	@Override
+	public boolean deleteColumnSetting(Management management) {
+		return managementDao.deleteColumnSetting(management);
+	}
 }

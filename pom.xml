@@ -554,5 +554,12 @@
     <artifactId>log4j</artifactId>
     <version>1.2.17</version>
 </dependency>
+
+<!-- 엑셀 인스턴스 여러 개 관리 -->
+<dependency>
+    <groupId>org.apache.commons</groupId>
+    <artifactId>commons-pool2</artifactId>
+    <version>2.11.1</version>
+</dependency>
   </dependencies>
 </project>

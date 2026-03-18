@@ -199,8 +199,8 @@
       <table class="info-table">
         <tbody>
           <tr>
-            <th>품목코드</th>
-            <td id="cd_item"></td>
+            <th>품목명</th>
+            <td id="nm_item"></td>
           </tr>
           <tr>
             <th>Lot No.</th>
@@ -244,7 +244,7 @@
           return;
       }
       
-	  	$('#cd_item').text("${data.cd_item}");
+	  	$('#nm_item').text("${data.nm_item}");
 	    $('#lbl_lot_no').text("${data.lbl_lot_no}");
 	    $('#no_mfg_order_serial').text("${data.no_mfg_order_serial}");
 	    $('#qty_inventory').text("${data.qty_inventory}");
