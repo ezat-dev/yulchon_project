@@ -742,6 +742,26 @@ public class ManagementController {
 	    management.setUser_id(userId);
 		return managementService.deleteColumnSetting(management);
 	}
+	
+	@RequestMapping(value = "/management/mobile/deleteAndInsertInvoiceInventory", method = RequestMethod.POST) 
+	@ResponseBody 
+	public boolean mobileDeleteAndInsertInvoiceInventory(@RequestBody Management management) {
+		return managementService.mobileDeleteAndInsertInvoiceInventory(management);
+	}
+	
+	//W/O, 수량 같은 품목 있나 조회
+	@RequestMapping(value = "/management/mobile/getSameWoQtyInventory", method = RequestMethod.POST) 
+	@ResponseBody
+	public Management findMatchingUnprintedItem(@RequestBody Management management) {
+	    return managementService.getSameWoQtyInventory(management);
+	}
+
+	//로트번호 스왑
+	@RequestMapping(value = "/management/mobile/swapLotNo", method = RequestMethod.POST) 
+	@ResponseBody
+	public boolean swapLotNo(@RequestBody Management management) {
+	    return managementService.swapLotNo(management);
+	}
 
 }
 

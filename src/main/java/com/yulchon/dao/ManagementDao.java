@@ -64,4 +64,11 @@ public interface ManagementDao {
 	List<Management> getColumnSettingList(Management management);
 	boolean insertColumnSetting(Management management);
 	boolean deleteColumnSetting(Management management);
+	boolean mobileDeleteInvoiceInventory(Management management);
+	boolean mobileInsertInvoiceInventory(Management management);
+	Management selectI_TRANSACTION_NextSeq(Management management);
+	boolean insertS_SALES_REQUEST_LOT(Management management);
+	Management selectSEQ_REQUEST_SERIAL(Management management);
+	Management getSameWoQtyInventory(Management management);
+	boolean swapLotNo(Management datas);
 }

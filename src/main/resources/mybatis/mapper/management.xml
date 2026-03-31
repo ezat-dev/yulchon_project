@@ -161,32 +161,66 @@ SELECT 'N' AS YN_CHECK --선택
 </select>
 
 <!-- 인보이스에 품목 추가 -->
+
 <update id="insertInvoiceInventory">
 INSERT INTO ez_invoice_inventory_mapping (
-        invoice_no,
-        lot_no,
-        cd_item,
-        item_count
-    )
-    SELECT 
-        A.invoice_no,
-        A.lot_no,
-        A.cd_item,
-        -- 기존 DB의 MAX값 + 현재 묶음 안에서의 순번
-        A.current_max + ROW_NUMBER() OVER(PARTITION BY A.cd_item ORDER BY A.lot_no)
-    FROM (
-        <foreach collection="addList" item="item" separator="UNION ALL">
-            SELECT 
-                #{invoice_no} AS invoice_no, 
-                #{item.lbl_lot_no} AS lot_no, 
-                #{item.cd_item} AS cd_item,
-                -- 이 서브쿼리는 전체 묶음 실행 전 딱 한 번만 각 품목의 시작점을 잡습니다.
-                (SELECT ISNULL(MAX(item_count), 0) 
-                 FROM ez_invoice_inventory_mapping 
-                 WHERE invoice_no = #{invoice_no} 
-                   AND cd_item = #{item.cd_item}) AS current_max
-        </foreach>
-    ) A
+    invoice_no,
+    lot_no,
+    cd_item,
+    item_count,
+    extra_invoice_no,
+    extra_packing_inspection,
+    extra_order_no,
+    extra_part_no,
+    extra_spec,
+    extra_bundle_no,
+    extra_weight,
+    customer_product_code_number
+)
+SELECT 
+    A.invoice_no,
+    A.lot_no,
+    A.cd_item,
+    -- 기존 DB의 MAX값 + 현재 묶음 안에서의 순번
+    A.current_max + ROW_NUMBER() OVER(PARTITION BY A.cd_item ORDER BY A.lot_no),
+    A.extra_invoice_no,
+    A.extra_packing_inspection,
+    A.extra_order_no,
+    A.extra_part_no,
+    A.extra_spec,
+    A.extra_bundle_no,
+    A.extra_weight,
+    A.customer_product_code_number
+FROM (
+    <foreach collection="addList" item="item" separator="UNION ALL">
+        SELECT 
+            #{invoice_no} AS invoice_no, 
+            #{item.lbl_lot_no} AS lot_no, 
+            #{item.cd_item} AS cd_item,
+            -- 해당 품목의 현재 MAX item_count 조회
+            (SELECT ISNULL(MAX(item_count), 0) 
+             FROM ez_invoice_inventory_mapping 
+             WHERE invoice_no = #{invoice_no} 
+               AND cd_item = #{item.cd_item}) AS current_max,
+            -- 동일한 invoice_no와 no_mfg_order_serial을 가진 기존 데이터에서 extra 값 추출
+            (SELECT TOP 1 extra_invoice_no FROM ez_invoice_inventory_mapping 
+             WHERE invoice_no = #{invoice_no} AND lot_no IN (SELECT LBL_LOT_NO FROM M_WO_LABEL_DETAIL WHERE NO_MFG_ORDER_SERIAL = #{item.no_mfg_order_serial})) AS extra_invoice_no,
+            (SELECT TOP 1 extra_packing_inspection FROM ez_invoice_inventory_mapping 
+             WHERE invoice_no = #{invoice_no} AND lot_no IN (SELECT LBL_LOT_NO FROM M_WO_LABEL_DETAIL WHERE NO_MFG_ORDER_SERIAL = #{item.no_mfg_order_serial})) AS extra_packing_inspection,
+            (SELECT TOP 1 extra_order_no FROM ez_invoice_inventory_mapping 
+             WHERE invoice_no = #{invoice_no} AND lot_no IN (SELECT LBL_LOT_NO FROM M_WO_LABEL_DETAIL WHERE NO_MFG_ORDER_SERIAL = #{item.no_mfg_order_serial})) AS extra_order_no,
+            (SELECT TOP 1 extra_part_no FROM ez_invoice_inventory_mapping 
+             WHERE invoice_no = #{invoice_no} AND lot_no IN (SELECT LBL_LOT_NO FROM M_WO_LABEL_DETAIL WHERE NO_MFG_ORDER_SERIAL = #{item.no_mfg_order_serial})) AS extra_part_no,
+            (SELECT TOP 1 extra_spec FROM ez_invoice_inventory_mapping 
+             WHERE invoice_no = #{invoice_no} AND lot_no IN (SELECT LBL_LOT_NO FROM M_WO_LABEL_DETAIL WHERE NO_MFG_ORDER_SERIAL = #{item.no_mfg_order_serial})) AS extra_spec,
+            (SELECT TOP 1 extra_bundle_no FROM ez_invoice_inventory_mapping 
+             WHERE invoice_no = #{invoice_no} AND lot_no IN (SELECT LBL_LOT_NO FROM M_WO_LABEL_DETAIL WHERE NO_MFG_ORDER_SERIAL = #{item.no_mfg_order_serial})) AS extra_bundle_no,
+            (SELECT TOP 1 extra_weight FROM ez_invoice_inventory_mapping 
+             WHERE invoice_no = #{invoice_no} AND lot_no IN (SELECT LBL_LOT_NO FROM M_WO_LABEL_DETAIL WHERE NO_MFG_ORDER_SERIAL = #{item.no_mfg_order_serial})) AS extra_weight,
+            (SELECT TOP 1 customer_product_code_number FROM ez_invoice_inventory_mapping 
+             WHERE invoice_no = #{invoice_no} AND lot_no IN (SELECT LBL_LOT_NO FROM M_WO_LABEL_DETAIL WHERE NO_MFG_ORDER_SERIAL = #{item.no_mfg_order_serial})) AS customer_product_code_number
+    </foreach>
+) A
 </update>
 
 <!-- 인보이스 품목 삭제 -->
@@ -326,7 +360,11 @@ SELECT 'N' AS YN_CHECK --선택
      ,eiim.customer_product_code_number
      ,eiim.extra_invoice_no
      ,eiim.extra_packing_inspection
+     ,eiim.extra_order_no
+     ,eiim.extra_part_no
      ,eiim.extra_spec
+     ,eiim.extra_bundle_no
+     ,eiim.extra_weight
   FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
        INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
       INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
@@ -552,11 +590,14 @@ SELECT 'N' AS YN_CHECK --선택
 	 ,eiim.customer_product_code_number
      ,eiim.extra_invoice_no
      ,eiim.extra_packing_inspection
+     ,eiim.extra_order_no
+     ,eiim.extra_part_no
 	 ,eiim.cd_item
 	 ,item_count
      ,eiim.invoice_no
      ,eiim.extra_spec
      ,eiim.extra_bundle_no
+     ,eiim.extra_weight
   FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
        INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
       INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
@@ -602,7 +643,7 @@ WHERE ein.invoice_is_moved IS NULL
       OR 
       (ein.invoice_is_shipped = 'R' AND ISNULL(item_counts.item_count, 0) > 0)
   )
-ORDER BY ein.invoice_name DESC;
+ORDER BY ein.invoice_date DESC;
 </select>
 
 <!-- 초기화된 품목 조회 -->
@@ -934,11 +975,14 @@ UPDATE S_SALES_REQUEST_LOT
    </foreach>
 </update>
 
+<!-- 여기서 TOP 1로 조회해서 AMT_INVENTORY만 가지고오면 될듯?  -->
 <select id="getI_ONHAND_INVENTORY" parameterType="management" resultType="management">
-SELECT *
+SELECT TOP 1*
   FROM I_ONHAND_INVENTORY(NOLOCK)
  WHERE CD_ITEM = #{cd_item}
    AND STS_ITEM = 'G'
+   ORDER BY DT_UPDATE DESC
+   <!-- AND NO_LOT = #{lbl_lot_no} -->
 </select>
 
 <update id="updateI_ONHAND_INVENTORY">
@@ -1087,7 +1131,7 @@ INSERT INTO I_TRANSACTION (
 ) VALUES (
     #{invoice_name},
     #{no_transaction},	--수불번호인데 어디있는지 모르겠음(자바에서 만듬)
-    CONVERT(VARCHAR(8), GETDATE(), 112),         -- 오늘 날짜
+    #{invoice_name_date},
     '',           -- 현재 시간
     #{user_id}, 
     GETDATE(), 
@@ -1329,4 +1373,123 @@ AND B.CD_WH = 'YC_FG3'
       AND table_name = #{table_name}
       AND field_name = #{field_name}
 </delete>
+
+<!-- 인보이스 다른거 선택했을 때 삭제(모바일) -->
+<delete id="mobileDeleteInvoiceInventory">
+    DELETE FROM ez_invoice_inventory_mapping 
+    WHERE invoice_no = #{old_invoice_no}
+      AND lot_no = #{lbl_lot_no}
+</delete>
+
+<!-- 인보이스 다른거 선택했을 때 추가(모바일) -->
+<insert id="mobileInsertInvoiceInventory">
+	INSERT INTO ez_invoice_inventory_mapping
+	(
+	invoice_no, lot_no, customer_product_code_number, cd_item,
+	extra_invoice_no, extra_packing_inspection, extra_order_no,
+	extra_part_no, extra_spec, extra_bundle_no, extra_weight
+	)
+	VALUES(
+	#{new_invoice_no}, #{lbl_lot_no}, #{customer_product_code_number},#{cd_item}, 
+	#{extra_invoice_no}, #{extra_packing_inspection}, #{extra_order_no},
+	#{extra_part_no}, #{extra_spec}, #{extra_bundle_no}, #{extra_weight}
+	)
+</insert>
+
+<select id="selectI_TRANSACTION_NextSeq" parameterType="management" resultType="management">
+  SELECT COUNT(*) + 1 AS next_seq
+FROM I_TRANSACTION
+    <![CDATA[
+WHERE DT_INSERT >= CONVERT(VARCHAR(10), GETDATE(), 120) + ' 00:00:00'
+  AND DT_INSERT < CONVERT(VARCHAR(10), DATEADD(DAY, 1, GETDATE()), 120) + ' 00:00:00'
+  ]]>
+  AND NO_TRANSACTION LIKE '%ISS%';
+</select>
+
+<insert id="insertS_SALES_REQUEST_LOT">
+IF NOT EXISTS (
+        SELECT 1 
+        FROM S_SALES_REQUEST_LOT 
+        WHERE NO_SALES_REQUEST_SERIAL = #{no_sales_request_serial}
+          AND SEQ_SALES_REQUEST = #{seq_sales_request}
+          AND LOT_NO = #{lbl_lot_no}
+    )
+    BEGIN
+        INSERT INTO S_SALES_REQUEST_LOT (
+            NO_SALES_REQUEST_SERIAL,
+            SEQ_SALES_REQUEST,
+            LOT_NO,
+            QTY_ISSUE,
+            STS_PROGRESS,
+            REMARK,
+            ID_INSERT,
+            DT_INSERT,
+            ID_UPDATE,
+            DT_UPDATE
+        ) 
+        VALUES (
+            #{no_sales_request_serial}, 
+            #{seq_sales_request}, 
+            #{lbl_lot_no}, 
+            #{qty_inventory}, 
+            'R',
+            NULL,
+            'ADMIN',
+            GETDATE(), 
+            'ADMIN',
+            GETDATE()
+        )
+    END
+</insert>
+
+<!-- pda 스캔 로직 시 수주번호(SEQ_REQUEST_SERIAL) 조회 -->
+<select id="selectSEQ_REQUEST_SERIAL" parameterType="management" resultType="management">
+SELECT TOP 1 *
+FROM S_SALES_REQUEST_DETAIL SD
+WHERE SD.CD_ITEM = #{cd_item}
+ORDER BY SD.DT_UPDATE DESC
+</select>
+
+<!-- 다른 인보이스에 있는거 선택했을 때 선택한 인보이스의 품목 중 W/O와 재고수량 같은거 조회 -->
+<select id="getSameWoQtyInventory" parameterType="management" resultType="management">
+    SELECT TOP 1
+           eiim.lot_no        AS lbl_lot_no
+         , eiim.invoice_no
+    FROM ez_invoice_inventory_mapping eiim
+         INNER JOIN M_WO_LABEL_DETAIL A WITH (NOLOCK)
+                 ON eiim.lot_no = A.LBL_LOT_NO
+         INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK)
+                 ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
+         LEFT JOIN ez_shipping_list esl
+                ON eiim.lot_no = esl.lbl_lot_no
+    WHERE eiim.invoice_no       = #{invoice_no}
+      AND A.NO_MFG_ORDER_SERIAL = #{no_mfg_order_serial}
+      AND FLOOR(B.QTY_INVENTORY) = #{qty_inventory}
+      AND B.QTY_INVENTORY        != 0
+      AND B.CD_WH                = 'YC_FG3'
+      AND (esl.shipping_list_no IS NULL
+           OR esl.shipping_list_no = '')   -- 미출력 조건
+    ORDER BY eiim.lot_no ASC
+</select>
+
+<!-- W/O, 수량 같은거 로트번호 바꾸기 -->
+<update id="swapLotNo" parameterType="management">
+    -- STEP 1: scan 쪽 lot_no를 임시값으로 변경
+    UPDATE ez_invoice_inventory_mapping
+       SET lot_no = CONCAT('__SWAP__', #{scan_lot_no})
+     WHERE lot_no      = #{scan_lot_no}
+       AND invoice_no  = #{scan_invoice_no};
+
+    -- STEP 2: target lot_no → scan lot_no로 변경
+    UPDATE ez_invoice_inventory_mapping
+       SET lot_no = #{scan_lot_no}
+     WHERE lot_no      = #{target_lot_no}
+       AND invoice_no  = #{target_invoice_no};
+
+    -- STEP 3: 임시값 → target lot_no로 변경
+    UPDATE ez_invoice_inventory_mapping
+       SET lot_no = #{target_lot_no}
+     WHERE lot_no = CONCAT('__SWAP__', #{scan_lot_no})
+       AND invoice_no = #{scan_invoice_no};
+</update>
 </mapper>

@@ -536,6 +536,11 @@ button:hover {
     ⚙️ 열 숨기기
 </button>
 
+<button onclick="downloadExcel();" 
+        style="padding:4px 12px; cursor:pointer;">
+    📥 엑셀 다운로드
+</button>
+
 <div id="columnPanel" style="display:none; position:fixed; z-index:9999;
      background:#fff; border:1px solid #ddd; border-radius:4px;
      padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.15); min-width:200px;
@@ -1657,6 +1662,72 @@ function loadColumnSettings() {
         }
     });
 }
+
+//엑셀 다운로드
+function downloadExcel() {
+    // 컬럼별 너비 매핑 (field 기준)
+    const colWidthMap = {
+        "rownum":                       6,   // No (formatter rownum)
+        "cd_item":                      14,  // 품목코드
+        "nm_item":                      33,  // 품목명
+        "spec_item":                    23,  // 규격
+        "lbl_lot_no":                   22,  // Lot No.
+        "no_mfg_order_serial":          22,  // W/O No
+        "customer_product_code_number": 28,  // 고객사 부여 품번
+        "extra_invoice_no":             22,  // 출력용 인보이스
+        "extra_packing_inspection":     38,  // 출력용 Packinglist No
+        "extra_order_no":               20,  // 출력용 Order No
+        "extra_part_no":                20,  // 출력용 Part No
+        "extra_bundle_no":              20,  // Bundle No
+        "extra_weight":                 20,  // 출력용 중량
+        "kgm_weight":                   12,  // 단중
+        "lbl_real_length":              12,  // 실길이
+        "qty_inventory":                12,  // 재고수량
+        "wgt_inventory":                14,  // 재고중량
+        "cd_wh":                        12,  // 창고코드
+        "nm_wh":                        16,  // 창고명
+        "lbl_date":                     14,  // 발행일자
+        "nm_customer":                  40,  // 고객명
+        "po_customer":                  14,  // 고객PO
+        "no_receipt":                   14,  // 입하No
+        "remarks":                      14,  // 비고
+        "nm_location":                  14,  // 위치
+    };
+
+    // 보이는 컬럼만 (visible: false, 미리보기 제외)
+    const columns = dataTable.getColumns().filter(col => {
+        const def = col.getDefinition();
+        return col.isVisible() && def.field && def.field !== "preview";
+    });
+
+    const rows = dataTable.getRows("active").map(row => row.getData());
+
+    if (rows.length === 0) {
+        alert("다운로드할 데이터가 없습니다.");
+        return;
+    }
+
+    // 헤더
+    const header = columns.map(col => col.getDefinition().title);
+
+    // 데이터
+    const data = rows.map(row =>
+        columns.map(col => row[col.getField()] ?? "")
+    );
+
+    const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+
+    // 보이는 컬럼 순서대로 너비 동적 생성
+    ws['!cols'] = columns.map(col => {
+        const field = col.getField();
+        return { wch: colWidthMap[field] ?? 15 }; // 매핑 없으면 기본값 15
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "InventoryList");
+    XLSX.writeFile(wb, "인보이스_리스트.xlsx");
+}
+
 </script>
 
 

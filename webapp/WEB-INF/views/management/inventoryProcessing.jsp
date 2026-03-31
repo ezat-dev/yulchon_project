@@ -415,6 +415,10 @@ button:hover{
 				        <span class="legend-text">스캔 대기</span>
 				    </div>
 				</div>
+				<button onclick="downloadExcel();" 
+				        style="padding:4px 12px; cursor:pointer;">
+				 		   📥 엑셀 다운로드
+				</button>
 <!--                 <button class="insert-button">
                     <img src="/yulchon/css/image/insert-icon.png" alt="insert" class="button-image">추가
                 </button>
@@ -498,6 +502,8 @@ dataTable = new Tabulator('#dataTable', {
 	    { title: "출력용 Packinglist No/Inspection No", field: "extra_packing_inspection", width: 300, hozAlign: "center", headerFilter: "input"},
 	    { title: "출력용 Order No", field: "extra_order_no", width: 170, hozAlign: "center", headerFilter: "input"},
 	    { title: "출력용 Part No", field: "extra_part_no", width: 170, hozAlign: "center", headerFilter: "input"},
+	    { title: "Bundle No", field: "extra_bundle_no", width: 170, hozAlign: "center", headerFilter: "input"},
+	    { title: "출력용 중량", field: "extra_weight", width: 170, hozAlign: "center", headerFilter: "input"},
 	    { title: "단중", field: "kgm_weight", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
 	    { title: "실길이", field: "lbl_real_length", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
 	    { title: "재고수량", field: "qty_inventory", sorter: "string", width: 100, hozAlign: "center", headerFilter: "input"},
@@ -743,6 +749,72 @@ $(function() {
 	    dataTable.setData("/yulchon/management/getShippingList", {});
   });
 });
+
+//쉬핑마크 출력한것만 엑셀 다운로드
+function downloadExcel() {
+  const colWidthMap = {
+  	"rownum":                       6,   // No (formatter rownum)
+      "cd_item":                      14,
+      "nm_item":                      33,
+      "spec_item":                    23,
+      "lbl_lot_no":                   22,
+      "no_mfg_order_serial":          22,
+      "customer_product_code_number": 28,
+      "extra_invoice_no":             22,
+      "extra_packing_inspection":     38,
+      "extra_order_no":               20,
+      "extra_part_no":                20,  // 출력용 Part No
+      "extra_bundle_no":              20,  // Bundle No
+      "extra_weight":                 20,  // 출력용 중량
+      "kgm_weight":                   12,
+      "lbl_real_length":              12,
+      "qty_inventory":                12,
+      "wgt_inventory":                14,
+      "cd_wh":                        12,
+      "nm_wh":                        16,
+      "lbl_date":                     14,
+      "nm_customer":                  40,
+      "po_customer":                  14,
+      "no_receipt":                   14,
+      "remarks":                      14,
+      "nm_location":                  14,
+  };
+
+  // 보이는 컬럼만 (selected 체크박스, rownum, visible:false 제외)
+  const columns = dataTable.getColumns().filter(col => {
+      const def = col.getDefinition();
+      return col.isVisible() 
+          && def.field 
+          && def.formatter !== "rowSelection"
+          && def.formatter !== "rownum";
+  });
+
+  // 초록색 행만 = shipping_list_no가 있는 행만
+  const rows = dataTable.getRows("active")
+      .map(row => row.getData())
+      .filter(data => 
+          data.shipping_list_no !== null && 
+          data.shipping_list_no !== undefined && 
+          data.shipping_list_no !== ""
+      );
+
+  if (rows.length === 0) {
+      alert("다운로드할 데이터가 없습니다.");
+      return;
+  }
+
+  const header = columns.map(col => col.getDefinition().title);
+  const data = rows.map(row =>
+      columns.map(col => row[col.getField()] ?? "")
+  );
+
+  const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+  ws['!cols'] = columns.map(col => ({ wch: colWidthMap[col.getField()] ?? 15 }));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "ShippingList");
+  XLSX.writeFile(wb, "출하_리스트.xlsx");
+}
 </script>
 
 

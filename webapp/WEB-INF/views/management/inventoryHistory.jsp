@@ -553,6 +553,7 @@ dataTable = new Tabulator('#dataTable', {
     { title: "실길이", field: "lbl_real_length", sorter: "string", width: 120, hozAlign: "center"},
     { title: "Lot No.", field: "lbl_lot_no", width: 170, hozAlign: "center"},
     { title: "W/O No", field: "no_mfg_order_serial", width: 170, hozAlign: "center"},
+    { title: "Bundle No", field: "extra_bundle_no", width: 170, hozAlign: "center"},
     { title: "재고수량", field: "qty_inventory", sorter: "string", width: 100, hozAlign: "center"},
     { title: "재고중량", field: "wgt_inventory", sorter: "string", width: 120, hozAlign: "center"},
     { title: "창고코드", field: "cd_wh", sorter: "string", width: 120, hozAlign: "center"},
@@ -630,7 +631,7 @@ function initInvoiceTable(){
 	    selectedRowData = row.getData();
 	    dataTable.setData("/yulchon/management/getCompleteInventoryList", 
 	    	    { invoice_no: selectedRowData.invoice_no,
-    	    		invoice_is_shipped: selectedRowData.invoice_is_shipped.trim() });
+    	    		invoice_is_shipped: (selectedRowData.invoice_is_shipped || "").trim() });
 	  },
 	  rowDblClick: function(e, row) {
 	    var d = row.getData();

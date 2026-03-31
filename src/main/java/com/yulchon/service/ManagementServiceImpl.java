@@ -1,11 +1,14 @@
 package com.yulchon.service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import com.yulchon.dao.ManagementDao;
 import com.yulchon.domain.Management;
@@ -196,6 +199,20 @@ public class ManagementServiceImpl implements ManagementService{
 
 			//기초데이터(뒤쪽에서 하면 조회 안되서 insert 안됨. 먼저 실행해야함)
 			managementDao.insertShippingResult(management);
+			
+			
+			//pda 스캔 로직 추가(S_SALES_REQUEST_LOT 테이블에 추가)
+			List<Management> datas0 = managementDao.getRealDeductInventoryList(management);
+			for(Management v: datas0) {
+				Management seq_request_serial_data = managementDao.selectSEQ_REQUEST_SERIAL(v);
+				String no_sales_request_serial = seq_request_serial_data.getNo_sales_request_serial();
+				//Integer seq_sales_request = seq_request_serial_data.getSeq_sales_request();
+				//System.out.println("수주번호: " + no_sales_request_serial);
+				String lbl_lot_no = v.getLbl_lot_no();
+				seq_request_serial_data.setLbl_lot_no(lbl_lot_no);
+				boolean insertS_SALES_REQUEST_LOT = managementDao.insertS_SALES_REQUEST_LOT(seq_request_serial_data);
+				//System.out.println("insertS_SALES_REQUEST_LOT 성공여부: " + insertS_SALES_REQUEST_LOT);
+			}
 
 
 			// 2. 차감 데이터 조회
@@ -207,7 +224,7 @@ public class ManagementServiceImpl implements ManagementService{
 				throw new RuntimeException("차감할 재고 데이터가 존재하지 않아 출하 완료를 취소합니다.");
 			}
 			String no_sales_request_serial = datas1.get(0).getNo_sales_request_serial();
-			//System.out.println("no_sales_request_serial: " + no_sales_request_serial);
+			System.out.println("no_sales_request_serial: " + no_sales_request_serial);
 
 			if (datas1 == null || datas1.isEmpty()) {
 				//System.out.println("알림: 차감할 데이터가 없습니다.");
@@ -238,10 +255,14 @@ public class ManagementServiceImpl implements ManagementService{
 			int count = 0;
 			for(Management v : datas1) {
 				String lbl_lot_no = v.getLbl_lot_no();
+				//System.out.println("로트번호: " + lbl_lot_no);
 				String inventoryCount = v.getQty_inventory();
+				//System.out.println("inventoryCount: " + inventoryCount);
 				String invoice_name = v.getInvoice_name();
+				//System.out.println("invoice_name: " + invoice_name);
 				Management data = managementDao.getI_ONHAND_INVENTORY(v);
 				if(data != null) {
+					//System.out.println("getI_ONHAND_INVENTORY 데이터 존재!");
 					data.setUser_id(loginUserID);
 					data.setQty_inventory(inventoryCount);
 					data.setNo_lot(lbl_lot_no);
@@ -254,13 +275,25 @@ public class ManagementServiceImpl implements ManagementService{
 				//I_TRANSACTION 테이블에 추가
 				//수불번호 만들기
 				String[] parts = invoice_name.split("-");
-				String datePart = parts[1]; // "20260226"
-				int sequencePart = Integer.parseInt(parts[2]); // 1 (숫자로 변환)
+				String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")); // "20260226" >> 여기 오늘 날짜	**수정함
+				//int sequencePart = Integer.parseInt(parts[2]); // 1 (숫자로 변환) >> I_TRANSACTION 오늘날짜로 조회해서 행 개수 + 1	**수정함
+				int sequencePart = Integer.parseInt(managementDao.selectI_TRANSACTION_NextSeq(management).getNext_seq());
 
 				String noTransaction = String.format("ISS%s%05d", datePart, sequencePart);
 				//System.out.println("만든 수불번호: " + noTransaction);
 				v.setNo_transaction(noTransaction);
-				managementDao.insertI_TRANSACTION(v);
+				String invoice_name_date = "";
+				String invoiceNameDatePart = v.getInvoice_name().substring(3);
+				if (invoiceNameDatePart.length() == 6) {
+				    // YYMMDD 형식인 경우 앞에 20을 붙임
+				    invoice_name_date = "20" + invoiceNameDatePart;
+				} else if (invoiceNameDatePart.length() == 8) {
+				    // YYYYMMDD 형식인 경우 그대로 사용
+				    invoice_name_date = invoiceNameDatePart;
+				}
+				v.setInvoice_name_date(invoice_name_date);
+				boolean insertI_TRANSACTION = managementDao.insertI_TRANSACTION(v);
+				//System.out.println("I_TRANSACTION 데이터 추가 성공 여부: " + insertI_TRANSACTION);
 
 				//I_TRANSACTION_DETAIL 테이블에 추가
 				UUID uuid = UUID.randomUUID();
@@ -321,17 +354,17 @@ public class ManagementServiceImpl implements ManagementService{
 			throw e; 
 		}
 	}
-	
+
 	@Override
 	public Management getProductConfirm(Management management) {
 		return managementDao.getProductConfirm(management);
 	}
-	
+
 	@Override
 	public boolean updateInvoiceName(Management management) {
 		return managementDao.updateInvoiceName(management);
 	}
-	
+
 	@Override
 	public List<Management> getColumnSettingList(Management management) {
 		return managementDao.getColumnSettingList(management);
@@ -345,5 +378,36 @@ public class ManagementServiceImpl implements ManagementService{
 	@Override
 	public boolean deleteColumnSetting(Management management) {
 		return managementDao.deleteColumnSetting(management);
+	}
+
+	@Transactional(rollbackFor = Exception.class)
+	@Override
+	public boolean mobileDeleteAndInsertInvoiceInventory(Management management) {
+		try {
+			boolean flag1 = managementDao.mobileDeleteInvoiceInventory(management);
+			boolean flag2 = managementDao.mobileInsertInvoiceInventory(management);
+			if(flag1 && flag2) {
+				return true;
+			}else {
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+	            return false;
+			}
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+	        TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+	        return false;
+		}
+	}
+	
+	@Override
+	public Management getSameWoQtyInventory(Management management) {
+		return managementDao.getSameWoQtyInventory(management);
+	}
+
+	@Transactional
+	@Override
+	public boolean swapLotNo(Management management) {
+		return managementDao.swapLotNo(management);
 	}
 }

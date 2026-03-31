@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -43,11 +45,23 @@ public class PrintExcel {
 		ActiveXComponent excel = null;
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
+	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -68,15 +82,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "F4", data.getExtra_bundle_no());
@@ -93,12 +117,11 @@ public class PrintExcel {
 			putCellValue(sheet, "K9", data.getQty_inventory());
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -135,19 +158,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 	    }
 		return resultMap;
 	}
@@ -161,10 +179,22 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -185,15 +215,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "H5", data.getExtra_bundle_no());
@@ -211,12 +251,11 @@ public class PrintExcel {
 			
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -253,19 +292,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -279,10 +313,22 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -303,15 +349,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "H5", data.getExtra_bundle_no());
@@ -329,12 +385,11 @@ public class PrintExcel {
 			
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -371,19 +426,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -397,10 +447,22 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -421,15 +483,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "F4", data.getExtra_bundle_no());
@@ -446,12 +518,11 @@ public class PrintExcel {
 			
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -488,19 +559,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -514,10 +580,22 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -538,15 +616,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getInvoice_name());
@@ -564,12 +652,11 @@ public class PrintExcel {
 			}
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -606,19 +693,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -632,10 +714,22 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -657,14 +751,25 @@ public class PrintExcel {
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
 			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getInvoice_name());
@@ -679,12 +784,11 @@ public class PrintExcel {
 			
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -721,19 +825,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -747,10 +846,22 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -771,15 +882,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			String rawDate = data.getLbl_date();
 			String formattedDate = "";
@@ -813,12 +934,11 @@ public class PrintExcel {
 			 * Dispatch.call(shapes, "AddPicture", qrTempPath, false, true, left+40, top-10,
 			 * 45, 45);
 			 */
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -855,19 +975,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -881,10 +996,22 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -905,15 +1032,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			String rawDate = data.getLbl_date();
 			String formattedDate = "";
@@ -941,12 +1078,11 @@ public class PrintExcel {
 			putCellValue(sheet, "A19", data.getExtra_bundle_no());
 			putCellValue(sheet, "A20", "*" + data.getExtra_bundle_no() + "*");
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -983,19 +1119,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -1009,11 +1140,23 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -1034,15 +1177,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B4", data.getExtra_packing_inspection());
@@ -1054,12 +1207,11 @@ public class PrintExcel {
 			putCellValue(sheet, "B9", data.getWgt_inventory());
 			putCellValue(sheet, "B11", data.getExtra_bundle_no());
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -1096,19 +1248,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -1122,11 +1269,23 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -1147,15 +1306,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			int totalLength = Integer.parseInt(data.getLbl_real_length())/1000*(Integer.parseInt(data.getQty_inventory()));
 			// [2] 값 넣기 (Null 방어 로직 추가)
@@ -1170,12 +1339,11 @@ public class PrintExcel {
 			putCellValue(sheet, "E8", totalLength + " m");
 			putCellValue(sheet, "E10", data.getExtra_bundle_no());
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -1212,19 +1380,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -1238,11 +1401,23 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -1263,15 +1438,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			System.out.println("item_seq_total: " + data.getItem_seq_total());
 			// [2] 값 넣기 (Null 방어 로직 추가)
@@ -1281,12 +1466,11 @@ public class PrintExcel {
 			putCellValue(sheet, "B7", data.getItem_seq_total()); //<- 여기에 같은 품목 개수 조회해서 넣어야 함(1/30)
 			putCellValue(sheet, "A9", "NET WEIGHT : " + data.getWgt_inventory() + " KG / PCS : " + data.getQty_inventory() + "PCS");
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -1323,19 +1507,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -1349,11 +1528,23 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -1374,15 +1565,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			int totalLength = Integer.parseInt(data.getLbl_real_length())/1000*(Integer.parseInt(data.getQty_inventory()));
 			
@@ -1396,12 +1597,11 @@ public class PrintExcel {
 			putCellValue(sheet, "B9", data.getWgt_inventory() + " KG");
 			putCellValue(sheet, "B12", data.getExtra_bundle_no());
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -1438,19 +1638,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -1464,11 +1659,23 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -1489,15 +1696,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			String[] part = data.getCd_materail().split(" ");
 			String material1 = part[2];
@@ -1513,12 +1730,11 @@ public class PrintExcel {
 			putCellValue(sheet, "B11", data.getQty_inventory() + " PCS");
 			putCellValue(sheet, "B2", data.getExtra_invoice_no());
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -1555,19 +1771,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -1581,11 +1792,23 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -1606,15 +1829,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B9", data.getExtra_bundle_no());
@@ -1624,12 +1857,11 @@ public class PrintExcel {
 			putCellValue(sheet, "E10", data.getExtra_invoice_no());
 			putCellValue(sheet, "E12", data.getExtra_bundle_no());
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -1666,19 +1898,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -1692,11 +1919,23 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -1717,15 +1956,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "H4", data.getExtra_bundle_no());
@@ -1741,12 +1990,11 @@ public class PrintExcel {
 			putCellValue(sheet, "E9", data.getWgt_inventory());
 			putCellValue(sheet, "K9", data.getQty_inventory());
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -1783,19 +2031,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -1809,11 +2052,23 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -1834,15 +2089,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "H4", data.getExtra_bundle_no());
@@ -1858,12 +2123,11 @@ public class PrintExcel {
 			putCellValue(sheet, "K9", data.getQty_inventory());
 			putCellValue(sheet, "K7", data.getRemarks()); //비고
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -1900,19 +2164,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -1926,11 +2185,23 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -1951,15 +2222,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getExtra_invoice_no());
@@ -1973,12 +2254,11 @@ public class PrintExcel {
 			putCellValue(sheet, "B10", data.getExtra_packing_inspection());
 			putCellValue(sheet, "B12", data.getExtra_bundle_no());
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -2015,19 +2295,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -2041,11 +2316,23 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -2066,15 +2353,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "F4", data.getExtra_bundle_no());
@@ -2089,12 +2386,11 @@ public class PrintExcel {
 			putCellValue(sheet, "E9", data.getWgt_inventory());
 			putCellValue(sheet, "K9", data.getQty_inventory());
 
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -2131,19 +2427,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -2157,10 +2448,22 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -2181,15 +2484,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			String rawDate = data.getLbl_date();
 			String formattedDate = "";
@@ -2223,12 +2536,11 @@ public class PrintExcel {
 			 * Dispatch.call(shapes, "AddPicture", qrTempPath, false, true, left+40, top-10,
 			 * 45, 45);
 			 */
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -2265,19 +2577,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}
@@ -2291,10 +2598,22 @@ public class PrintExcel {
 	    Dispatch workbook = null;
 	    Dispatch sheet = null;
 	    
+	    // 파일별 락 획득
+	    ReentrantLock fileLock = ExcelManager.getInstance().getFileLock(file_path);
+	    boolean locked = false;
+	    
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
 		try {
+	        // 파일 락 먼저 잡기 (최대 15초 대기)
+	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        if (!locked) {
+	            resultMap.put("result", false);
+	            resultMap.put("message", "현재 같은 양식이 사용 중입니다. 잠시 후 다시 시도해주세요.");
+	            return resultMap;
+	        }
+	        
 			// 싱글톤 매니저의 풀에서 엑셀 인스턴스를 하나 빌려오기
 	        excel = ExcelManager.getInstance().borrowExcel();
 	        if (excel == null) {
@@ -2315,15 +2634,25 @@ public class PrintExcel {
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
 
-			// [변경 3] 빌려온 엑셀로 워크북 열기
-	        Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
-	        // 매번 새로 열어야 동시성 충돌이 없습니다.
-	        workbook = Dispatch.call(workbooks, "Open", file_path).toDispatch();
+	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
+	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
 
 	        excel.setProperty("ScreenUpdating", false);
 
 	        Dispatch worksheets = Dispatch.get(workbook, "Worksheets").toDispatch();
 	        sheet = Dispatch.call(worksheets, "Item", new Variant(1)).toDispatch();
+	        
+	        Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
+	        int shapeCount = Dispatch.get(shapes, "Count").toInt();
+	        for (int i = shapeCount; i >= 1; i--) {
+	            Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
+	            String shapeName = Dispatch.get(shape, "Name").toString();
+	            
+	            // 엑셀에 삽입된 그림은 보통 이름에 "Picture"가 포함됨
+	            if (shapeName.contains("Picture")) {
+	                Dispatch.call(shape, "Delete");
+	            }
+	        }
 
 			String rawDate = data.getLbl_date();
 			String formattedDate = "";
@@ -2357,12 +2686,11 @@ public class PrintExcel {
 			 * Dispatch.call(shapes, "AddPicture", qrTempPath, false, true, left+40, top-10,
 			 * 45, 45);
 			 */
-			Dispatch shapes = Dispatch.get(sheet, "Shapes").toDispatch();
-			int shapeCount = Dispatch.get(shapes, "Count").toInt();
+			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
 
 			// [2] 이름이 "QR_HOLDER"인 도형 찾기
-			for (int i = 1; i <= shapeCount; i++) {
+			for (int i = 1; i <= currentShapeCount; i++) {
 			    Dispatch shape = Dispatch.call(shapes, "Item", new Variant(i)).toDispatch();
 			    String shapeName = Dispatch.get(shape, "Name").toString();
 			    
@@ -2399,19 +2727,14 @@ public class PrintExcel {
 			resultMap.put("result", false);
 			resultMap.put("message", "인쇄 중 오류가 발생했습니다. " + e.getMessage());
 		}finally {
-			// 중요: 자원 해제 및 풀 반납
-	        try {
-	            if (workbook != null) {
-	                // 저장하지 않고 닫기
-	                Dispatch.call(workbook, "Close", new Variant(false));
-	            }
-	        } catch (Exception ignore) {}
 	        
 	        if (excel != null) {
 	            try { excel.setProperty("ScreenUpdating", true); } catch (Exception ignore) {}
 	            // 다 쓴 엑셀 인스턴스를 다시 풀에 넣어줍니다.
 	            ExcelManager.getInstance().returnExcel(excel);
 	        }
+	        // 락 해제
+	        if (locked) fileLock.unlock();
 		}
 		return resultMap;
 	}

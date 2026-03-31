@@ -449,5 +449,56 @@ public class ManagementDaoImpl implements ManagementDao {
 		}
 		return true;
 	}
+	
+	@Override
+	public boolean mobileDeleteInvoiceInventory(Management management) {
+		int result =  sqlSession.delete("management.mobileDeleteInvoiceInventory", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean mobileInsertInvoiceInventory(Management management) {
+		int result =  sqlSession.insert("management.mobileInsertInvoiceInventory", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public Management selectI_TRANSACTION_NextSeq(Management management) {
+		return sqlSession.selectOne("management.selectI_TRANSACTION_NextSeq", management);
+	}
+	
+	@Override
+	public boolean insertS_SALES_REQUEST_LOT(Management management) {
+		int result =  sqlSession.insert("management.insertS_SALES_REQUEST_LOT", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public Management selectSEQ_REQUEST_SERIAL(Management management) {
+		return sqlSession.selectOne("management.selectSEQ_REQUEST_SERIAL", management);
+	}
+	
+	@Override
+	public Management getSameWoQtyInventory(Management management) {
+		return sqlSession.selectOne("management.getSameWoQtyInventory", management);
+	}
+
+	@Override
+	public boolean swapLotNo(Management datas) {
+		int result =  sqlSession.update("management.swapLotNo", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
 }
 

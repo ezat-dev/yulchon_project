@@ -5,6 +5,8 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 
 import com.jacob.activeX.ActiveXComponent;
+import com.jacob.com.Dispatch;
+import com.jacob.com.Variant;
 
 public class ExcelInstanceFactory extends BasePooledObjectFactory<ActiveXComponent> {
 
@@ -27,7 +29,11 @@ public class ExcelInstanceFactory extends BasePooledObjectFactory<ActiveXCompone
     public void destroyObject(PooledObject<ActiveXComponent> p) throws Exception {
         // 인스턴스 파괴 시 안전하게 종료
         try {
-            p.getObject().invoke("Quit");
+        	ActiveXComponent excel = p.getObject();
+            Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
+            // [핵심] 모든 워크북을 "저장하지 않고(false)" 강제 종료
+            Dispatch.call(workbooks, "Close", new Variant(false)); 
+            excel.invoke("Quit");
         } catch (Exception ignore) {}
     }
 }

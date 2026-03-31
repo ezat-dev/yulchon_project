@@ -95,8 +95,77 @@ public class Management {
 	private String field_name;
 	private String is_visible;
 	private String extra_weight;
-
+	private String old_invoice_no;
+	private String new_invoice_no;
+	private String next_seq;
+	private String invoice_name_date;
+	private String scan_lot_no;
+	private String scan_invoice_no;
+	private String target_lot_no;
+	private String target_invoice_no;
+	private String old_lot_no;
+	private String new_lot_no;
 	
+	public String getOld_lot_no() {
+		return old_lot_no;
+	}
+	public void setOld_lot_no(String old_lot_no) {
+		this.old_lot_no = old_lot_no;
+	}
+	public String getNew_lot_no() {
+		return new_lot_no;
+	}
+	public void setNew_lot_no(String new_lot_no) {
+		this.new_lot_no = new_lot_no;
+	}
+	public String getScan_invoice_no() {
+		return scan_invoice_no;
+	}
+	public void setScan_invoice_no(String scan_invoice_no) {
+		this.scan_invoice_no = scan_invoice_no;
+	}
+	public String getTarget_lot_no() {
+		return target_lot_no;
+	}
+	public void setTarget_lot_no(String target_lot_no) {
+		this.target_lot_no = target_lot_no;
+	}
+	public String getTarget_invoice_no() {
+		return target_invoice_no;
+	}
+	public void setTarget_invoice_no(String target_invoice_no) {
+		this.target_invoice_no = target_invoice_no;
+	}
+	public String getScan_lot_no() {
+		return scan_lot_no;
+	}
+	public void setScan_lot_no(String scan_lot_no) {
+		this.scan_lot_no = scan_lot_no;
+	}
+	public String getInvoice_name_date() {
+		return invoice_name_date;
+	}
+	public void setInvoice_name_date(String invoice_name_date) {
+		this.invoice_name_date = invoice_name_date;
+	}
+	public String getNext_seq() {
+		return next_seq;
+	}
+	public void setNext_seq(String next_seq) {
+		this.next_seq = next_seq;
+	}
+	public String getOld_invoice_no() {
+		return old_invoice_no;
+	}
+	public void setOld_invoice_no(String old_invoice_no) {
+		this.old_invoice_no = old_invoice_no;
+	}
+	public String getNew_invoice_no() {
+		return new_invoice_no;
+	}
+	public void setNew_invoice_no(String new_invoice_no) {
+		this.new_invoice_no = new_invoice_no;
+	}
 	public String getExtra_weight() {
 		return extra_weight;
 	}

@@ -203,10 +203,10 @@ display: none;
 		<div class="info-table-container">
 			<table class="info-table">
 				<tbody>
-					<tr>
+<!-- 					<tr>
 						<th>품목명</th>
 						<td id="nm_item"></td>
-					</tr>
+					</tr> -->
 					<tr>
 						<th>Lot No.</th>
 						<td id="lbl_lot_no"></td>
@@ -247,6 +247,18 @@ display: none;
 	let selectedInvoiceNo = "";
 	let selectedInvoiceName = "";
 	let invoice_no = "";
+	let lot_no = "";
+	let customer_product_code_number = "";
+	let cd_item = "";
+	let extra_invoice_no = "";
+	let extra_packing_inspection = "";
+	let extra_order_no = "";
+	let extra_part_no = "";
+	let extra_spec = "";
+	let extra_bundle_no = "";
+	let extra_weight = "";
+	let no_mfg_order_serial = "";
+	let qty_inventory = "";
 	
 	const showLoading = () => $('#loadingOverlay').css('display', 'flex');
 	const hideLoading = () => $('#loadingOverlay').hide();
@@ -283,67 +295,126 @@ display: none;
 	// timeBetweenScans는 단일 디코딩이면 큰 의미 없지만, 생성자 시그니처 맞추기 용도도 있음
 	const codeReader = new ZXing.BrowserMultiFormatReader(hints, 200);
 	
-  $(document).ready(function() {
-	  invoice_no = "${data.invoice_no}";
-	  selectedInvoiceNo = "${selectedInvoiceNo}";
-	  selectedInvoiceName = "${selectedInvoiceName}";
-	  
-	  	$('#nm_item').text("${data.nm_item}");
+	$(document).ready(function() {
+	    invoice_no = "${data.invoice_no}";
+	    selectedInvoiceNo = "${selectedInvoiceNo}";
+	    selectedInvoiceName = "${selectedInvoiceName}";
+	    
+	    lot_no = "${data.lbl_lot_no}";
+	    customer_product_code_number = "${data.customer_product_code_number}";
+	    cd_item = "${data.cd_item}";
+	    no_mfg_order_serial = "${data.no_mfg_order_serial}";
+	    qty_inventory = "${data.qty_inventory}";
+
+	    $('#nm_item').text("${data.nm_item}");
 	    $('#lbl_lot_no').text("${data.lbl_lot_no}");
 	    $('#no_mfg_order_serial').text("${data.no_mfg_order_serial}");
 	    $('#qty_inventory').text("${data.qty_inventory}");
 	    $('#nm_customer').text("${data.nm_customer}");
 	    $('#invoice_no').text(invoice_no);
 
-	    if(invoice_no == null || invoice_no == ""){
-	    	var msg = "인보이스 부여되지 않은 품목입니다.\n" + selectedInvoiceName + "에 품목을 추가하시겠습니까?";
-	        
+	    //스캔한 품목 인보이스 없을 때
+	    if (invoice_no == null || invoice_no == "") {
+	        var msg = "인보이스 부여되지 않은 품목입니다.\n" + selectedInvoiceName + "에 품목을 추가하시겠습니까?";
 	        if (confirm(msg)) {
-	            //확인 눌렀을 때
 	            insertInvoiceInventory(); 
 	        } else {
-	        	history.back();
+	            history.back();
 	        }
-		   }else if(invoice_no != selectedInvoiceNo){
-				alert("인보이스를 잘못 선택하셨습니다.\n다시 선택 후 스캔해주세요.");
-				history.back();
-			   }
+	    } //선택한 인보이스와 스캔한 품목의 인보이스 다를 때
+	    else if (invoice_no != selectedInvoiceNo) {
+	        console.log("선택한 인보이스 번호:", selectedInvoiceNo);
+	        console.log("스캔한 품목의 인보이스 번호: ", invoice_no);
 
-	    //인보이스 부여 안된거 스캔했을때 확인 누르고 추가
-	      function insertInvoiceInventory() {  
-	    	  var addList = [];
-	          addList.push({
-	              lbl_lot_no: "${data.lbl_lot_no}",
-	              cd_item: "${data.cd_item}"
-	          });
-	          
-	  	    const payload = {
-	  	    	    invoice_no: selectedInvoiceNo,
-	  	    	    addList: addList
-	  	    	  };
-	  	    		    console.log("전송 데이타: ", payload);
-	  	    		    $.ajax({
-	  	    			      url: "/yulchon/management/mobile/insertInvoiceInventory",
-	  	    			      type: "POST",
-	  	    			      contentType: 'application/json',
-	  	    			      data: JSON.stringify(payload),
-	  	    			      //processData: false,
-	  	    			      //contentType: false,
-	  	    			      success: function(result) {
-	  	    			          if(result === true || result === "true"){
-	  	    			        	  console.log("추가 성공");
-	  	    			        	  alert("추가 성공했습니다.");
-	  	    			          }else{
-	  	    				          console.log("추가 실패");
-	  	    				        alert("추가 실패했습니다.");
-	  	    			              }
-	  	    			        },
-	  	    			      error: function() {
-	  	    			        alert('추가 중 오류가 발생했습니다.');
-	  	    			      }
-	  	    			    });
+	        //w/o, 수량 같은거 있는지 조회
+	        $.ajax({
+	            url: "/yulchon/management/mobile/getSameWoQtyInventory",
+	            type: "POST",
+	            contentType: "application/json",
+	            data: JSON.stringify({
+	                invoice_no: selectedInvoiceNo,
+	                no_mfg_order_serial: no_mfg_order_serial,
+	                qty_inventory: qty_inventory
+	            }),
+	            success: function (matchedItem) {
+	                if (matchedItem && matchedItem.lbl_lot_no) {
+	                    var matchedLotNo = matchedItem.lbl_lot_no;
+
+	                    if (!confirm("[" + selectedInvoiceName + "] 인보이스에 동일 W/O·수량의 미출력 품목(LOT: " + matchedLotNo + ")이 있습니다.\n로트번호를 서로 교체하시겠습니까?")) {
+	                        history.back();
+	                        return;
+	                    }
+
+	                    $.ajax({
+	                        url: "/yulchon/management/mobile/swapLotNo",
+	                        type: "POST",
+	                        contentType: "application/json",
+	                        data: JSON.stringify({
+	                            scan_lot_no: lot_no,
+	                            scan_invoice_no: invoice_no,
+	                            target_lot_no: matchedLotNo,
+	                            target_invoice_no: selectedInvoiceNo
+	                        }),
+	                        success: function (result) {
+	                            if (result === true || result === "true") {
+	                                alert("로트번호 교체가 완료되었습니다.");
+	                                var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" + lot_no
+	                                        + "&selectedInvoiceNo=" + selectedInvoiceNo
+	                                        + "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
+	                                window.location.href = url;
+	                            } else {
+	                                alert("로트번호 교체 실패");
+	                                history.back();
+	                            }
+	                        },
+	                        error: function () {
+	                            alert("로트번호 교체 중 오류가 발생했습니다.");
+	                        }
+	                    });
+	                } else {
+	                    alert("매칭되는 교체 대상이 없습니다.");
+	                    history.back();
+	                }
+	            },
+	            error: function() {
+	                alert("조회 중 오류가 발생했습니다.");
+	            }
+	        });
+	    } 
+
+	    // 인보이스 추가 함수
+	    function insertInvoiceInventory() {  
+	        var addList = [{
+	            lbl_lot_no: "${data.lbl_lot_no}",
+	            cd_item: "${data.cd_item}",
+	            no_mfg_order_serial: "${data.no_mfg_order_serial}",
+	            qty_inventory: "${data.qty_inventory}"
+	        }];
+	        
+	        const payload = {
+	            invoice_no: selectedInvoiceNo,
+	            addList: addList
+	        };
+
+	        $.ajax({
+	            url: "/yulchon/management/mobile/insertInvoiceInventory",
+	            type: "POST",
+	            contentType: 'application/json',
+	            data: JSON.stringify(payload),
+	            success: function(result) {
+	                if(result === true || result === "true"){
+	                    alert("추가 성공했습니다.");
+	                } else {
+	                    alert("추가 실패했습니다.");
+	                }
+	            },
+	            error: function() {
+	                alert('추가 중 오류가 발생했습니다.');
+	            }
+	        });
 	    }
-  });
+	});
+			    
 
    //쉬핑마크 출력 및 출하목록 저장
     function handlePrint() {
@@ -367,7 +438,6 @@ display: none;
     	  	  success: function(result) {
     	  	  	  if(result.result === true || result.result === "true"){
     					alert(result.message);
-    					history.back();
     	  	  	  	  }else{
     					alert(result.message);
     	  	  	  	  	  }

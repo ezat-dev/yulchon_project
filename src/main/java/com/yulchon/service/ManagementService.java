@@ -45,4 +45,7 @@ public interface ManagementService {
 	List<Management> getColumnSettingList(Management management);
 	boolean insertColumnSetting(Management management);
 	boolean deleteColumnSetting(Management management);
+	boolean mobileDeleteAndInsertInvoiceInventory(Management management);
+	Management getSameWoQtyInventory(Management management);
+	boolean swapLotNo(Management datas);
 }
