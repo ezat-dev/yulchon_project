@@ -283,7 +283,7 @@ public class ManagementServiceImpl implements ManagementService{
 				//System.out.println("만든 수불번호: " + noTransaction);
 				v.setNo_transaction(noTransaction);
 				String invoice_name_date = "";
-				String invoiceNameDatePart = v.getInvoice_name().substring(3);
+				String invoiceNameDatePart = v.getInvoice_name().split("-")[1];
 				if (invoiceNameDatePart.length() == 6) {
 				    // YYMMDD 형식인 경우 앞에 20을 붙임
 				    invoice_name_date = "20" + invoiceNameDatePart;
@@ -409,5 +409,15 @@ public class ManagementServiceImpl implements ManagementService{
 	@Override
 	public boolean swapLotNo(Management management) {
 		return managementDao.swapLotNo(management);
+	}
+	
+	@Override
+	public boolean updateLotNo(Management management) {
+		return managementDao.updateLotNo(management);
+	}
+	
+	@Override
+	public Management getIsShippingList(Management management) {
+		return managementDao.getIsShippingList(management);
 	}
 }

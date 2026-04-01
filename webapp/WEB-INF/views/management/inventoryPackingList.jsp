@@ -762,25 +762,121 @@ dataTable = new Tabulator('#dataTable', {
           contentType: "application/json",
           success: function(res) {
 			if(res === true || res === "true"){
-				console.log("고객사 부여 품번 수정 완료");
+				console.log("데이터 수정 완료");
 				}else{
-					console.log("고객사 부여 품번 수정 실패")
+					console.log("데이터 수정 실패")
 					}
   			},
 		      error: function() {
-		    	  console.log("고객사 부여 품번 수정 중 에러 발생");
+		    	  console.log("데이터 수정 중 에러 발생");
 		      }
       });
       
   },
   cellClick:function(e, cell){
 	    selectedCell = cell;
+	    document.querySelectorAll(".tabulator-cell.key-selected")
+        .forEach(el => el.classList.remove("key-selected"));
+    cell.getElement().classList.add("key-selected");
 	},
     tableBuilt: function() {
         loadColumnSettings();
-    }
-});
-}
+        // 방향키 셀 이동
+        document.addEventListener("keydown", function(e) {
+        	if (!selectedCell) return;
+
+            // 편집 중일 때는 상하 방향키 이동만 막음 (좌우는 텍스트 커서 이동을 위해 허용하거나 선택적 사용)
+            if (selectedCell.getElement().classList.contains("tabulator-editing")) {
+                if (e.key === "ArrowUp" || e.key === "ArrowDown") return;
+            }
+
+            var row = selectedCell.getRow();
+            var field = selectedCell.getField();
+            var rows = dataTable.getRows("active"); // 현재 필터링된 행 기준
+            var columns = dataTable.getColumns().filter(col => col.getField() && col.isVisible() && col.getDefinition().editor);
+            
+            var rowIndex = rows.indexOf(row);
+            var colIndex = columns.findIndex(col => col.getField() === field);
+
+            var targetRow = null;
+            var targetField = field;
+
+            // 방향키 판별
+            if (e.key === "ArrowUp") {
+                e.preventDefault();
+                if (rowIndex > 0) targetRow = rows[rowIndex - 1];
+            } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                if (rowIndex < rows.length - 1) targetRow = rows[rowIndex + 1];
+            } else if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                if (colIndex > 0) {
+                    targetField = columns[colIndex - 1].getField();
+                    targetRow = row;
+                }
+            } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                if (colIndex < columns.length - 1) {
+                    targetField = columns[colIndex + 1].getField();
+                    targetRow = row;
+                }
+            }
+
+            // 타겟 셀로 이동 처리
+            if (targetRow && targetField) {
+                var targetCell = targetRow.getCell(targetField);
+                if (targetCell) {
+                    // 1. 기존 선택 클래스 모두 제거
+                    document.querySelectorAll(".key-selected").forEach(el => el.classList.remove("key-selected"));
+                    
+                    // 2. 변수 업데이트
+                    selectedCell = targetCell;
+                    
+                    // 3. 새 셀에 클래스 추가 및 포커스
+                    var cellElem = targetCell.getElement();
+                    cellElem.classList.add("key-selected");
+                    cellElem.focus(); // 포커스를 줘야 붙여넣기 이벤트가 해당 영역에서 잘 작동함
+                    cellElem.scrollIntoView({ block: "nearest", inline: "nearest" });
+                }
+            }
+        });
+
+        // 붙여넣기
+        document.querySelector("#dataTable").addEventListener("paste", function(e) {
+            if (!selectedCell) return;
+
+            e.preventDefault();
+
+            var startRow = selectedCell.getRow();
+            var startIndex = startRow.getPosition(true);
+            var field = selectedCell.getField();
+
+            var paste = (e.clipboardData || window.clipboardData).getData("text");
+            var values = paste.split(/\r?\n/).filter(function(v) {
+                return v.trim() !== "";
+            });
+
+            if (selectedCell.getElement().classList.contains("tabulator-editing")) {
+                selectedCell.cancelEdit();
+            }
+
+            setTimeout(function() {
+            values.forEach(function(value, i) {
+                var row = dataTable.getRowFromPosition(startIndex + i, true);
+                if (row) {
+                    var targetCell = row.getCell(field);
+                    if (targetCell) {
+                        targetCell.setValue(value.trim());
+                    }
+                }
+            });
+        }, 10);
+        });
+
+    } // tableBuilt 끝
+
+  }); // Tabulator 끝
+  } // initDataTable 끝
 
 document.querySelector("#dataTable").addEventListener("paste", function(e) {
     if (!selectedCell) {
@@ -1049,6 +1145,7 @@ function initLeftTable(){
 	  ajaxParams: {},
 	  placeholder: "조회된 데이터가 없습니다.",
 	  selectable: true,
+	  selectableRangeMode: "click",
 	  ajaxResponse: function(url, params, response) {
 	    return response;
 	  },
@@ -1132,6 +1229,7 @@ function initRightTable(){
 	  ajaxParams: {},
 	  placeholder: "조회된 데이터가 없습니다.",
 	  selectable: true,
+	  selectableRangeMode: "click",
 	  ajaxResponse: function(url, params, response) {
 	    return response;
 	  },

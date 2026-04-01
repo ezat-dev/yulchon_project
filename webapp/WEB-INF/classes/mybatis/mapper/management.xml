@@ -478,7 +478,7 @@ INSERT INTO ez_shipping_result (
     cd_item, nm_item, spec_item, kgm_weight, lbl_real_length, 
     lbl_lot_no, no_mfg_order_serial, qty_inventory, wgt_inventory, 
     cd_wh, nm_wh, lbl_date, nm_customer, po_customer, no_receipt, 
-    remarks, nm_location, invoice_no, invoice_name
+    remarks, nm_location, invoice_no, invoice_name, bundle_no
 )
 SELECT 
     A.CD_ITEM, 
@@ -499,7 +499,8 @@ SELECT
     A.REMARKS, 
     A.NM_LOCATION,
     eiim.invoice_no,
-    ein.invoice_name
+    ein.invoice_name,
+    eiim.extra_bundle_no
   FROM M_WO_LABEL_DETAIL A WITH (NOLOCK)
        INNER JOIN I_WH_ONHAND_INVENTORY B WITH (NOLOCK) ON A.CD_ITEM = B.CD_ITEM AND A.LBL_LOT_NO = B.NO_LOT
        INNER JOIN B_ITEM C WITH (NOLOCK) ON A.CD_ITEM = C.CD_ITEM
@@ -643,7 +644,7 @@ WHERE ein.invoice_is_moved IS NULL
       OR 
       (ein.invoice_is_shipped = 'R' AND ISNULL(item_counts.item_count, 0) > 0)
   )
-ORDER BY ein.invoice_name DESC;
+ORDER BY ein.invoice_date DESC;
 </select>
 
 <!-- 초기화된 품목 조회 -->
@@ -1492,4 +1493,19 @@ ORDER BY SD.DT_UPDATE DESC
      WHERE lot_no = CONCAT('__SWAP__', #{scan_lot_no})
        AND invoice_no = #{scan_invoice_no};
 </update>
+
+<!-- 인보이스 부여 안된거 스캔 시 w/o, 수량 같은거 있으면 업데이트 -->
+<update id="updateLotNo">
+    UPDATE ez_invoice_inventory_mapping
+       SET lot_no = #{new_lot_no}
+     WHERE lot_no     = #{old_lot_no}
+       AND invoice_no = #{invoice_no}
+</update>
+
+<select id="getIsShippingList" parameterType="management" resultType="management">
+    SELECT *
+    FROM ez_shipping_list 
+    WHERE invoice_no = #{invoice_no} 
+      AND lbl_lot_no = #{lot_no}
+</select>
 </mapper>

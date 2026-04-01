@@ -510,17 +510,25 @@ public class PreviewExcel {
 		//QR 임시 저장 경로
 		String qrTempPath = "D:\\\\율촌_쉬핑마크_양식\\\\QR임시저장경로\\\\qr_temp.png"; 
 		
+	    long total = System.currentTimeMillis();
+	    long t;
+		
 		try {
+			t = System.currentTimeMillis();
 	        // 파일 락 먼저 잡기 (최대 15초 대기)
 	        locked = fileLock.tryLock(15, TimeUnit.SECONDS);
+	        System.out.println("[STEP 1] 파일 락 획득: " + (System.currentTimeMillis() - t) + "ms");
 	        if (!locked) {
 	            return null;
 	        }
 			// [1] 풀에서 엑셀 인스턴스 빌려오기
+	        t = System.currentTimeMillis();
 	        excel = ExcelManager.getInstance().borrowExcel();
+	        System.out.println("[STEP 2] Excel 인스턴스 borrowExcel: " + (System.currentTimeMillis() - t) + "ms");
 	        if (excel == null) return null;
 	        
 			// QR 이미지 생성 부분
+	        t = System.currentTimeMillis();
 			String qrContent = data.getLbl_lot_no(); 
 			if (qrContent == null || qrContent.isEmpty()) qrContent = "No Data";
 			
@@ -533,9 +541,12 @@ public class PreviewExcel {
 			BitMatrix bitMatrix = qrCodeWriter.encode(qrContent, BarcodeFormat.QR_CODE, 300, 300, hints);
 			Path path = FileSystems.getDefault().getPath(qrTempPath);
 			MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
+			System.out.println("[STEP 3] QR 이미지 생성 및 저장: " + (System.currentTimeMillis() - t) + "ms");
 
+			t = System.currentTimeMillis();
 	        workbook = ExcelManager.getInstance().getWorkbook(excel, file_path);
 	        Dispatch.call(workbook, "Activate"); // 여러 양식이 열려있을 수 있으니 활성화
+	        System.out.println("[STEP 4] Workbook 열기 + Activate: " + (System.currentTimeMillis() - t) + "ms");
 
 	        excel.setProperty("ScreenUpdating", false);
 
@@ -553,7 +564,9 @@ public class PreviewExcel {
 	                Dispatch.call(shape, "Delete");
 	            }
 	        }
+	        System.out.println("[STEP 5] 시트 접근 + Picture 도형 삭제 (도형 수: " + shapeCount + "): " + (System.currentTimeMillis() - t) + "ms");
 
+	        t = System.currentTimeMillis();
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "F4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCd_materail());
@@ -566,8 +579,9 @@ public class PreviewExcel {
 			putCellValue(sheet, "L8", getTodayFormatted());
 			putCellValue(sheet, "E9", data.getWgt_inventory());
 			putCellValue(sheet, "K9", data.getQty_inventory());
-			
+			System.out.println("[STEP 6] 셀 값 입력 (11개): " + (System.currentTimeMillis() - t) + "ms");
 
+			t = System.currentTimeMillis();
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -592,19 +606,22 @@ public class PreviewExcel {
 
 			    // [4] 그 위치 그대로 QR 이미지 삽입 (좌표 계산 필요 없음!)
 			    Dispatch.call(shapes, "AddPicture", qrTempPath, false, true, left, top, width, height);
-			    
+			    System.out.println("[STEP 7] QR_HOLDER 탐색 + QR 이미지 삽입: " + (System.currentTimeMillis() - t) + "ms");
 			    // (선택) 원본 홀더 도형은 삭제하거나 보이지 않게 처리
 			    // Dispatch.call(qrHolder, "Delete");
 			} else {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
+			t = System.currentTimeMillis();
 			// 캡처 직전에 화면 업데이트 활성화
 			excel.setProperty("ScreenUpdating", true);
 
 			// 잠깐 대기 (엑셀 렌더링 시간)
 			Thread.sleep(500);
+			System.out.println("[STEP 8] ScreenUpdating 활성화 + 500ms 대기: " + (System.currentTimeMillis() - t) + "ms");
 			
+			t = System.currentTimeMillis();
 			// 이미지 캡쳐
 			synchronized (ExcelManager.class) { 
 	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
@@ -614,7 +631,9 @@ public class PreviewExcel {
 
 	            // 엑셀에서 클립보드로 복사
 	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
+	            System.out.println("[STEP 9-1] CopyPicture 호출: " + (System.currentTimeMillis() - t) + "ms");
 
+	            long t2 = System.currentTimeMillis();
 	            // 클립보드에서 데이터 읽기
 	            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
 	            Transferable contents = clipboard.getContents(null);
@@ -624,11 +643,14 @@ public class PreviewExcel {
 	                BufferedImage buffered = toBufferedImage(image);
 	                ByteArrayOutputStream baos = new ByteArrayOutputStream();
 	                ImageIO.write(buffered, "png", baos);
+	                System.out.println("[STEP 9-2] 클립보드 → PNG 변환: " + (System.currentTimeMillis() - t2) + "ms");
+	                System.out.println("[TOTAL] 전체 소요 시간: " + (System.currentTimeMillis() - total) + "ms");
 	                return baos.toByteArray(); 
 	            }
 	        }
 
 	        } catch (Exception e) {
+	        	System.err.println("[ERROR] 예외 발생 지점까지 소요: " + (System.currentTimeMillis() - total) + "ms");
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
@@ -640,6 +662,7 @@ public class PreviewExcel {
 	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
+		        System.out.println("[FINALLY] 전체 종료 시점 총 소요: " + (System.currentTimeMillis() - total) + "ms");
 	        }
 	        return null;
 	}

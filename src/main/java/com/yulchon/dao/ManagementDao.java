@@ -71,4 +71,6 @@ public interface ManagementDao {
 	Management selectSEQ_REQUEST_SERIAL(Management management);
 	Management getSameWoQtyInventory(Management management);
 	boolean swapLotNo(Management datas);
+	boolean updateLotNo(Management management);
+	Management getIsShippingList(Management management);
 }

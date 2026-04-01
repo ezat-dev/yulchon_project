@@ -105,7 +105,22 @@ public class Management {
 	private String target_invoice_no;
 	private String old_lot_no;
 	private String new_lot_no;
+	private String lot_no;
+	private String bundle_no;
 	
+	
+	public String getBundle_no() {
+		return bundle_no;
+	}
+	public void setBundle_no(String bundle_no) {
+		this.bundle_no = bundle_no;
+	}
+	public String getLot_no() {
+		return lot_no;
+	}
+	public void setLot_no(String lot_no) {
+		this.lot_no = lot_no;
+	}
 	public String getOld_lot_no() {
 		return old_lot_no;
 	}

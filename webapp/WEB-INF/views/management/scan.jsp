@@ -192,7 +192,12 @@ const CROP_RATIOS = [1.0, 0.85, 0.72, 0.60];
 const MAX_LONG_EDGE = 1600;
 
 // 대비는 과하면 오히려 깨질 수 있어 1.15~1.35 범위 권장 구성
-const PREPROCESS_FILTER = "grayscale(1) contrast(1.25)";
+const PREPROCESS_FILTER = [
+    "grayscale(1) contrast(1.25)",
+    "grayscale(1) contrast(1.5) brightness(0.9)",
+    "grayscale(1) contrast(1.8) brightness(0.8)",
+    "grayscale(1) contrast(2.0) brightness(0.75)",
+];
 
 const formats = [
 	  ZXing.BarcodeFormat.QR_CODE,
@@ -435,45 +440,138 @@ $(document).on('click', '.btn-check', function(e) {
 //===== 메인 디코딩 함수 =====
 async function decodeBarcodeOrQrFromFile(file) {
     const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-
-    // 1) 다운스케일 캔버스 생성
     const baseCanvas = drawBitmapToScaledCanvas(bitmap, MAX_LONG_EDGE);
-
-    // 2) 전처리 캔버스 생성
-    const preCanvas = applyPreprocessFilter(baseCanvas, PREPROCESS_FILTER);
-
-    // 3) ZXing Reader 생성
     const codeReader = createZxingReaderWithHints();
 
-    // 4) 전처리 캔버스 기준 크롭 여러 단계 시도
-    for (let i = 0; i < CROP_RATIOS.length; i++) {
-        const ratio = CROP_RATIOS[i];
+    // ✅ 1단계: 감마 보정 캔버스 생성 (반사광 억제 핵심)
+    const gammaCanvas = applyGammaCorrection(baseCanvas, 1.8);
 
-        const candidateCanvas = (ratio === 1.0)
-            ? preCanvas
-            : cropCenter(preCanvas, ratio);
+    // ✅ 2단계: 감마 보정 + Adaptive Threshold (테이프 불균일 밝기 대응 핵심)
+    const adaptiveCanvas = applyAdaptiveThreshold(gammaCanvas, 15, 10);
 
-        const result = await tryDecodeReaderFromCanvasOrImage(codeReader, candidateCanvas);
-        if (result) {
-            return result;
+ // 1. 다양한 감마 값 준비 (반사광 강도에 대응)
+    const gammaValues = [1.5, 2.0, 2.5];
+    
+    for (const g of gammaValues) {
+        const gammaCanvas = applyGammaCorrection(baseCanvas, g);
+        
+        // 2. 파이프라인 다양화
+        const pipelines = [
+            // A: 감마 + 적응형 임계 (가장 강력)
+            applyAdaptiveThreshold(gammaCanvas, 15, 10), 
+            
+            // B: 감마 + 노이즈 제거 + 적응형 임계 (테이프 기포/먼지 대응)
+            applyAdaptiveThreshold(applyBlur(gammaCanvas), 21, 7), 
+            
+            // C: 기존 필터 조합
+            ...PREPROCESS_FILTER.map(f => applyPreprocessFilter(gammaCanvas, f))
+        ];
+
+        for (const pipeline of pipelines) {
+            for (const ratio of CROP_RATIOS) {
+                const c = ratio === 1.0 ? pipeline : cropCenter(pipeline, ratio);
+                const result = await tryDecodeReaderFromCanvasOrImage(codeReader, c);
+                if (result) return result;
+            }
         }
     }
-
-    // 5) 전처리가 오히려 방해인 케이스 대비, 원본(base)도 크롭 여러 단계 시도
-    for (let i = 0; i < CROP_RATIOS.length; i++) {
-        const ratio = CROP_RATIOS[i];
-
-        const candidateCanvas = (ratio === 1.0)
-            ? baseCanvas
-            : cropCenter(baseCanvas, ratio);
-
-        const result = await tryDecodeReaderFromCanvasOrImage(codeReader, candidateCanvas);
-        if (result) {
-            return result;
-        }
-    }
-
     return null;
+}
+
+//간단한 블러 함수 (노이즈 제거용)
+function applyBlur(srcCanvas) {
+    const canvas = document.createElement("canvas");
+    canvas.width = srcCanvas.width;
+    canvas.height = srcCanvas.height;
+    const ctx = canvas.getContext("2d");
+    // 브라우저 기본 블러 필터 활용 (성능 우수)
+    ctx.filter = "blur(1px)"; 
+    ctx.drawImage(srcCanvas, 0, 0);
+    return canvas;
+}
+
+//✅ 감마 보정 (LUT 방식, 반사광으로 날아간 밝은 영역 억제)
+function applyGammaCorrection(srcCanvas, gamma = 1.8) {
+    const canvas = document.createElement("canvas");
+    canvas.width = srcCanvas.width;
+    canvas.height = srcCanvas.height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(srcCanvas, 0, 0);
+
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+
+    const lut = new Uint8Array(256);
+    for (let i = 0; i < 256; i++) {
+        lut[i] = Math.round(255 * Math.pow(i / 255, gamma));
+    }
+
+    for (let i = 0; i < data.length; i += 4) {
+        data[i]   = lut[data[i]];
+        data[i+1] = lut[data[i+1]];
+        data[i+2] = lut[data[i+2]];
+        // alpha는 건드리지 않음
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+}
+
+// ✅ Adaptive Threshold (테이프 기포/불균일 밝기 대응)
+// blockSize: 주변 참조 범위 (클수록 넓은 영역 기준), C: 임계값 오프셋
+function applyAdaptiveThreshold(srcCanvas, blockSize = 15, C = 10) {
+    const canvas = document.createElement("canvas");
+    canvas.width = srcCanvas.width;
+    canvas.height = srcCanvas.height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(srcCanvas, 0, 0);
+
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+    const w = canvas.width, h = canvas.height;
+    const half = Math.floor(blockSize / 2);
+
+    // 그레이스케일 추출
+    const gray = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) {
+        gray[i] = 0.299 * data[i*4] + 0.587 * data[i*4+1] + 0.114 * data[i*4+2];
+    }
+
+    // ✅ 적분 이미지(Summed Area Table)로 블록 평균을 O(1)에 계산 → 성능 최적화
+    const integral = new Float64Array((w + 1) * (h + 1));
+    for (let y = 1; y <= h; y++) {
+        for (let x = 1; x <= w; x++) {
+            integral[y * (w+1) + x] =
+                gray[(y-1) * w + (x-1)]
+                + integral[(y-1) * (w+1) + x]
+                + integral[y * (w+1) + (x-1)]
+                - integral[(y-1) * (w+1) + (x-1)];
+        }
+    }
+
+    for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+            const x1 = Math.max(0, x - half);
+            const y1 = Math.max(0, y - half);
+            const x2 = Math.min(w - 1, x + half);
+            const y2 = Math.min(h - 1, y + half);
+            const count = (x2 - x1 + 1) * (y2 - y1 + 1);
+            const sum =
+                integral[(y2+1) * (w+1) + (x2+1)]
+                - integral[y1 * (w+1) + (x2+1)]
+                - integral[(y2+1) * (w+1) + x1]
+                + integral[y1 * (w+1) + x1];
+
+            const threshold = (sum / count) - C;
+            const val = gray[y * w + x] < threshold ? 0 : 255;
+            const idx = (y * w + x) * 4;
+            data[idx] = data[idx+1] = data[idx+2] = val;
+            data[idx+3] = 255;
+        }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
 }
 
 // ===== ZXing 리더 생성 =====

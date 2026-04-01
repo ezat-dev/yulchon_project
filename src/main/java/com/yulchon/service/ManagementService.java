@@ -48,4 +48,6 @@ public interface ManagementService {
 	boolean mobileDeleteAndInsertInvoiceInventory(Management management);
 	Management getSameWoQtyInventory(Management management);
 	boolean swapLotNo(Management datas);
+	boolean updateLotNo(Management management);
+	Management getIsShippingList(Management management);
 }

@@ -313,76 +313,100 @@ display: none;
 	    $('#nm_customer').text("${data.nm_customer}");
 	    $('#invoice_no').text(invoice_no);
 
-	    //스캔한 품목 인보이스 없을 때
+	    //스캔한 품목 인보이스 없을 때 - w/o, 수량 같은거로 로트번호 바꿈
 	    if (invoice_no == null || invoice_no == "") {
-	        var msg = "인보이스 부여되지 않은 품목입니다.\n" + selectedInvoiceName + "에 품목을 추가하시겠습니까?";
+	        var msg = "인보이스 부여되지 않은 품목입니다.\n" + selectedInvoiceName + "의  W/O, 수량이 같은 품목과 교체하시겠습니까?";
 	        if (confirm(msg)) {
 	            insertInvoiceInventory(); 
 	        } else {
-	            history.back();
+	            history.back(); 
 	        }
 	    } //선택한 인보이스와 스캔한 품목의 인보이스 다를 때
 	    else if (invoice_no != selectedInvoiceNo) {
 	        console.log("선택한 인보이스 번호:", selectedInvoiceNo);
 	        console.log("스캔한 품목의 인보이스 번호: ", invoice_no);
+	        console.log("스캔한 품목의 로트넘버: ", lot_no);
 
-	        //w/o, 수량 같은거 있는지 조회
+	        //이미 스캔한 품목인지 확인 - 스캔 한건 인보이스 교체 불가
 	        $.ajax({
-	            url: "/yulchon/management/mobile/getSameWoQtyInventory",
+	            url: "/yulchon/management/mobile/getIsShippingList",
 	            type: "POST",
 	            contentType: "application/json",
 	            data: JSON.stringify({
-	                invoice_no: selectedInvoiceNo,
-	                no_mfg_order_serial: no_mfg_order_serial,
-	                qty_inventory: qty_inventory
+	                invoice_no: invoice_no,
+	                lot_no: lot_no
 	            }),
-	            success: function (matchedItem) {
-	                if (matchedItem && matchedItem.lbl_lot_no) {
-	                    var matchedLotNo = matchedItem.lbl_lot_no;
+	            success: function (data) {
+		            console.log("출력한 품목인지 조회 데이터: ", data);
+					if(data && Object.keys(data).length > 0){
+						alert("인보이스를 잘못 선택하셨습니다.");
+						history.back();
+						return;
+						}
 
-	                    if (!confirm("[" + selectedInvoiceName + "] 인보이스에 동일 W/O·수량의 미출력 품목(LOT: " + matchedLotNo + ")이 있습니다.\n로트번호를 서로 교체하시겠습니까?")) {
-	                        history.back();
-	                        return;
-	                    }
+			        //w/o, 수량 같은거 있는지 조회
+			        $.ajax({
+			            url: "/yulchon/management/mobile/getSameWoQtyInventory",
+			            type: "POST",
+			            contentType: "application/json",
+			            data: JSON.stringify({
+			                invoice_no: selectedInvoiceNo,
+			                no_mfg_order_serial: no_mfg_order_serial,
+			                qty_inventory: qty_inventory
+			            }),
+			            success: function (matchedItem) {
+			                if (matchedItem && matchedItem.lbl_lot_no) {
+			                    var matchedLotNo = matchedItem.lbl_lot_no;
 
-	                    $.ajax({
-	                        url: "/yulchon/management/mobile/swapLotNo",
-	                        type: "POST",
-	                        contentType: "application/json",
-	                        data: JSON.stringify({
-	                            scan_lot_no: lot_no,
-	                            scan_invoice_no: invoice_no,
-	                            target_lot_no: matchedLotNo,
-	                            target_invoice_no: selectedInvoiceNo
-	                        }),
-	                        success: function (result) {
-	                            if (result === true || result === "true") {
-	                                alert("로트번호 교체가 완료되었습니다.");
-	                                var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" + lot_no
-	                                        + "&selectedInvoiceNo=" + selectedInvoiceNo
-	                                        + "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
-	                                window.location.href = url;
-	                            } else {
-	                                alert("로트번호 교체 실패");
-	                                history.back();
-	                            }
-	                        },
-	                        error: function () {
-	                            alert("로트번호 교체 중 오류가 발생했습니다.");
-	                        }
-	                    });
-	                } else {
-	                    alert("매칭되는 교체 대상이 없습니다.");
-	                    history.back();
-	                }
+			                    if (!confirm("[" + selectedInvoiceName + "] 인보이스에 동일 W/O·수량의 미출력 품목(LOT: " + matchedLotNo + ")이 있습니다.\n로트번호를 서로 교체하시겠습니까?")) {
+			                        history.back();
+			                        return;
+			                    }
+
+			                    $.ajax({
+			                        url: "/yulchon/management/mobile/swapLotNo",
+			                        type: "POST",
+			                        contentType: "application/json",
+			                        data: JSON.stringify({
+			                            scan_lot_no: lot_no,
+			                            scan_invoice_no: invoice_no,
+			                            target_lot_no: matchedLotNo,
+			                            target_invoice_no: selectedInvoiceNo
+			                        }),
+			                        success: function (result) {
+			                            if (result === true || result === "true") {
+			                                alert("로트번호 교체가 완료되었습니다.");
+			                                var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" + lot_no
+			                                        + "&selectedInvoiceNo=" + selectedInvoiceNo
+			                                        + "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
+			                                window.location.href = url;
+			                            } else {
+			                                alert("로트번호 교체 실패");
+			                                history.back();
+			                            }
+			                        },
+			                        error: function () {
+			                            alert("로트번호 교체 중 오류가 발생했습니다.");
+			                        }
+			                    });
+			                } else {
+			                    alert("매칭되는 교체 대상이 없습니다.");
+			                    history.back();
+			                }
+			            },
+			            error: function() {
+			                alert("조회 중 오류가 발생했습니다.");
+			            }
+			        });
 	            },
 	            error: function() {
 	                alert("조회 중 오류가 발생했습니다.");
 	            }
 	        });
+
 	    } 
 
-	    // 인보이스 추가 함수
+	    // 스캔한 품목 인보이스 없을 때 - w/o, 수량 같은거로 로트번호 바꿈
 	    function insertInvoiceInventory() {  
 	        var addList = [{
 	            lbl_lot_no: "${data.lbl_lot_no}",
@@ -397,19 +421,51 @@ display: none;
 	        };
 
 	        $.ajax({
-	            url: "/yulchon/management/mobile/insertInvoiceInventory",
+	            url: "/yulchon/management/mobile/getSameWoQtyInventory",
 	            type: "POST",
-	            contentType: 'application/json',
-	            data: JSON.stringify(payload),
-	            success: function(result) {
-	                if(result === true || result === "true"){
-	                    alert("추가 성공했습니다.");
-	                } else {
-	                    alert("추가 실패했습니다.");
+	            contentType: "application/json",
+	            data: JSON.stringify({
+	                invoice_no: selectedInvoiceNo,
+	                no_mfg_order_serial: "${data.no_mfg_order_serial}",
+	                qty_inventory: "${data.qty_inventory}"
+	            }),
+	            success: function(matchedItem) {
+
+	                // 매칭된 미출력 품목 있으면 → lot_no만 스캔한걸로 UPDATE
+	                if (matchedItem && matchedItem.lbl_lot_no) {
+	                    var matchedLotNo = matchedItem.lbl_lot_no;
+
+	                    $.ajax({
+	                        url: "/yulchon/management/mobile/updateLotNo",
+	                        type: "POST",
+	                        contentType: "application/json",
+	                        data: JSON.stringify({
+	                            old_lot_no: matchedLotNo,          // 기존 매칭된 lot
+	                            new_lot_no: "${data.lbl_lot_no}",  // 스캔한 lot으로 교체
+	                            invoice_no: selectedInvoiceNo
+	                        }),
+	                        success: function(result) {
+	                            if (result === true || result === "true") {
+	                                console.log("교체 성공했습니다.");
+	                            } else {
+	                            	console.log("교체 실패했습니다.");
+	                                history.back();
+	                            }
+	                        },
+	                        error: function() {
+	                            alert("lot 교체 중 오류가 발생했습니다.");
+	                            history.back();
+	                        }
+	                    });
+	                // w/o, 수량 같은거 없을 때
+	                }else {
+	                	alert("W/O, 수량이 같은 품목이 없습니다.");
+	                	history.back();
 	                }
 	            },
 	            error: function() {
-	                alert('추가 중 오류가 발생했습니다.');
+	                alert("미출력 품목 조회 중 오류가 발생했습니다.");
+	                history.back();
 	            }
 	        });
 	    }

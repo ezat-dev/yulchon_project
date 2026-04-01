@@ -762,6 +762,22 @@ public class ManagementController {
 	public boolean swapLotNo(@RequestBody Management management) {
 	    return managementService.swapLotNo(management);
 	}
+	
+	//인보이스 부여 안된거 스캔 후 w/o, 수량 같은거 있으면 업데이트
+	//모바일 출하취소(출하목록에서만 삭제)
+	@RequestMapping(value = "/management/mobile/updateLotNo", method = RequestMethod.POST) 
+	@ResponseBody 
+	public boolean updateLotNo(@RequestBody Management management) {
+		return managementService.updateLotNo(management);
+	}
+	
+	//스캔한 품목이 출력한 품목인지 조회
+	//W/O, 수량 같은 품목 있나 조회
+	@RequestMapping(value = "/management/mobile/getIsShippingList", method = RequestMethod.POST) 
+	@ResponseBody
+	public Management getIsShippingList(@RequestBody Management management) {
+	    return managementService.getIsShippingList(management);
+	}
 
 }
 

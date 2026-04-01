@@ -500,5 +500,19 @@ public class ManagementDaoImpl implements ManagementDao {
 		}
 		return true;
 	}
+	
+	@Override
+	public boolean updateLotNo(Management management) {
+		int result =  sqlSession.update("management.updateLotNo", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public Management getIsShippingList(Management management) {
+		return sqlSession.selectOne("management.getIsShippingList", management);
+	}
 }
 
