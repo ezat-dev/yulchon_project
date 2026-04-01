@@ -33,7 +33,10 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+html, body { 
+height: 100%; 
+overflow: hidden;
+}
 
 body {
   margin: 0;
@@ -49,6 +52,10 @@ body {
 .main {
   width: min(1800px, calc(100% - 32px));
   margin: 24px auto;
+
+    height: calc(100% - 48px);  /* 위아래 margin 24px씩 */
+    display: flex;
+    flex-direction: column;
 }
 
 /* 상단 바(탭) */
@@ -253,6 +260,7 @@ select {
     height: calc(100vh - 160px);
     min-height: 520px;
     overflow: hidden;
+    flex: 1;
 }
 
 /* 카드 래핑 */
