@@ -13,6 +13,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.yulchon.domain.Management;
 import com.yulchon.service.ManagementService;
+import com.yulchon.util.LogAspect;
 import com.yulchon.util.PreviewExcel;
 import com.yulchon.util.PrintExcel;
 
@@ -59,7 +61,10 @@ public class ManagementController {
 	private static final String KMEX_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_KMEX_양식.xlsx";
 	private static final String THAIAUTO_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_THAIAUTO_양식.xlsx";
 	private static final String PIONEER_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_PIONEER_양식.xlsx";
+	private static final String PCT_FILE_PATH = "D:/율촌_쉬핑마크_양식/쉬핑마크_PCT_양식.xlsx";
 
+	private static final Logger logger = Logger.getLogger(LogAspect.class);
+	
 	private String getShippingMarkFilePath(String companyName) {
 		if(companyName.contains("KEEPRO")) {
 			return KEEPRO_FILE_PATH;
@@ -264,7 +269,7 @@ public class ManagementController {
 		String file_path = getShippingMarkFilePath(customerName);
 
 		//테스트용으로 해놓음
-		//customerName = "PIONEER";
+		//customerName = "KKM";
 
 		Map<String, Object> printResult = new HashMap<>();
 		if(customerName.contains("KAB")) {
@@ -293,7 +298,7 @@ public class ManagementController {
 			printResult = printExcel.printNok(data, NOK_FILE_PATH);
 		}else if(customerName.contains("NST")) {
 			printResult = printExcel.printNst(data, NST_FILE_PATH);
-		}else if(customerName.contains("Profender") || customerName.contains("PROFENDER")) {
+		}else if(customerName.contains("PROFENDER")) {
 			printResult = printExcel.printProfender(data, PROFENDER_FILE_PATH);
 		}else if(customerName.contains("DKK")) {
 			printResult = printExcel.printDkk(data, DKK_FILE_PATH);
@@ -307,6 +312,12 @@ public class ManagementController {
 			printResult = printExcel.printThaiAuto(data, THAIAUTO_FILE_PATH);
 		}else if(customerName.contains("PIONEER")) {
 			printResult = printExcel.printPioneer(data, PIONEER_FILE_PATH);
+		}else if(customerName.contains("Profender")) {
+			printResult = printExcel.printProfenderPct(data, PCT_FILE_PATH);
+		} else if(customerName.contains("ROCS")) {
+		    // 출력 없이 출하목록만 추가
+			System.out.println("ROCS: 출력 안함");
+		    printResult.put("result", true);
 		}else {
 			printResult = printExcel.printKth(data, KTH_FILE_PATH);
 		}
@@ -328,7 +339,7 @@ public class ManagementController {
 
 
 		long end = System.nanoTime();   // 끝 시간
-		System.out.println("⏱ 실행시간(ms): " + (end - start));
+		System.out.println("⏱ 실행시간(ms): " + (end - start)/1000000);
 
 		return resultMap;
 	}
@@ -486,6 +497,7 @@ public class ManagementController {
 	    } catch (Exception e) {
 	        e.printStackTrace();
 	        // 에러 발생 시 서비스에서 롤백을 수행하므로 데이터는 안전함
+	        logger.error("[출하완료 컨트롤러 에러]: " + e.getMessage(), e);
 	        return false;
 	    }
 	}
@@ -686,7 +698,7 @@ public class ManagementController {
 			imageBytes = previewExcel.previewNok(data, NOK_FILE_PATH);
 		}else if(customerName.contains("NST")) {
 			imageBytes = previewExcel.previewNst(data, NST_FILE_PATH);
-		}else if(customerName.contains("Profender") || customerName.contains("PROFENDER")) {
+		}else if(customerName.contains("PROFENDER")) {
 			imageBytes = previewExcel.previewProfender(data, PROFENDER_FILE_PATH);
 		}else if(customerName.contains("DKK")) {
 			imageBytes = previewExcel.previewDkk(data, DKK_FILE_PATH);
@@ -700,6 +712,11 @@ public class ManagementController {
 			imageBytes = previewExcel.previewThaiAuto(data, THAIAUTO_FILE_PATH);
 		}else if(customerName.contains("PIONEER")) {
 			imageBytes = previewExcel.previewPioneer(data, PIONEER_FILE_PATH);
+		}else if(customerName.contains("Profender")) {
+			imageBytes = previewExcel.previewProfenderPct(data, PCT_FILE_PATH);
+		}else if(customerName.contains("ROCS")) {
+			System.out.println("ROCS: 미리보기 없음");
+		    return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 		}else {
 			imageBytes = previewExcel.previewKth(data, KTH_FILE_PATH);
 		}
@@ -709,7 +726,7 @@ public class ManagementController {
 	    }
 
 		long end = System.nanoTime();   // 끝 시간
-		System.out.println("⏱ 실행시간(ms): " + (end - start));
+		System.out.println("⏱ 실행시간(ms): " + (end - start)/1000000);
 		
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.setContentType(MediaType.IMAGE_PNG);
@@ -768,6 +785,7 @@ public class ManagementController {
 	@RequestMapping(value = "/management/mobile/updateLotNo", method = RequestMethod.POST) 
 	@ResponseBody 
 	public boolean updateLotNo(@RequestBody Management management) {
+		System.out.println("인보이스 교체 함수");
 		return managementService.updateLotNo(management);
 	}
 	

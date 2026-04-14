@@ -42,6 +42,12 @@
 		<property name="url" value="jdbc:sqlserver://211.233.61.253:1433;DataBaseName=WISEN;" />
         <property name="username" value="sa" /> 
         <property name="password" value="WISEN"/>
+        
+            <property name="initialSize" value="5"/>
+    <property name="maxActive" value="20"/>
+    <property name="minIdle" value="5"/>
+    <property name="maxIdle" value="10"/>
+    <property name="maxWait" value="3000"/>
     </bean>
 	<tx:annotation-driven/>
 

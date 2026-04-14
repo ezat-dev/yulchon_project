@@ -305,6 +305,7 @@ display: none;
 	    cd_item = "${data.cd_item}";
 	    no_mfg_order_serial = "${data.no_mfg_order_serial}";
 	    qty_inventory = "${data.qty_inventory}";
+	    customerName = "${data.nm_customer}";
 
 	    $('#nm_item').text("${data.nm_item}");
 	    $('#lbl_lot_no').text("${data.lbl_lot_no}");
@@ -312,7 +313,9 @@ display: none;
 	    $('#qty_inventory').text("${data.qty_inventory}");
 	    $('#nm_customer').text("${data.nm_customer}");
 	    $('#invoice_no').text(invoice_no);
-
+	    
+		updateButtonLabel();
+		
 	    //스캔한 품목 인보이스 없을 때 - w/o, 수량 같은거로 로트번호 바꿈
 	    if (invoice_no == null || invoice_no == "") {
 	        var msg = "인보이스 부여되지 않은 품목입니다.\n" + selectedInvoiceName + "의  W/O, 수량이 같은 품목과 교체하시겠습니까?";
@@ -414,7 +417,7 @@ display: none;
 	            no_mfg_order_serial: "${data.no_mfg_order_serial}",
 	            qty_inventory: "${data.qty_inventory}"
 	        }];
-	        
+	        console.log("스캔한거 인보이스 부여 안되어 있을 때: ", addList);
 	        const payload = {
 	            invoice_no: selectedInvoiceNo,
 	            addList: addList
@@ -447,6 +450,10 @@ display: none;
 	                        success: function(result) {
 	                            if (result === true || result === "true") {
 	                                console.log("교체 성공했습니다.");
+	                                var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" + lot_no
+	                                + "&selectedInvoiceNo=" + selectedInvoiceNo
+	                                + "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
+	                        window.location.href = url;
 	                            } else {
 	                            	console.log("교체 실패했습니다.");
 	                                history.back();
@@ -565,6 +572,18 @@ display: none;
         };
         input.click();
     }
+
+    //고객사 ROCS면 버튼 텍스트 바꿈
+    function updateButtonLabel() {
+    const customerName = $('#nm_customer').text().trim();
+    console.log("고객사: ", customerName);
+    if (customerName.includes('ROCS')) {
+        $('.btn-print').text('출하 등록');
+    } else {
+        $('.btn-print').text('출력');
+    }
+}
+    
   //===== 메인 디코딩 함수 =====
     async function decodeBarcodeOrQrFromFile(file) {
         const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });

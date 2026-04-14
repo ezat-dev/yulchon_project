@@ -690,7 +690,7 @@ dataTable = new Tabulator('#dataTable', {
     { title: "출력용 Part No", field: "extra_part_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
     { title: "Bundle No", field: "extra_bundle_no", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
     { title: "출력용 중량", field: "extra_weight", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
-    //{ title: "출력용 Spec", field: "extra_spec", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
+    { title: "출력용 Size", field: "extra_spec", width: 170, hozAlign: "center", headerFilter: "input", editor: "input" },
     { title: "단중", field: "kgm_weight", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input"},
     { title: "실길이", field: "lbl_real_length", sorter: "string", width: 120, hozAlign: "center", headerFilter: "input" },
     { title: "재고수량", field: "qty_inventory", sorter: "string", width: 100, hozAlign: "center", headerFilter: "input"},
@@ -1104,6 +1104,27 @@ function initUpdateInvoiceNameTable(){
 	      console.log("새로운 데이터: ", newValue);
 	      console.log("수정할 데이터: ", rowData);
 	      console.log("수정할 invoice_no: ", invoice_no);
+
+	      //유효성 검사 추가
+		    if (field === "invoice_name") {
+	        var parts = newValue.split("-");
+	        
+	        // 하이픈이 2개 이상인지 (split 결과가 3조각 이상이어야 함)
+	        if (parts.length < 3) {
+	            alert("인보이스 이름 형식이 올바르지 않습니다.\n예: YC-260101-001");
+	            cell.restoreOldValue();
+	            return;
+	        }
+	
+	        var datePart = parts[1];
+	
+	        // 가운데가 6자리 또는 8자리 숫자인지
+	        if (!/^\d{6}$/.test(datePart) && !/^\d{8}$/.test(datePart)) {
+	            alert("날짜 부분은 6자리(YYMMDD) 또는 8자리(YYYYMMDD) 숫자여야 합니다.");
+	            cell.restoreOldValue();
+	            return;
+	        }
+	    }
 
 	      var updateData = {
 	    		  "targetField": field,
@@ -1778,6 +1799,7 @@ function downloadExcel() {
         "extra_part_no":                20,  // 출력용 Part No
         "extra_bundle_no":              20,  // Bundle No
         "extra_weight":                 20,  // 출력용 중량
+        "extra_spec":                 20,  // 출력용 Size
         "kgm_weight":                   12,  // 단중
         "lbl_real_length":              12,  // 실길이
         "qty_inventory":                12,  // 재고수량

@@ -47,7 +47,8 @@ LEFT JOIN ez_invoice_name ein
     ON eiim.invoice_no = ein.invoice_no
 
 WHERE B.QTY_INVENTORY != 0
-  AND eiim.invoice_no IS NULL; 
+  AND eiim.invoice_no IS NULL
+  AND B.CD_WH = 'YC_FG3' 
 </select>
 
 <!-- 인보이스 조회 -->

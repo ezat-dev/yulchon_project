@@ -561,7 +561,7 @@ dataTable = new Tabulator('#dataTable', {
     { title: "실길이", field: "lbl_real_length", sorter: "string", width: 120, hozAlign: "center"},
     { title: "Lot No.", field: "lbl_lot_no", width: 170, hozAlign: "center"},
     { title: "W/O No", field: "no_mfg_order_serial", width: 170, hozAlign: "center"},
-    { title: "Bundle No", field: "extra_bundle_no", width: 170, hozAlign: "center"},
+    { title: "Bundle No", field: "bundle_no", width: 170, hozAlign: "center"},
     { title: "재고수량", field: "qty_inventory", sorter: "string", width: 100, hozAlign: "center"},
     { title: "재고중량", field: "wgt_inventory", sorter: "string", width: 120, hozAlign: "center"},
     { title: "창고코드", field: "cd_wh", sorter: "string", width: 120, hozAlign: "center"},

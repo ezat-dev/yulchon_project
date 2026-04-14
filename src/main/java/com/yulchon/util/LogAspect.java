@@ -115,7 +115,7 @@ public class LogAspect {
             logger.info("[종료] [" + loginUserId + "(" + loginUserName + ")]" + type + "." + methodName + "() | 반환: " + resultStr);
             return result;
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             // 여기서 에러를 가로채서 errorLog.log에 저장
             // e를 인자로 넣으면 에러가 발생한 상세 경로(Stack Trace)가 다 찍힙니다.
             logger.error("[에러발생] " + type + "." + methodName + "() | 메시지: " + e.getMessage(), e);

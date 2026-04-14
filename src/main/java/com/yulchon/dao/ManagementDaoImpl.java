@@ -350,8 +350,8 @@ public class ManagementDaoImpl implements ManagementDao {
 	}
 
 	@Override
-	public Management getI_MONTHLY_INVENTORY(Management management) {
-		return sqlSession.selectOne("management.getI_MONTHLY_INVENTORY", management);
+	public List<Management> getI_MONTHLY_INVENTORY(Management management) {
+		return sqlSession.selectList("management.getI_MONTHLY_INVENTORY", management);
 	}
 
 	@Override

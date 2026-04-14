@@ -1,31 +1,34 @@
 package com.yulchon.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.apache.commons.pool2.impl.GenericObjectPool;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import com.jacob.activeX.ActiveXComponent;
 import com.jacob.com.Dispatch;
 import com.jacob.com.Variant;
 
 public class ExcelManager {
-	private static ExcelManager instance;
-    private GenericObjectPool<ActiveXComponent> pool;
-    
-    //파일 경로별 락 관리
+    private static ExcelManager instance;
+    private final List<ActiveXComponent> excelPool = new ArrayList<>();
     private final ConcurrentHashMap<String, ReentrantLock> fileLocks = new ConcurrentHashMap<>();
-
+    private final ConcurrentHashMap<String, ActiveXComponent> fileToExcelCache = new ConcurrentHashMap<>();
+    private static final int POOL_SIZE = 3;
 
     private ExcelManager() {
-        ExcelInstanceFactory factory = new ExcelInstanceFactory();
-        GenericObjectPoolConfig<ActiveXComponent> config = new GenericObjectPoolConfig<>();
-        config.setMaxTotal(3); // 엑셀 인스턴스 최대 3개
-        config.setBlockWhenExhausted(true); // 3개 다 쓰고 있으면 다음 사람 대기
-        config.setMaxWaitMillis(10000); // 최대 10초 대기 후 에러 반환
-        
-        this.pool = new GenericObjectPool<>(factory, config);
+        for (int i = 0; i < POOL_SIZE; i++) {
+            try {
+                ActiveXComponent excel = new ActiveXComponent("Excel.Application");
+                excel.setProperty("Visible", false);
+                excel.setProperty("DisplayAlerts", false);
+                excelPool.add(excel);
+                System.out.println("엑셀 인스턴스 생성 완료: " + (i+1) + "번");
+            } catch (Exception e) {
+                System.out.println("엑셀 인스턴스 생성 실패: " + (i+1) + "번 - " + e.getMessage());
+            }
+        }
+        System.out.println("최종 풀 크기: " + excelPool.size());
     }
 
     public static synchronized ExcelManager getInstance() {
@@ -33,42 +36,51 @@ public class ExcelManager {
         return instance;
     }
 
-    // 빌려오기
-    public ActiveXComponent borrowExcel() throws Exception {
-        return pool.borrowObject();
+    public synchronized ActiveXComponent borrowExcelForFile(String filePath) {
+        String normalPath = filePath.replace("\\", "/").toLowerCase();
+
+        // 1. 캐시에서 먼저 찾기 (COM 호출 없음)
+        ActiveXComponent cached = fileToExcelCache.get(normalPath);
+        if (cached != null) {
+            System.out.println("캐시 재사용: " + filePath);
+            return cached;
+        }
+
+        // 2. 캐시 없으면 파일이 가장 적게 열려있는 인스턴스 반환
+        ActiveXComponent least = excelPool.get(0);
+        int minCount = Integer.MAX_VALUE;
+        for (ActiveXComponent excel : excelPool) {
+            try {
+                int count = Dispatch.get(excel.getProperty("Workbooks").toDispatch(), "Count").toInt();
+                if (count < minCount) {
+                    minCount = count;
+                    least = excel;
+                }
+            } catch (Exception e) { /* skip */ }
+        }
+
+        // 3. 캐시에 등록
+        fileToExcelCache.put(normalPath, least);
+        System.out.println("새 인스턴스에 파일 열기: " + filePath);
+        return least;
     }
 
-    // 반납하기
-    public void returnExcel(ActiveXComponent excel) {
-        if (excel != null) pool.returnObject(excel);
-    }
-    
-    // 파일별 락 가져오기 (없으면 새로 생성)
     public ReentrantLock getFileLock(String filePath) {
-        return fileLocks.computeIfAbsent(
-            filePath.toLowerCase(), 
-            k -> new ReentrantLock()
-        );
+        return fileLocks.computeIfAbsent(filePath.toLowerCase(), k -> new ReentrantLock());
     }
-    
+
     public Dispatch getWorkbook(ActiveXComponent excel, String filePath) {
         Dispatch workbooks = excel.getProperty("Workbooks").toDispatch();
         int count = Dispatch.get(workbooks, "Count").toInt();
 
-        // 현재 엑셀 프로세스에 열려 있는 파일들을 다 뒤져서 같은 경로가 있는지 확인
         for (int i = 1; i <= count; i++) {
             Dispatch wb = Dispatch.call(workbooks, "Item", new Variant(i)).toDispatch();
             String openPath = Dispatch.get(wb, "FullName").toString();
-            //System.out.println("열려있는 파일 경로: " + openPath);
-            //System.out.println("요청 들어온 파일 경로: " + filePath);
-            
             if (openPath.replace("\\", "/").equalsIgnoreCase(filePath.replace("\\", "/"))) {
-            	//System.out.println("열었던 엑셀 반환");
-                return wb; // 이미 열려있으면 그대로 반환 (재사용)
+                return wb;
             }
         }
-        // 없으면 새로 Open
-        //System.out.println("엑셀 새로 열기");
+
         return Dispatch.call(workbooks, "Open", filePath).toDispatch();
     }
 }
