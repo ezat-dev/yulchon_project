@@ -201,12 +201,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -363,12 +363,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -522,12 +522,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -680,12 +680,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -830,12 +830,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -978,12 +978,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -1143,12 +1143,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -1303,12 +1303,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -1446,13 +1446,13 @@ public class PreviewExcel {
 	        } catch (Exception e) {
 	            e.printStackTrace();
 	        } finally {
-	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	        	// [6] 자원 반납
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -1528,19 +1528,21 @@ public class PreviewExcel {
 			    // YYYYMMDD 형식인 경우 그대로 사용
 			    invoice_name_date = invoiceNameDatePart;
 			}
+			String lblDate = data.getLbl_date();
 			
 			int totalLength = (int) Math.round(
 				    (double) Integer.parseInt(data.getLbl_real_length()) 
 				    * Integer.parseInt(data.getQty_inventory()) / 1000.0
 				);
 			// [2] 값 넣기 (Null 방어 로직 추가)
+			putCellValue(sheet, "C3", data.getExtra_part_no());
 			putCellValue(sheet, "C4", data.getSteel_grade_item_010() + " " + data.getCd_materail());
-			putCellValue(sheet, "B6", "OD " + data.getOut_diameter() + " x ID " + data.getIn_daimeter() + " x WT " + data.getThickness());
-			putCellValue(sheet, "E5", data.getExtra_part_no());
+			putCellValue(sheet, "C5", "OD " + data.getOut_diameter() + " x ID " + data.getIn_daimeter() + " x WT " + data.getThickness());
+			putCellValue(sheet, "E5", data.getExtra_order_no());
 			putCellValue(sheet, "C6", data.getLbl_real_length() + " mm");
 			putCellValue(sheet, "E6", data.getNo_mfg_order_serial());
 			putCellValue(sheet, "C7", data.getQty_inventory());
-			putCellValue(sheet, "E7", getTodayDate(invoice_name_date));
+			putCellValue(sheet, "E7", getTodayDate(lblDate));
 			putCellValue(sheet, "C8", data.getWgt_inventory());
 			putCellValue(sheet, "E8", totalLength + " m");
 			putCellValue(sheet, "E10", data.getExtra_bundle_no());
@@ -1607,12 +1609,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -1682,7 +1684,7 @@ public class PreviewExcel {
 	        if(data.getExtra_spec() != null && !data.getExtra_spec().isEmpty()) {
 	        	size = data.getExtra_spec();
 	        }
-			System.out.println("item_seq_total: " + data.getItem_seq_total());
+			//System.out.println("item_seq_total: " + data.getItem_seq_total());
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "A3", "S/O NO. " + data.getCustomer_product_code_number());
 			putCellValue(sheet, "B4", data.getSteel_grade_item_010() + " " + data.getCd_materail());
@@ -1752,12 +1754,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -1900,12 +1902,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -1971,15 +1973,15 @@ public class PreviewExcel {
 	            }
 	        }
 
-			String[] part = data.getCd_materail().split(" ");
-			String material1 = part[2];
-			String material2 = part[0] + " " + part[1];
+//			String[] part = data.getCd_materail().split(" ");
+//			String material1 = part[2];
+//			String material2 = part[0] + " " + part[1];
 			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getExtra_part_no());
 			putCellValue(sheet, "B4", data.getExtra_bundle_no());
-			putCellValue(sheet, "B7", material1);
-			putCellValue(sheet, "B8", material2);
+			putCellValue(sheet, "B7", data.getCd_materail() + "-E-C");
+			putCellValue(sheet, "B8", data.getSteel_grade_item_010());
 			putCellValue(sheet, "B9", data.getOut_diameter() + " OD X " + data.getIn_daimeter() + " ID X " + data.getLbl_real_length() + "mm");
 			putCellValue(sheet, "B10", data.getWgt_inventory() + " KG");
 			putCellValue(sheet, "B11", data.getQty_inventory() + " PCS");
@@ -2047,12 +2049,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -2188,12 +2190,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -2268,7 +2270,7 @@ public class PreviewExcel {
 			    // YYYYMMDD 형식인 경우 그대로 사용
 			    invoice_name_date = invoiceNameDatePart;
 			}
-			System.out.println("양식 날짜: " + invoice_name_date);
+			//System.out.println("양식 날짜: " + invoice_name_date);
 			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "H4", data.getExtra_bundle_no());
@@ -2346,12 +2348,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -2507,12 +2509,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -2620,6 +2622,7 @@ public class PreviewExcel {
 			    System.err.println("엑셀 양식에 'QR_HOLDER' 이름의 도형이 없습니다!");
 			}
 
+			Dispatch.call(sheet, "Activate");
 			// 캡처 직전에 화면 업데이트 활성화
 			excel.setProperty("ScreenUpdating", true);
 
@@ -2628,11 +2631,19 @@ public class PreviewExcel {
 			
 			// 이미지 캡쳐
 			synchronized (ExcelManager.class) { 
+				System.out.println("캡쳐 로직");
 	            String printArea = Dispatch.get(Dispatch.get(sheet, "PageSetup").toDispatch(), "PrintArea").toString();
+	            //System.out.println("[DEBUG] PrintArea: '" + printArea + "'");
 	            Dispatch captureRange = (printArea != null && !printArea.isEmpty())
 	                ? Dispatch.call(sheet, "Range", printArea).toDispatch()
 	                : Dispatch.get(sheet, "UsedRange").toDispatch();
-
+	             //**********************
+	                //test용
+	             // captureRange 주소 확인
+	                //String address = Dispatch.get(captureRange, "Address").toString();
+	                //System.out.println("[DEBUG] captureRange Address: " + address);
+		         //**********************
+	                //System.out.println("복사 시작");
 	            // 엑셀에서 클립보드로 복사
 	            Dispatch.call(captureRange, "CopyPicture", new Variant(1), new Variant(2));
 
@@ -2652,12 +2663,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -2808,12 +2819,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -2972,12 +2983,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -3137,12 +3148,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }
@@ -3278,12 +3289,12 @@ public class PreviewExcel {
 	            e.printStackTrace();
 	        } finally {
 	        	// [6] 자원 반납
-	            if (workbook != null) {
-	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
-	            }
-	            if (excel != null) {
-	                //ExcelManager.getInstance().returnExcel(excel);
-	            }
+//	            if (workbook != null) {
+//	                try { Dispatch.call(workbook, "Close", new Variant(false)); } catch (Exception ignore) {}
+//	            }
+//	            if (excel != null) {
+//	                //ExcelManager.getInstance().returnExcel(excel);
+//	            }
 		        // 락 해제
 		        if (locked) fileLock.unlock();
 	        }

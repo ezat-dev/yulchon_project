@@ -296,7 +296,7 @@ public class ManagementController {
 			printResult = printExcel.printMmp(data, MMP_FILE_PATH);
 		}else if(customerName.contains("NOK")) {
 			printResult = printExcel.printNok(data, NOK_FILE_PATH);
-		}else if(customerName.contains("NST")) {
+		}else if(customerName.contains("NST") || customerName.contains("아이엠에스")) {
 			printResult = printExcel.printNst(data, NST_FILE_PATH);
 		}else if(customerName.contains("PROFENDER")) {
 			printResult = printExcel.printProfender(data, PROFENDER_FILE_PATH);
@@ -330,7 +330,7 @@ public class ManagementController {
 				resultMap.put("message", "출력 요청 및 출하목록 추가 완료");
 			} else {
 				resultMap.put("result", false);
-				resultMap.put("message", "출력 요청 완료\n잠시만 기다려 주세요.");
+				resultMap.put("message", "이미 출력된 품목입니다.\n재출력 요청이 완료되었습니다.");
 			}
 		} else {
 			// 인쇄 자체가 실패한 경우
@@ -696,7 +696,7 @@ public class ManagementController {
 			imageBytes = previewExcel.previewMmp(data, MMP_FILE_PATH);
 		}else if(customerName.contains("NOK")) {
 			imageBytes = previewExcel.previewNok(data, NOK_FILE_PATH);
-		}else if(customerName.contains("NST")) {
+		}else if(customerName.contains("NST") || customerName.contains("아이엠에스")) {
 			imageBytes = previewExcel.previewNst(data, NST_FILE_PATH);
 		}else if(customerName.contains("PROFENDER")) {
 			imageBytes = previewExcel.previewProfender(data, PROFENDER_FILE_PATH);

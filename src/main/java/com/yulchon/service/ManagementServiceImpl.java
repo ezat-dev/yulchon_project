@@ -207,11 +207,11 @@ public class ManagementServiceImpl implements ManagementService{
 				Management seq_request_serial_data = managementDao.selectSEQ_REQUEST_SERIAL(v);
 				String no_sales_request_serial = seq_request_serial_data.getNo_sales_request_serial();
 				//Integer seq_sales_request = seq_request_serial_data.getSeq_sales_request();
-				System.out.println("수주번호: " + no_sales_request_serial);
+				//System.out.println("수주번호: " + no_sales_request_serial);
 				String lbl_lot_no = v.getLbl_lot_no();
 				seq_request_serial_data.setLbl_lot_no(lbl_lot_no);
 				boolean insertS_SALES_REQUEST_LOT = managementDao.insertS_SALES_REQUEST_LOT(seq_request_serial_data);
-				System.out.println("insertS_SALES_REQUEST_LOT 성공여부: " + insertS_SALES_REQUEST_LOT);
+				//System.out.println("insertS_SALES_REQUEST_LOT 성공여부: " + insertS_SALES_REQUEST_LOT);
 			}
 
 
@@ -224,7 +224,7 @@ public class ManagementServiceImpl implements ManagementService{
 				throw new RuntimeException("차감할 재고 데이터가 존재하지 않아 출하 완료를 취소합니다.");
 			}
 			String no_sales_request_serial = datas1.get(0).getNo_sales_request_serial();
-			System.out.println("no_sales_request_serial: " + no_sales_request_serial);
+			//System.out.println("no_sales_request_serial: " + no_sales_request_serial);
 
 			if (datas1 == null || datas1.isEmpty()) {
 				//System.out.println("알림: 차감할 데이터가 없습니다.");
@@ -232,7 +232,7 @@ public class ManagementServiceImpl implements ManagementService{
 			}
 
 			for(Management v : datas1) { v.setUser_id(loginUserID); }
-			System.out.println("2단계: 차감 대상 조회 완료 (건수: " + datas1.size() + ")");
+			//System.out.println("2단계: 차감 대상 조회 완료 (건수: " + datas1.size() + ")");
 
 			// 3. S_SALES_REQUEST 업데이트
 			managementDao.updateS_SALES_REQUEST_PROCESS(datas1);
@@ -249,20 +249,20 @@ public class ManagementServiceImpl implements ManagementService{
 				}
 			}
 			managementDao.updateS_SALES_REQUEST_LOT(datas1);
-			System.out.println("3단계: S_SALES_REQUEST 관련 업데이트 완료");
+			//System.out.println("3단계: S_SALES_REQUEST 관련 업데이트 완료");
 
 			// 4. 재고(Inventory) 루프 업데이트
 			int count = 0;
 			for(Management v : datas1) {
 				String lbl_lot_no = v.getLbl_lot_no();
-				System.out.println("로트번호: " + lbl_lot_no);
+				//System.out.println("로트번호: " + lbl_lot_no);
 				String inventoryCount = v.getQty_inventory();
-				System.out.println("inventoryCount: " + inventoryCount);
+				//System.out.println("inventoryCount: " + inventoryCount);
 				String invoice_name = v.getInvoice_name();
-				System.out.println("invoice_name: " + invoice_name);
+				//System.out.println("invoice_name: " + invoice_name);
 				Management data = managementDao.getI_ONHAND_INVENTORY(v);
 				if(data != null) {
-					System.out.println("getI_ONHAND_INVENTORY 데이터 존재!");
+					//System.out.println("getI_ONHAND_INVENTORY 데이터 존재!");
 					data.setUser_id(loginUserID);
 					data.setQty_inventory(inventoryCount);
 					data.setNo_lot(lbl_lot_no);
@@ -280,7 +280,7 @@ public class ManagementServiceImpl implements ManagementService{
 				int sequencePart = Integer.parseInt(managementDao.selectI_TRANSACTION_NextSeq(management).getNext_seq());
 
 				String noTransaction = String.format("ISS%s%05d", datePart, sequencePart);
-				System.out.println("만든 수불번호: " + noTransaction);
+				//System.out.println("만든 수불번호: " + noTransaction);
 				v.setNo_transaction(noTransaction);
 				String invoice_name_date = "";
 				String invoiceNameDatePart = v.getInvoice_name().split("-")[1];
@@ -293,7 +293,7 @@ public class ManagementServiceImpl implements ManagementService{
 				}
 				v.setInvoice_name_date(invoice_name_date);
 				boolean insertI_TRANSACTION = managementDao.insertI_TRANSACTION(v);
-				System.out.println("I_TRANSACTION 데이터 추가 성공 여부: " + insertI_TRANSACTION);
+				//System.out.println("I_TRANSACTION 데이터 추가 성공 여부: " + insertI_TRANSACTION);
 
 				//I_TRANSACTION_DETAIL 테이블에 추가
 				UUID uuid = UUID.randomUUID();
@@ -312,7 +312,7 @@ public class ManagementServiceImpl implements ManagementService{
 
 				String seq_transaction = "";
 				//I_TRANSACTION에서 SEQ_TRANSACTION 조회
-				System.out.println("SEQ_TRANSACTION 조회할 로트번호: " + v.getLbl_lot_no());
+				//System.out.println("SEQ_TRANSACTION 조회할 로트번호: " + v.getLbl_lot_no());
 				Management seqTransactionData = managementDao.getI_TRANSACTION_DETAIL(v);
 				seq_transaction = seqTransactionData.getSeq_transaction();
 
@@ -340,9 +340,9 @@ public class ManagementServiceImpl implements ManagementService{
 			managementDao.updateCompleteInvoiceList(management);
 			managementDao.deleteNoScanInventory(management);
 
-			System.out.println("기초 데이터 처리 완료(update, delete 뒤로 뺌)");
+			//System.out.println("기초 데이터 처리 완료(update, delete 뒤로 뺌)");
 
-			//System.out.println(">>> 모든 프로세스 성공적으로 완료");
+			System.out.println(">>> 모든 프로세스 성공적으로 완료");
 			//System.out.println("일부러 롤백 시작");
 			//if(true) throw new RuntimeException("테스트를 위한 강제 롤백!");
 			return true;

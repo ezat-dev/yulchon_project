@@ -544,7 +544,7 @@ display: none;
                 	// 2. 스캔 실패 시: 직접 입력창 띄우고 입력값으로 이동
                     hideLoading(); // 입력창을 띄우기 위해 로딩바 숨김
                     
-                    const userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.");
+                    const userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.", "D");
                     
                     // 취소를 눌렀거나 아무것도 입력 안 했을 때 처리
                     if (userInput === null) return; 

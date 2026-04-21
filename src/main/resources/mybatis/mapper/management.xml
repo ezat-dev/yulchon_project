@@ -865,8 +865,13 @@ SELECT * FROM ez_shipping_list
        LEFT JOIN ez_shipping_list AS esl 
                ON A.LBL_LOT_NO = esl.lbl_lot_no
 
-       LEFT JOIN S_SALES_REQUEST_LOT L WITH (NOLOCK) 
-               ON A.LBL_LOT_NO = L.LOT_NO
+       <!-- LEFT JOIN S_SALES_REQUEST_LOT L WITH (NOLOCK) 
+               ON A.LBL_LOT_NO = L.LOT_NO  -->
+	       LEFT JOIN (
+	    SELECT *,
+	           ROW_NUMBER() OVER (PARTITION BY LOT_NO ORDER BY DT_UPDATE DESC) AS RN
+	    FROM S_SALES_REQUEST_LOT WITH (NOLOCK)
+	) L ON A.LBL_LOT_NO = L.LOT_NO AND L.RN = 1         
        
        LEFT JOIN (
             SELECT 

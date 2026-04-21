@@ -225,6 +225,8 @@ $(function() {
 	  console.log('.btn-cancel 개수:', $('.btn-cancel').length);
 	  console.log('.btn-check 개수:', $('.btn-check').length);
 
+	  console.log("user agent", navigator.userAgent);
+
 //쉬핑마크 출력 클릭시
 $(document).on("click", ".btn-print", function () {
 	//showLoading();
