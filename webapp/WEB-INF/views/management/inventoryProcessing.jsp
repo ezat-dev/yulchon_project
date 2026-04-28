@@ -369,6 +369,10 @@ button:hover{
         width: 100%;
     }
 }
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
     </style>
 </head>
 
@@ -439,7 +443,10 @@ button:hover{
             <div id="dataTable"></div>
         </div>
     </main>
-
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white;">
+    <div class="spinner" style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <p style="margin-top: 15px;">출하 완료 중입니다. 잠시만 기다려주세요.</p>
+</div>
 
 <script>
 let now_page_code = "h03";
@@ -620,22 +627,37 @@ $(function() {
 		      data: JSON.stringify(payload),
 		      //processData: false,
 		      //contentType: false,
+		      beforeSend: function() {
+			        $('#loadingOverlay').css('display', 'flex');
+			  },
 		      success: function(result) {
 		          if(result === true || result === "true"){
 		        	  console.log("출하완료 성공");
-		        	  alert("출하 완료 성공");
+		        	  $('#loadingOverlay').hide();
+		        	  setTimeout(function(){
+			        	  alert("출하 완료 성공");
+			        	  }, 50);
 			    	    invoiceTable.setData("/yulchon/management/getNoUpdatedInvoiceList", 
 			    	    	    {});
 			    	    dataTable.setData("/yulchon/management/getShippingList", 
 			    	    	    {});
 		          }else{
 			          console.log("출하완료 실패");
-			          alert("출하완료 실패했습니다. 스캔한 품목이 있는지 확인해주세요.")
+			          $('#loadingOverlay').hide();
+		        	  setTimeout(function(){
+				          alert("출하완료 실패했습니다. 스캔한 품목이 있는지 확인해주세요.")
+			        	  }, 50);
 		              }
 		        },
 		      error: function() {
-		        alert('출하완료 중 오류가 발생했습니다.');
-		      }
+		    	  $('#loadingOverlay').hide();
+	        	  setTimeout(function(){
+	  		        alert('출하완료 중 오류가 발생했습니다.');
+		        	  }, 50);
+		      },
+		      complete: function() {
+		    	        $('#loadingOverlay').hide();
+		    	}
 		    });
 	    }else{
 			return;

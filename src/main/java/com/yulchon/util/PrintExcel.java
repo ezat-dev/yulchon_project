@@ -120,6 +120,9 @@ public class PrintExcel {
 			    invoice_name_date = invoiceNameDatePart;
 			}
 			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "F4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCustomer_product_code_number());
@@ -133,6 +136,7 @@ public class PrintExcel {
 			putCellValue(sheet, "L8", getTodayFormatted(invoice_name_date));
 			putCellValue(sheet, "E9", data.getWgt_inventory());
 			putCellValue(sheet, "K9", data.getQty_inventory());
+			putCellValue(sheet, "M9", "* " + lot_no_5);
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
@@ -263,6 +267,9 @@ public class PrintExcel {
 			    invoice_name_date = invoiceNameDatePart;
 			}
 			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "H5", data.getExtra_bundle_no());
 			putCellValue(sheet, "E6", data.getCustomer_product_code_number());
@@ -276,6 +283,7 @@ public class PrintExcel {
 			putCellValue(sheet, "L9", getTodayFormatted(invoice_name_date));
 			putCellValue(sheet, "E10", data.getWgt_inventory());
 			putCellValue(sheet, "K10", data.getQty_inventory());
+			putCellValue(sheet, "M10", "* " + lot_no_5);
 			
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
@@ -407,6 +415,9 @@ public class PrintExcel {
 			    invoice_name_date = invoiceNameDatePart;
 			}
 			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "H5", data.getExtra_bundle_no());
 			putCellValue(sheet, "E6", data.getCustomer_product_code_number());
@@ -420,6 +431,7 @@ public class PrintExcel {
 			putCellValue(sheet, "L9", getTodayFormatted(invoice_name_date));
 			putCellValue(sheet, "E10", data.getWgt_inventory());
 			putCellValue(sheet, "K10", data.getQty_inventory());
+			putCellValue(sheet, "M10", "* " + lot_no_5);
 			
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
@@ -551,6 +563,9 @@ public class PrintExcel {
 			    invoice_name_date = invoiceNameDatePart;
 			}
 			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "F4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCd_materail());
@@ -563,8 +578,8 @@ public class PrintExcel {
 			putCellValue(sheet, "L8", getTodayFormatted(invoice_name_date));
 			putCellValue(sheet, "E9", data.getWgt_inventory());
 			putCellValue(sheet, "K9", data.getQty_inventory());
+			putCellValue(sheet, "M9", "* " + lot_no_5);
 			
-
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -683,6 +698,9 @@ public class PrintExcel {
 	                Dispatch.call(shape, "Delete");
 	            }
 	        }
+	        
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getInvoice_name());
@@ -698,6 +716,7 @@ public class PrintExcel {
 			if(data.getOut_diameter().contains("48.6")) {
 				putCellValue(sheet, "E11", "yellow");	
 			}
+			putCellValue(sheet, "F13", "* " + lot_no_5);	
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
@@ -818,6 +837,9 @@ public class PrintExcel {
 	                Dispatch.call(shape, "Delete");
 	            }
 	        }
+	        
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getInvoice_name());
@@ -831,6 +853,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B9", data.getExtra_weight() + " KG");
 			putCellValue(sheet, "B10", data.getExtra_packing_inspection());
 			putCellValue(sheet, "B12", data.getExtra_bundle_no());
+			putCellValue(sheet, "B13", "* " + lot_no_5);
 			
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
@@ -962,6 +985,9 @@ public class PrintExcel {
 				formattedDate = rawDate;
 			}
 			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "C4", data.getSteel_grade_item_010() + " " + data.getCd_materail());
 			putCellValue(sheet, "C5", "OD " + data.getOut_diameter() + " x ID " + data.getIn_daimeter()  + " x WT " +data.getThickness());
@@ -972,6 +998,7 @@ public class PrintExcel {
 			putCellValue(sheet, "C8", data.getWgt_inventory() + " kg");
 			//putCellValue(sheet, "E8", data.getLbl_real_length());
 			putCellValue(sheet, "E10", data.getExtra_bundle_no());
+			putCellValue(sheet, "E13", "★ " + lot_no_5);
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			/*
@@ -1115,6 +1142,10 @@ public class PrintExcel {
 			int count = Integer.parseInt(data.getQty_inventory());
 			double quantityValue = Math.round((realLength * count / 1000.0) * 100.0) / 100.0;
 			int weight = Integer.parseInt(data.getWgt_inventory());
+			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "A4", data.getExtra_invoice_no());
 			putCellValue(sheet, "A6", "*N" + data.getExtra_invoice_no() + "*");
@@ -1128,6 +1159,7 @@ public class PrintExcel {
 			putCellValue(sheet, "G12", data.getOut_diameter() + " OD x " + data.getIn_daimeter()  + " ID " +data.getLbl_real_length() + "L");
 			putCellValue(sheet, "A19", data.getExtra_bundle_no());
 			putCellValue(sheet, "A20", "*" + data.getExtra_bundle_no() + "*");
+			putCellValue(sheet, "G2", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -1247,6 +1279,9 @@ public class PrintExcel {
 	                Dispatch.call(shape, "Delete");
 	            }
 	        }
+	        
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B4", data.getExtra_packing_inspection());
@@ -1257,6 +1292,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B8", data.getQty_inventory());
 			putCellValue(sheet, "B9", data.getWgt_inventory());
 			putCellValue(sheet, "B11", data.getExtra_bundle_no());
+			putCellValue(sheet, "D2", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -1392,6 +1428,10 @@ public class PrintExcel {
 				    (double) Integer.parseInt(data.getLbl_real_length()) 
 				    * Integer.parseInt(data.getQty_inventory()) / 1000.0
 				);
+			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "C3", data.getExtra_part_no());
 			putCellValue(sheet, "C4", data.getSteel_grade_item_010() + " " + data.getCd_materail());
@@ -1404,6 +1444,7 @@ public class PrintExcel {
 			putCellValue(sheet, "C8", data.getWgt_inventory());
 			putCellValue(sheet, "E8", totalLength + " m");
 			putCellValue(sheet, "E10", data.getExtra_bundle_no());
+			putCellValue(sheet, "E13", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -1529,12 +1570,18 @@ public class PrintExcel {
 	        	size = data.getExtra_spec();
 	        }
 			//System.out.println("item_seq_total: " + data.getItem_seq_total());
+	        
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
+			putCellValue(sheet, "A2", data.getExtra_invoice_no());
 			putCellValue(sheet, "A3", "S/O NO. " + data.getCustomer_product_code_number());
 			putCellValue(sheet, "B4", data.getSteel_grade_item_010() + " " + data.getCd_materail());
 			putCellValue(sheet, "B5", size);
 			putCellValue(sheet, "B7", data.getItem_seq_total()); //<- 여기에 같은 품목 개수 조회해서 넣어야 함(1/30)
 			putCellValue(sheet, "A9", "NET WEIGHT : " + data.getWgt_inventory() + " KG / PCS : " + data.getQty_inventory() + "PCS");
+			putCellValue(sheet, "A10", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -1660,6 +1707,9 @@ public class PrintExcel {
 				    * Integer.parseInt(data.getQty_inventory()) / 1000.0
 				);
 			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getExtra_invoice_no());
 			putCellValue(sheet, "B4", data.getCd_materail());
@@ -1669,6 +1719,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B8", totalLength + " MTR");
 			putCellValue(sheet, "B9", data.getWgt_inventory() + " KG");
 			putCellValue(sheet, "B12", data.getExtra_bundle_no());
+			putCellValue(sheet, "B13", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -1792,6 +1843,9 @@ public class PrintExcel {
 //			String[] part = data.getCd_materail().split(" ");
 //			String material1 = part[2];
 //			String material2 = part[0] + " " + part[1];
+	        
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
 			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getExtra_part_no());
@@ -1802,6 +1856,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B10", data.getWgt_inventory() + " KG");
 			putCellValue(sheet, "B11", data.getQty_inventory() + " PCS");
 			putCellValue(sheet, "B2", data.getExtra_invoice_no());
+			putCellValue(sheet, "B13", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -1921,6 +1976,9 @@ public class PrintExcel {
 	                Dispatch.call(shape, "Delete");
 	            }
 	        }
+	        
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B9", data.getExtra_bundle_no());
@@ -1929,6 +1987,7 @@ public class PrintExcel {
 			putCellValue(sheet, "E8", data.getQty_inventory());
 			putCellValue(sheet, "E10", data.getExtra_invoice_no());
 			putCellValue(sheet, "E12", data.getExtra_bundle_no());
+			putCellValue(sheet, "E13", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -2059,6 +2118,9 @@ public class PrintExcel {
 			    invoice_name_date = invoiceNameDatePart;
 			}
 			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "H4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCustomer_product_code_number());
@@ -2072,6 +2134,7 @@ public class PrintExcel {
 			putCellValue(sheet, "L8", getTodayFormattedDkk(invoice_name_date));
 			putCellValue(sheet, "E9", data.getWgt_inventory());
 			putCellValue(sheet, "K9", data.getQty_inventory());
+			putCellValue(sheet, "M9", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -2206,11 +2269,14 @@ public class PrintExcel {
 	        if(data.getExtra_weight() != null && !data.getExtra_weight().isEmpty()) {
 	        	weight = data.getExtra_weight();
 	        }
+	        
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
 			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "H4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCustomer_product_code_number());
-			putCellValue(sheet, "J5", data.getCd_materail()  + "-E-C");
+			putCellValue(sheet, "J5", data.getCd_materail() + "-E-C");
 			putCellValue(sheet, "F6", data.getOut_diameter());
 			putCellValue(sheet, "I6", data.getIn_daimeter());
 			putCellValue(sheet, "K6", data.getLbl_real_length());
@@ -2220,6 +2286,7 @@ public class PrintExcel {
 			putCellValue(sheet, "E9", weight);
 			putCellValue(sheet, "K9", data.getQty_inventory());
 			putCellValue(sheet, "K7", data.getRemarks()); //비고
+			putCellValue(sheet, "M9", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -2339,6 +2406,9 @@ public class PrintExcel {
 	                Dispatch.call(shape, "Delete");
 	            }
 	        }
+	        
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getExtra_invoice_no());
@@ -2351,6 +2421,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B9", data.getWgt_inventory());
 			putCellValue(sheet, "B10", data.getExtra_packing_inspection());
 			putCellValue(sheet, "B12", data.getExtra_bundle_no());
+			putCellValue(sheet, "A11", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -2481,6 +2552,9 @@ public class PrintExcel {
 			    invoice_name_date = invoiceNameDatePart;
 			}
 			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "F4", data.getExtra_bundle_no());
 			putCellValue(sheet, "E5", data.getCustomer_product_code_number());
@@ -2493,6 +2567,7 @@ public class PrintExcel {
 			putCellValue(sheet, "L8", getTodayFormattedDkk(invoice_name_date));
 			putCellValue(sheet, "E9", data.getWgt_inventory());
 			putCellValue(sheet, "K9", data.getQty_inventory());
+			putCellValue(sheet, "M4", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;
@@ -2622,6 +2697,9 @@ public class PrintExcel {
 				formattedDate = rawDate;
 			}
 			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "C4", data.getSteel_grade_item_010() + " " + data.getCd_materail());
 			putCellValue(sheet, "C5", "OD " + data.getOut_diameter() + " x ID " + data.getIn_daimeter()  + " x WT " +data.getThickness());
@@ -2632,6 +2710,7 @@ public class PrintExcel {
 			putCellValue(sheet, "C8", data.getWgt_inventory() + " kg");
 			//putCellValue(sheet, "E8", data.getLbl_real_length());
 			putCellValue(sheet, "E10", data.getExtra_bundle_no());
+			putCellValue(sheet, "E13", "* " + lot_no_5);
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			/*
@@ -2772,6 +2851,9 @@ public class PrintExcel {
 				formattedDate = rawDate;
 			}
 			
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "C4", data.getSteel_grade_item_010() + " " + data.getCd_materail());
 			putCellValue(sheet, "C5", "OD " + data.getOut_diameter() + " x ID " + data.getIn_daimeter()  + " x WT " +data.getThickness());
@@ -2782,6 +2864,7 @@ public class PrintExcel {
 			putCellValue(sheet, "C8", data.getWgt_inventory() + " kg");
 			//putCellValue(sheet, "E8", data.getLbl_real_length());
 			putCellValue(sheet, "E10", data.getExtra_bundle_no());
+			putCellValue(sheet, "E13", "* " + lot_no_5);
 
 			// [3] QR 이미지 삽입 (D1 셀 위치)
 			/*
@@ -2913,6 +2996,9 @@ public class PrintExcel {
 	            }
 	        }
 
+			//로트번호 뒤 5자리
+			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B9", data.getExtra_bundle_no());
 			putCellValue(sheet, "D4", "P/O No.: " + data.getExtra_order_no());
@@ -2920,6 +3006,7 @@ public class PrintExcel {
 			putCellValue(sheet, "E8", data.getQty_inventory());
 			putCellValue(sheet, "E10", data.getExtra_invoice_no());
 			putCellValue(sheet, "E12", data.getExtra_bundle_no());
+			putCellValue(sheet, "E13", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();
 			Dispatch qrHolder = null;

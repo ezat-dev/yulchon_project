@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
@@ -127,7 +128,8 @@ public class ManagementController {
 			@RequestParam(value="lbl_lot_no", required=true) String lbl_lot_no, 
 			@RequestParam(value="selectedInvoiceNo", required=true) String selectedInvoiceNo,
 			@RequestParam(value="selectedInvoiceName", required=true) String selectedInvoiceName,
-			Model model, Management management, HttpServletResponse response) throws Exception {
+			Model model, Management management, HttpServletResponse response,
+			HttpServletRequest request) throws Exception {
 
 		//System.out.println("selectedInvoiceNo: " + selectedInvoiceNo);
 		//System.out.println("selectedInvoiceName: " + selectedInvoiceName);
@@ -140,7 +142,20 @@ public class ManagementController {
 		if (data == null) {
 			response.setContentType("text/html; charset=UTF-8");
 			PrintWriter out = response.getWriter();
-			out.println("<script>alert('품목을 찾을 수 없습니다. 다시 스캔해주세요.'); history.back();</script>");
+
+		    String mode = request.getParameter("mode");
+		    if ("pda".equals(mode)) {
+		        out.println("<script>" +
+		                "location.href='/yulchon/management/mobile/scan" +
+		                "?mode=pda" +
+		                "&invoiceNo=" + selectedInvoiceNo +
+		                "&invoiceName=" + java.net.URLEncoder.encode(selectedInvoiceName, "UTF-8") +
+		                "&errorMsg=" + java.net.URLEncoder.encode("품목을 찾을 수 없습니다. 다시 스캔해주세요.", "UTF-8") +
+		                "';</script>");
+		    } else {
+		        out.println("<script>alert('품목을 찾을 수 없습니다. 다시 스캔해주세요.'); history.back();</script>");
+		    }
+		    
 			out.flush();
 			return null; // 스크립트를 직접 실행하므로 뷰 이름을 반환하지 않음
 		}
@@ -269,7 +284,7 @@ public class ManagementController {
 		String file_path = getShippingMarkFilePath(customerName);
 
 		//테스트용으로 해놓음
-		//customerName = "KKM";
+		//customerName = "CASH";
 
 		Map<String, Object> printResult = new HashMap<>();
 		if(customerName.contains("KAB")) {
@@ -672,6 +687,9 @@ public class ManagementController {
 		PreviewExcel previewExcel = new PreviewExcel();
 		byte[] imageBytes = null;
 
+		//테스트용
+		//customerName = "THAI AUTO";
+		
 		if(customerName.contains("KAB")) {
 			imageBytes = previewExcel.previewKoideKab(data, KAB_FILE_PATH);
 		}else if(customerName.contains("KCB")) {

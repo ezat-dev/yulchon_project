@@ -43,7 +43,23 @@ public class ExcelManager {
         ActiveXComponent cached = fileToExcelCache.get(normalPath);
         if (cached != null) {
             System.out.println("캐시 재사용: " + filePath);
-            return cached;
+            if (isExcelAlive(cached)) return cached;  // 살아있을 때만 재사용
+            fileToExcelCache.remove(normalPath);       // 죽었으면 캐시 제거
+        }
+        
+        // 죽은 인스턴스 복구
+        for (int i = 0; i < excelPool.size(); i++) {
+            if (!isExcelAlive(excelPool.get(i))) {
+                System.out.println("인스턴스 " + i + " 죽음 감지 → 재생성");
+                try {
+                    ActiveXComponent newExcel = new ActiveXComponent("Excel.Application");
+                    newExcel.setProperty("Visible", false);
+                    newExcel.setProperty("DisplayAlerts", false);
+                    excelPool.set(i, newExcel);
+                } catch (Exception e) {
+                    System.err.println("재생성 실패: " + e.getMessage());
+                }
+            }
         }
 
         // 2. 캐시 없으면 파일이 가장 적게 열려있는 인스턴스 반환
@@ -82,5 +98,15 @@ public class ExcelManager {
         }
 
         return Dispatch.call(workbooks, "Open", filePath).toDispatch();
+    }
+    
+    //인스턴스 살아있는지 확인
+    private boolean isExcelAlive(ActiveXComponent excel) {
+        try {
+            excel.getProperty("Workbooks");
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

@@ -43,7 +43,7 @@ body {
 	background: white;
 	border-radius: 8px;
 	padding: 30px;
-	margin-bottom: 30px;
+	margin-bottom: 10px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -76,8 +76,7 @@ body {
 .button-container {
 	display: flex;
 	justify-content: center;
-	gap: 15px;
-	margin-top: 20px;
+	gap: 2%;
 }
 
 .btn {
@@ -122,7 +121,7 @@ body {
 }
 
 /* 모바일 */
-@media ( max-width : 768px) {
+@media ( max-width : 800px) {
 	.scan-page {
 		padding: 15px;
 	}
@@ -240,6 +239,7 @@ display: none;
     <div class="spinner" style="width:50px; height:50px; border:5px solid #f3f3f3; border-top:5px solid #3498db; border-radius:50%; animation:spin 1s linear infinite;"></div>
     <p style="margin-top:15px; font-weight:bold;">쉬핑마크 출력 준비 중입니다. 잠시만 기다려 주세요...</p>
 </div>
+
 	<script>
 	let lotValue = "";
 	let scannedText = null;
@@ -315,6 +315,61 @@ display: none;
 	    $('#invoice_no').text(invoice_no);
 	    
 		updateButtonLabel();
+
+		//이미 출력한 품목인지 확인
+			$.ajax({
+	        url: "/yulchon/management/mobile/getIsShippingList",
+	        type: "POST",
+	        contentType: "application/json",
+	        data: JSON.stringify({
+	            invoice_no: invoice_no,
+	            lot_no: lot_no
+	        }),
+	        success: function(data) {
+	            if (data && Object.keys(data).length > 0) {
+	                // 이미 출력한 품목 → 모달 띄우기
+			        $('<style>').text(`
+		            @keyframes blink {
+		                0%, 100% { opacity: 1; }
+		                50% { opacity: 0; }
+		            }
+		        `).appendTo('head');
+		
+		        const $overlay = $('<div>').css({
+		            position: 'fixed', top: 0, left: 0,
+		            width: '100%', height: '100%',
+		            background: 'rgba(0,0,0,0.4)',
+		            zIndex: 9998
+		        });
+		        const $modal = $('<div>').addClass('blink-modal').css({
+		            position: 'fixed', top: '50%', left: '50%',
+		            transform: 'translate(-50%, -50%)',
+		            background: '#fff', padding: '20px 30px',
+		            border: '1px solid #ccc', borderRadius: '4px',
+		            zIndex: 9999, textAlign: 'center',
+		            boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+		            minWidth: '350px',
+		            fontSize: '18px'
+		        }).append(
+		            $('<p>').text("이미 출력한 품목입니다").css('color', 'red'),
+		            $('<button>').text('확인').css({
+		                marginTop: '10px',
+		                padding: '10px 40px',
+		                fontSize: '16px',
+		                cursor: 'pointer'
+		            }).on('click', function() {
+		                $overlay.remove();
+		                $modal.remove();
+		            })
+		        );
+		        $overlay.appendTo('body');
+		        $modal.appendTo('body');
+	            }
+	        },
+	        error: function() {
+	            alert("조회 중 오류가 발생했습니다.");
+	        }
+	    });
 		
 	    //스캔한 품목 인보이스 없을 때 - w/o, 수량 같은거로 로트번호 바꿈
 	    if (invoice_no == null || invoice_no == "") {
@@ -322,7 +377,14 @@ display: none;
 	        if (confirm(msg)) {
 	            insertInvoiceInventory(); 
 	        } else {
-	            history.back(); 
+            	var isPDA = new URLSearchParams(window.location.search).get("mode") === "pda";
+                if(isPDA){
+                 	window.location.replace("/yulchon/management/mobile/scan?mode=pda" +
+                		    "&invoiceNo="   + encodeURIComponent(selectedInvoiceNo) +
+                		    "&invoiceName=" + encodeURIComponent(selectedInvoiceName));
+                    }else{
+						history.back();
+                        }
 	        }
 	    } //선택한 인보이스와 스캔한 품목의 인보이스 다를 때
 	    else if (invoice_no != selectedInvoiceNo) {
@@ -342,8 +404,15 @@ display: none;
 	            success: function (data) {
 		            console.log("출력한 품목인지 조회 데이터: ", data);
 					if(data && Object.keys(data).length > 0){
-						alert("인보이스를 잘못 선택하셨습니다.");
-						history.back();
+						alert("다른 인보이스에서 출력한 품목입니다.");
+                    	var isPDA = new URLSearchParams(window.location.search).get("mode") === "pda";
+                        if(isPDA){
+                        	window.location.replace("/yulchon/management/mobile/scan?mode=pda" +
+                        		    "&invoiceNo="   + encodeURIComponent(selectedInvoiceNo) +
+                        		    "&invoiceName=" + encodeURIComponent(selectedInvoiceName));
+                            }else{
+								history.back();
+                                }
 						return;
 						}
 
@@ -362,7 +431,14 @@ display: none;
 			                    var matchedLotNo = matchedItem.lbl_lot_no;
 
 			                    if (!confirm("[" + selectedInvoiceName + "] 인보이스에 동일 W/O·수량의 미출력 품목(LOT: " + matchedLotNo + ")이 있습니다.\n로트번호를 서로 교체하시겠습니까?")) {
-			                        history.back();
+	                            	var isPDA = new URLSearchParams(window.location.search).get("mode") === "pda";
+	                                if(isPDA){
+	                                	window.location.replace("/yulchon/management/mobile/scan?mode=pda" +
+	                                		    "&invoiceNo="   + encodeURIComponent(selectedInvoiceNo) +
+	                                		    "&invoiceName=" + encodeURIComponent(selectedInvoiceName));
+		                                }else{
+											history.back();
+			                                }
 			                        return;
 			                    }
 
@@ -378,11 +454,19 @@ display: none;
 			                        }),
 			                        success: function (result) {
 			                            if (result === true || result === "true") {
-			                                alert("로트번호 교체가 완료되었습니다.");
-			                                var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" + lot_no
+			                            	var isPDA = new URLSearchParams(window.location.search).get("mode") === "pda";
+			                                //alert("로트번호 교체 완료되었습니다.");
+			                                if(isPDA){
+				                                var url = "/yulchon/management/mobile/shippingMarkPrint?mode=pda&lbl_lot_no=" + lot_no
+		                                        + "&selectedInvoiceNo=" + selectedInvoiceNo
+		                                        + "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
+		                                window.location.replace(url);
+				                                }else{
+					                                var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" + lot_no
 			                                        + "&selectedInvoiceNo=" + selectedInvoiceNo
 			                                        + "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
-			                                window.location.href = url;
+			                                window.location.replace(url);
+					                                }
 			                            } else {
 			                                alert("로트번호 교체 실패");
 			                                history.back();
@@ -393,7 +477,7 @@ display: none;
 			                        }
 			                    });
 			                } else {
-			                    alert("매칭되는 교체 대상이 없습니다.");
+			                    alert("W/O, 수량이 같은 품목이 없습니다.");
 			                    history.back();
 			                }
 			            },
@@ -449,11 +533,20 @@ display: none;
 	                        }),
 	                        success: function(result) {
 	                            if (result === true || result === "true") {
+	                            	var isPDA = new URLSearchParams(window.location.search).get("mode") === "pda";
 	                                console.log("교체 성공했습니다.");
-	                                var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" + lot_no
-	                                + "&selectedInvoiceNo=" + selectedInvoiceNo
-	                                + "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
-	                        window.location.href = url;
+	                                if(isPDA){
+		                                var url = "/yulchon/management/mobile/shippingMarkPrint?mode=pda&lbl_lot_no=" + lot_no
+		                                + "&selectedInvoiceNo=" + selectedInvoiceNo
+		                                + "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
+		                        window.location.replace(url);
+		                                }else{
+			                                var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" + lot_no
+			                                + "&selectedInvoiceNo=" + selectedInvoiceNo
+			                                + "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
+			                        window.location.replace(url);
+			                                }
+
 	                            } else {
 	                            	console.log("교체 실패했습니다.");
 	                                history.back();
@@ -499,11 +592,51 @@ display: none;
     	  		$('#loadingOverlay').css('display', 'flex');
         	  	  },
     	  	  success: function(result) {
-    	  	  	  if(result.result === true || result.result === "true"){
-    					alert(result.message);
-    	  	  	  	  }else{
-    					alert(result.message);
-    	  	  	  	  	  }
+    	  	    if(result.result === true || result.result === "true") {
+    	  	        alert(result.message);
+    	  	        handleBack();
+    	  	    }else {
+    	  	      $('<style>').text(`
+    	  	            @keyframes blink {
+    	  	                0%, 100% { opacity: 1; }
+    	  	                50% { opacity: 0; }
+    	  	            }
+    	  	            .blink-modal { animation: blink 0.4s step-end 4; }
+    	  	        `).appendTo('head');
+
+    	  	        const $overlay = $('<div>').css({
+    	  	            position: 'fixed', top: 0, left: 0,
+    	  	            width: '100%', height: '100%',
+    	  	            background: 'rgba(0,0,0,0.4)',
+    	  	            zIndex: 9998
+    	  	        });
+
+    	  	        const $modal = $('<div>').addClass('blink-modal').css({
+    	  	            position: 'fixed', top: '50%', left: '50%',
+    	  	            transform: 'translate(-50%, -50%)',
+    	  	            background: '#fff', padding: '20px 30px',
+    	  	            border: '1px solid #ccc', borderRadius: '4px',
+    	  	            zIndex: 9999, textAlign: 'center',
+    	  	            boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+    	  	            minWidth: '350px',
+    	  	            fontSize: '18px'
+    	  	        }).append(
+    	  	            $('<p>').text(result.message).css('color', 'red'),
+    	  	            $('<button>').text('확인').css({
+    	  	              marginTop: '10px',
+    	  	            padding: '10px 40px',
+    	  	            fontSize: '16px',
+    	  	            cursor: 'pointer'
+    	  	        	}).on('click', function() {
+    	  	                $overlay.remove();
+    	  	                $modal.remove();
+    	    	  	        handleBack();
+    	  	            })
+    	  	        );
+
+    	  	        $overlay.appendTo('body');
+    	  	        $modal.appendTo('body');
+    	  	    }
     	  	  },
     	  	  error: function() {
     	  	    alert('쉬핑마크 출력 중 오류가 발생했습니다.');
@@ -515,7 +648,14 @@ display: none;
     }
 
     function handleBack() {
-    	openCamera();
+        var isPDA = new URLSearchParams(window.location.search).get("mode") === "pda";
+        if (isPDA) {
+        	window.location.replace("/yulchon/management/mobile/scan?mode=pda" +
+        		    "&invoiceNo="   + encodeURIComponent(selectedInvoiceNo) +
+        		    "&invoiceName=" + encodeURIComponent(selectedInvoiceName));
+        } else {
+            openCamera();
+        }
     }
     function openCamera() {
         const input = document.createElement("input");
@@ -538,7 +678,7 @@ display: none;
                         + encodeURIComponent(selectedInvoiceNo)
                         + "&selectedInvoiceName=" 
                         + encodeURIComponent(selectedInvoiceName);
-              window.location.href = url;
+              window.location.replace(url);
                 } else {
                     //alert("인식 실패. 선명하게 다시 촬영해주세요.");
                 	// 2. 스캔 실패 시: 직접 입력창 띄우고 입력값으로 이동
@@ -562,7 +702,7 @@ display: none;
                             + "&selectedInvoiceName=" 
                             + encodeURIComponent(selectedInvoiceName);
                     
-                    window.location.href = url;
+                    window.location.replace(url);
                 }
             } catch (err) {
                 alert("스캔 중 오류 발생");

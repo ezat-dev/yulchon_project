@@ -198,10 +198,10 @@
     <div class="info-table-container">
       <table class="info-table">
         <tbody>
-          <tr>
+<!--           <tr>
             <th>품목명</th>
             <td id="nm_item"></td>
-          </tr>
+          </tr> -->
           <tr>
             <th>Lot No.</th>
             <td id="lbl_lot_no"></td>

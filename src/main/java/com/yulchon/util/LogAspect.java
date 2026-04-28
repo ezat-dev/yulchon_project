@@ -35,10 +35,16 @@ public class LogAspect {
     	// 세션에서 사용자 정보 가져오기
         String loginUserId = "Guest"; // 기본값
         String loginUserName = "GuestName";
+        String modeStr = "";
         try {
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
             if (attributes != null) {
                 HttpServletRequest request = attributes.getRequest();
+                
+                // mode 파라미터 꺼내기
+                String accessMode = request.getParameter("mode");
+                modeStr = (accessMode != null) ? accessMode : "web";
+                
                 HttpSession session = request.getSession(false);
                 if (session != null && session.getAttribute("loginUserId") != null) { 
                     loginUserId = session.getAttribute("loginUserId").toString();
@@ -86,7 +92,7 @@ public class LogAspect {
 		}
 
         // 메서드 실행 전 로그
-        logger.info("[시작] [" + loginUserId + "(" + loginUserName + ")]" + type + "." + methodName + "() | 인자: " + args);
+        logger.info("[시작] [" + loginUserId + "(" + loginUserName + ")]" + "[mode:" + modeStr + "] " + type + "." + methodName + "() | 인자: " + args);
 
         try {
         	// 실제 컨트롤러 메서드 실행

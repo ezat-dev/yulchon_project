@@ -7,19 +7,16 @@
   <meta name="author" content="태경열처리">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="/yulchon/css/login/style.css">
-
-	<script src="https://cdn.jsdelivr.net/npm/ionicons@latest/dist/ionicons/ionicons.js"></script>
-<!-- 	<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>  -->
-<script src="https://unpkg.com/@zxing/library@latest"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<%@include file="../include/pluginpage.jsp" %>  
+  <script src="https://cdn.jsdelivr.net/npm/ionicons@latest/dist/ionicons/ionicons.js"></script>
+  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <%@include file="../include/pluginpage.jsp" %>
   <title>율촌</title>
   <style>
-  .scan-page {
+.scan-page {
     padding: 20px;
 }
 
-/* 왼쪽 위 제목 */
 .scan-title {
     font-size: 28px;
     font-weight: bold;
@@ -28,14 +25,12 @@
     justify-content: center;
 }
 
-/* 버튼 영역 */
 .scan-button-wrap {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 110px;
 }
 
-/* 공통 버튼 */
 .scan-btn {
     height: 140px;
     font-size: 22px;
@@ -46,744 +41,852 @@
     color: #fff;
 }
 
-/* 버튼별 색상 */
-.btn-print {
-    background-color: #4f8fd3;
+.btn-print  { background-color: #4f8fd3; }
+.btn-cancel { background-color: #d9534f; }
+.btn-check  { background-color: #5cb85c; }
+
+.scan-btn.btn-active {
+    outline: 4px solid #fff;
+    box-shadow: 0 0 0 6px rgba(0,0,0,0.35);
+    transform: scale(1.03);
 }
 
-.btn-cancel {
-    background-color: #d9534f;
-}
-
-.btn-check {
-    background-color: #5cb85c;
-}
-
-/* 🔥 태블릿 */
 @media (max-width: 1024px) {
     .scan-button-wrap {
         grid-template-columns: 1fr;
+        gap: 20px;
     }
-
     .scan-btn {
         height: 120px;
         font-size: 20px;
     }
 }
 
-/* 🔥 모바일 */
 @media (max-width: 600px) {
-    .scan-title {
-        font-size: 40px;
-    }
+    .scan-title { font-size: 40px; }
+    .scan-btn   { height: 100px; font-size: 25px; }
+}
 
-    .scan-btn {
-        height: 100px;
-        font-size: 25px;
-    }
-}
-  .scan-page,
-.scan-button-wrap,
-.scan-btn {
-  position: relative !important;
-  /*z-index: 999999 !important;*/
-}
 @keyframes spin {
-    0% { transform: rotate(0deg); }
+    0%   { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-#loadingOverlay{
-display: none; 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    background: rgba(0,0,0,0.7); /* 배경을 좀 더 어둡게 해서 가독성 높임 */
-    
-    /* 중요: 버튼의 999999보다 더 높은 숫자를 부여 */
-    z-index: 9999999 !important; 
-    
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
+
+#loadingOverlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 9999999 !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     color: white;
 }
-/* 모달 배경 */
+
 .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000;
+    position: fixed; top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
 }
-/* 모달 박스 */
 .modal-content {
-    width: 85%; max-width: 400px; background: #fff; border-radius: 8px; overflow: hidden;
-    display: flex; flex-direction: column; max-height: 70vh;
+    width: 85%; max-width: 400px;
+    background: #fff; border-radius: 8px;
+    overflow: hidden; display: flex;
+    flex-direction: column; max-height: 70vh;
 }
 .modal-header { padding: 15px; background: #222; color: #fff; text-align: center; font-weight: bold; }
-.modal-body { flex: 1; overflow-y: auto; padding: 10px; }
+.modal-body   { flex: 1; overflow-y: auto; padding: 10px; min-height: 100px;}
 .modal-footer { border-top: 1px solid #eee; padding: 10px; text-align: center; }
 
-/* 리스트 스타일 */
 .invoice-list { list-style: none; padding: 0; margin: 0; }
 .invoice-item {
-    padding: 15px; border-bottom: 1px solid #f0f0f0; font-size: 16px; cursor: pointer;
+    padding: 15px; border-bottom: 1px solid #f0f0f0;
+    font-size: 16px; cursor: pointer;
     display: flex; justify-content: space-between; align-items: center;
 }
 .invoice-item:active { background-color: #f8f8f8; }
-.invoice-item:after { content: '❯'; color: #ccc; font-size: 12px; }
+.invoice-item:after  { content: '❯'; color: #ccc; font-size: 12px; }
 
-.btn-close-modal { width: 100%; padding: 10px; border: none; background: #eee; border-radius: 4px; }
+.btn-close-modal {
+    width: 100%; padding: 10px;
+    border: none; background: #eee; border-radius: 4px;
+    font-size: 16px; cursor: pointer;
+}
+
+/* PDA 상태 안내 */
+#pdaStatus {
+    display: none;
+    margin-top: 30px;
+    padding: 18px 20px;
+    background: #e8f0fe;
+    border-left: 5px solid #4f8fd3;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: bold;
+    color: #1a3c6e;
+    text-align: center;
+    line-height: 1.6;
+}
+
+/* PDA 입력창 - 실제 input */
+#pdaInputDisplay {
+    display: none;
+    margin-top: 12px;
+    padding: 14px 18px;
+    width: 100%;
+    background: #fff;
+    border: 2px solid #4f8fd3;
+    border-radius: 8px;
+    font-size: 26px;
+    font-weight: bold;
+    color: #1a3c6e;
+    letter-spacing: 0.05em;
+    text-align: center;
+    box-sizing: border-box;
+    outline: none;
+}
+#pdaInputDisplay:focus {
+    border-color: #1a3c6e;
+    box-shadow: 0 0 0 3px rgba(79,143,211,0.3);
+}
   </style>
 </head>
 <body>
 
 <div class="scan-page">
     <div class="scan-title">
-                         <a href="#" class="nav__logo"><img class="yulchonLogo" src="/yulchon/css/sideBar/yulchon_logo.png" ></a>
-					    </div>
+        <a href="#" class="nav__logo">
+            <img class="yulchonLogo" src="/yulchon/css/sideBar/yulchon_logo.png">
+        </a>
+    </div>
 
     <div class="scan-button-wrap">
         <button type="button" class="scan-btn btn-cancel">출하 취소</button>
-        <button class="scan-btn btn-print">쉬핑마크 출력</button>
-        <button class="scan-btn btn-check">품목 확인</button>
+        <button type="button" class="scan-btn btn-print">쉬핑마크 출력</button>
+        <button type="button" class="scan-btn btn-check">품목 확인</button>
     </div>
-    <input type="file" id="qrInput" accept="image/*" capture="environment" style="display:none;">
+
+    <!-- PDA 상태 안내 -->
+    <div id="pdaStatus"></div>
+
+    <!-- PDA 입력창 (보이는 실제 input) -->
+    <input type="text" id="pdaInputDisplay"
+           autocomplete="off" autocorrect="off"
+           autocapitalize="off" spellcheck="false"
+           inputmode="url"
+           lang="en"
+           placeholder="스캔 또는 직접 입력 후 Enter">
 </div>
 
-<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; color: white;">
-    <div class="spinner" style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-    <p style="margin-top: 15px;">이미지를 분석 중입니다...</p>
+<!-- 로딩 오버레이 -->
+<div id="loadingOverlay">
+    <div class="spinner" style="width:50px;height:50px;border:5px solid #f3f3f3;border-top:5px solid #3498db;border-radius:50%;animation:spin 1s linear infinite;"></div>
+    <p style="margin-top:15px;">이미지를 분석 중입니다...</p>
 </div>
+
+<!-- 인보이스 선택 모달 -->
 <div id="invoiceModal" class="modal-overlay" style="display:none;">
     <div class="modal-content">
         <div class="modal-header">인보이스 선택</div>
         <div class="modal-body">
-            <ul id="invoiceList" class="invoice-list">
-                </ul>
+            <ul id="invoiceList" class="invoice-list"></ul>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn-close-modal">닫기</button>
         </div>
     </div>
 </div>
-<!-- 로그 -->
-<pre id="scanLog"
-     style="white-space:pre-wrap; border:1px solid #ccc; padding:10px; margin-top:20px;">
-</pre>
+
 <script>
-let lotValue = "";
-let scannedText = null;
-let scannedFormat = null;
-let selectedInvoiceNo = "";
-let selectedInvoiceName = "";
-//===== 설정 값 =====
-const ZXING_FORMATS = [
+// =====================================================
+// 공통 변수
+// =====================================================
+var selectedInvoiceNo   = "";
+var selectedInvoiceName = "";
+
+var isPDA = new URLSearchParams(window.location.search).get("mode") === "pda";
+
+// =====================================================
+// 로딩 (웹모바일 전용)
+// =====================================================
+var showLoading = function() { $('#loadingOverlay').css('display', 'flex'); };
+var hideLoading = function() { $('#loadingOverlay').hide(); };
+
+// =====================================================
+// ZXing 설정 (웹모바일 전용)
+// =====================================================
+var ZXING_FORMATS = [
     ZXing.BarcodeFormat.QR_CODE,
     ZXing.BarcodeFormat.CODE_128,
     ZXing.BarcodeFormat.CODE_39,
     ZXing.BarcodeFormat.EAN_13,
     ZXing.BarcodeFormat.ITF
 ];
-
-// 가운데 촬영 전제에서 중앙 크롭 여러 단계 시도 구성
-const CROP_RATIOS = [1.0, 0.85, 0.72, 0.60];
-
-// 너무 큰 원본은 실패/느림 가능성이 올라가므로 적당히 축소 구성
-const MAX_LONG_EDGE = 1600;
-
-// 대비는 과하면 오히려 깨질 수 있어 1.15~1.35 범위 권장 구성
-const PREPROCESS_FILTER = [
+var CROP_RATIOS   = [1.0, 0.85, 0.72, 0.60];
+var MAX_LONG_EDGE = 1600;
+var PREPROCESS_FILTER = [
     "grayscale(1) contrast(1.25)",
     "grayscale(1) contrast(1.5) brightness(0.9)",
     "grayscale(1) contrast(1.8) brightness(0.8)",
-    "grayscale(1) contrast(2.0) brightness(0.75)",
+    "grayscale(1) contrast(2.0) brightness(0.75)"
 ];
 
-const formats = [
-	  ZXing.BarcodeFormat.QR_CODE,
-	  ZXing.BarcodeFormat.CODE_128,
-	  ZXing.BarcodeFormat.CODE_39,
-	  ZXing.BarcodeFormat.EAN_13,
-	  ZXing.BarcodeFormat.ITF,
-	];
-const hints = new Map();
-hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
-hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-
-// timeBetweenScans는 단일 디코딩이면 큰 의미 없지만, 생성자 시그니처 맞추기 용도도 있음
-const codeReader = new ZXing.BrowserMultiFormatReader(hints, 200);
-
-//로딩 표시
-const showLoading = () => $('#loadingOverlay').css('display', 'flex');
-const hideLoading = () => $('#loadingOverlay').hide();
-
-$(function() {
-	hideLoading();
-	  console.log('jQuery 버전:', $.fn.jquery);
-	  console.log('jsQR 타입:', typeof jsQR);
-	  console.log('.btn-print 개수:', $('.btn-print').length);
-	  console.log('.btn-cancel 개수:', $('.btn-cancel').length);
-	  console.log('.btn-check 개수:', $('.btn-check').length);
-
-	  console.log("user agent", navigator.userAgent);
-
-//쉬핑마크 출력 클릭시
-$(document).on("click", ".btn-print", function () {
-	//showLoading();
-    
-    $.ajax({
-        url: "/yulchon/management/mobile/getNoUpdatedInvoiceList",
-        method: "POST",
-        dataType: "json",
-        success: function (data) {
-            hideLoading();
-            renderInvoiceList(data);
-        },
-        error: function () {
-            hideLoading();
-            alert("에러 발생");
-        }
-    });
-});
-
-// 2. 리스트 렌더링 및 모달 표시
+// =====================================================
+// 공통: 인보이스 리스트 렌더링
+// =====================================================
 function renderInvoiceList(list) {
-    const $listContainer = $("#invoiceList");
+    var $listContainer = $("#invoiceList");
     $listContainer.empty();
-
-    if (list.length === 0) {
+    if (!list || list.length === 0) {
         $listContainer.append('<li class="invoice-item" style="justify-content:center;">목록이 없습니다.</li>');
     } else {
-        list.forEach(item => {
+        list.forEach(function(item) {
             var html =
-        	  '<li class="invoice-item"' +
-			  ' data-invoice-name="' + item.invoice_name + '"' +
-			  ' data-invoice-no="' + item.invoice_no + '">' +
-			    item.invoice_name +
-			  '</li>';
+                '<li class="invoice-item"' +
+                ' data-invoice-name="' + item.invoice_name + '"' +
+                ' data-invoice-no="'   + item.invoice_no   + '">' +
+                item.invoice_name + '</li>';
             $listContainer.append(html);
         });
     }
     $("#invoiceModal").fadeIn(200);
 }
 
-// 3. 인보이스 항목 클릭 시 -> 카메라 실행
-$(document).on("click", ".invoice-item", function() {
-    selectedInvoiceNo = $(this).data("invoice-no");
-    selectedInvoiceName = $(this).data("invoice-name");
-    console.log("selectedInvoiceNo", selectedInvoiceNo);
-    if(!selectedInvoiceNo) return;
-
-    $("#invoiceModal").fadeOut(200);
-    openCamera(); // 카메라 실행
+// =====================================================
+// jQuery ready
+// =====================================================
+$(function() {
+    hideLoading();
+    if (isPDA) {
+        initPDAMode();
+    } else {
+        initWebMode();
+    }
 });
 
-// 모달 닫기
-$(document).on("click", ".btn-close-modal", function() {
-    $("#invoiceModal").fadeOut(200);
-});
 
-// 4. 카메라 실행 및 스캔 로직
-function openCamera() {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.capture = "environment";
+// #####################################################
+// PDA 모드
+// #####################################################
+function initPDAMode() {
 
-    input.onchange = async function (e) {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
+    var $pdaStatus    = $('#pdaStatus');
+    var $inputDisplay = $('#pdaInputDisplay'); // 이게 곧 스캔 input
 
-        showLoading();
-        try {
-            const decoded = await decodeBarcodeOrQrFromFile(file);
-            if (decoded) {
-                // 인보이스 번호와 QR/바코드 텍스트를 함께 전달
-            	var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" 
-                    + encodeURIComponent(decoded.text) 
-                    + "&selectedInvoiceNo=" 
-                    + encodeURIComponent(selectedInvoiceNo)
-                    + "&selectedInvoiceName=" 
-                    + encodeURIComponent(selectedInvoiceName);
-          window.location.href = url;
-            } else {
-                //alert("인식 실패. 선명하게 다시 촬영해주세요.");
-            	// 2. 스캔 실패 시: 직접 입력창 띄우고 입력값으로 이동
-                hideLoading(); // 입력창을 띄우기 위해 로딩바 숨김
-                
-                const userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.", "D");
-                
-                // 취소를 눌렀거나 아무것도 입력 안 했을 때 처리
-                if (userInput === null) return; 
-                if (userInput.trim() === "") {
-                    alert("번호를 입력해야 합니다.");
-                    return;
+    $pdaStatus.show();
+
+    // 상태 안내 + 입력창 표시 제어
+    function showPDAStatus(msg, showInput) {
+        $pdaStatus.html(msg);
+        if (showInput) {
+            $inputDisplay.show().val('');
+        } else {
+            $inputDisplay.hide().val('');
+        }
+    }
+    showPDAStatus('버튼 선택 후 바코드를 스캔하세요.', false);
+
+    // 현재 대기 액션: null / 'cancel' / 'check' / 'print'
+    var pendingAction = null;
+
+    // 버튼 활성 강조
+    function setActiveBtn(btnClass) {
+        $('.scan-btn').removeClass('btn-active');
+        if (btnClass) $('.' + btnClass).addClass('btn-active');
+    }
+
+    //품목 찾을 수 없을 때
+    var errorMsg = new URLSearchParams(window.location.search).get("errorMsg");
+    if (errorMsg) {
+        // 이미 출력한 품목 → 모달 띄우기
+        $('<style>').text(`
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    `).appendTo('head');
+
+    const $overlay = $('<div>').css({
+        position: 'fixed', top: 0, left: 0,
+        width: '100%', height: '100%',
+        background: 'rgba(0,0,0,0.4)',
+        zIndex: 9998
+    });
+    const $modal = $('<div>').addClass('blink-modal').css({
+        position: 'fixed', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        background: '#fff', padding: '20px 30px',
+        border: '1px solid #ccc', borderRadius: '4px',
+        zIndex: 9999, textAlign: 'center',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+        minWidth: '350px',
+        fontSize: '18px'
+    }).append(
+        $('<p>').text(errorMsg).css('color', 'red'),
+        $('<button>').text('확인').css({
+            marginTop: '10px',
+            padding: '10px 40px',
+            fontSize: '16px',
+            cursor: 'pointer'
+        }).on('click', function() {
+            $overlay.remove();
+            $modal.remove();
+            $('#pdaInputDisplay').on('focus', function() {
+                if ($(this).val() === '') {
+                    $(this).val('D');
                 }
+            });
+            $('#pdaInputDisplay').focus();
+        })
+    );
+    $overlay.appendTo('body');
+    $modal.appendTo('body');
+    }
 
-                console.log("직접 입력 완료:", userInput);
+    // -----------------------------------------------
+    // 버튼 클릭 핸들러
+    // -----------------------------------------------
 
-                var url = "/yulchon/management/mobile/shippingMarkPrint?lbl_lot_no=" 
-                        + encodeURIComponent(userInput.trim()) 
-                        + "&selectedInvoiceNo=" 
-                        + encodeURIComponent(selectedInvoiceNo)
-                        + "&selectedInvoiceName=" 
-                        + encodeURIComponent(selectedInvoiceName);
-                
-                window.location.href = url;
+    // 출하 취소
+    $(document).on('click', '.btn-cancel', function() {
+        pendingAction = 'cancel';
+        setActiveBtn('btn-cancel');
+        showPDAStatus('출하 취소<br>바코드를 스캔하거나 LOT번호를 입력 후 Enter', true);
+     // 클릭 이벤트 컨텍스트 안이라 포커스 허용됨
+        $('#pdaInputDisplay').on('focus', function() {
+            if ($(this).val() === '') {
+                $(this).val('D');
             }
-        } catch (err) {
-            alert("스캔 중 오류 발생");
-        } finally {
-            hideLoading();
-        }
-    };
-    input.click();
-}
+        });
+        $('#pdaInputDisplay').focus();
+    });
 
-//출하 취소 클릭시
-$(document).on('click', '.btn-cancel', function(e) {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.capture = "environment";
-
-    input.onchange = async function (e) {
-        const file = e.target.files && e.target.files[0];
-        if (!file) { 
-            return; 
-        }
-
-        showLoading();
-
-        try {
-            const decoded = await decodeBarcodeOrQrFromFile(file);
-
-            console.log("[decoded]", decoded);
-
-            if (decoded) {
-                window.location.href = "/yulchon/management/mobile/shippingCancel?lbl_lot_no=" + encodeURIComponent(decoded.text);
-            } else {
-                //alert("바코드나 QR코드를 인식하지 못했습니다. 선명하게 다시 촬영해주세요.");
-                hideLoading(); // 입력창을 띄우기 위해 로딩바 숨김
-                
-                const userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.");
-                
-                // 취소를 눌렀거나 아무것도 입력 안 했을 때 처리
-                if (userInput === null) return; 
-                if (userInput.trim() === "") {
-                    alert("번호를 입력해야 합니다.");
-                    return;
-                }
-
-                console.log("직접 입력 완료:", userInput);
-                
-                window.location.href = "/yulchon/management/mobile/shippingCancel?lbl_lot_no=" + encodeURIComponent(userInput.trim());
+    // 품목 확인
+    $(document).on('click', '.btn-check', function() {
+        pendingAction = 'check';
+        setActiveBtn('btn-check');
+        showPDAStatus('품목 확인<br>바코드를 스캔하거나 LOT번호를 입력 후 Enter', true);
+     // 클릭 이벤트 컨텍스트 안이라 포커스 허용됨
+        $('#pdaInputDisplay').on('focus', function() {
+            if ($(this).val() === '') {
+                $(this).val('D');
             }
-        } catch (err) {
-            console.error("[scan fatal error]", err);
-            alert("스캔 중 오류가 발생했습니다.");
-        } finally {
-            hideLoading();
-        }
-    };
+        });
+        $('#pdaInputDisplay').focus();
+    });
 
-    input.click();
-});
+    // 쉬핑마크 출력 → 인보이스 선택 먼저
+    $(document).on('click', '.btn-print', function() {
+        setActiveBtn('btn-print');
+        showPDAStatus('쉬핑마크 출력<br>인보이스를 선택하세요.', false);
 
-//품목확인 클릭시
-$(document).on('click', '.btn-check', function(e) {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.capture = "environment";
-
-    input.onchange = async function (e) {
-        const file = e.target.files && e.target.files[0];
-        if (!file) { 
-            return; 
-        }
-
-        showLoading();
-
-        try {
-            const decoded = await decodeBarcodeOrQrFromFile(file);
-
-            console.log("[decoded]", decoded);
-
-            if (decoded) {
-                window.location.href = "/yulchon/management/mobile/productConfirm?lbl_lot_no=" + encodeURIComponent(decoded.text);
-            } else {
-                hideLoading(); // 입력창을 띄우기 위해 로딩바 숨김
-                
-                const userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.");
-                
-                // 취소를 눌렀거나 아무것도 입력 안 했을 때 처리
-                if (userInput === null) return; 
-                if (userInput.trim() === "") {
-                    alert("번호를 입력해야 합니다.");
-                    return;
-                }
-
-                console.log("직접 입력 완료:", userInput);
-                
-                window.location.href = "/yulchon/management/mobile/productConfirm?lbl_lot_no=" + encodeURIComponent(userInput.trim());
+        $.ajax({
+            url:      "/yulchon/management/mobile/getNoUpdatedInvoiceList?mode=pda",
+            method:   "POST",
+            dataType: "json",
+            success: function(data) {
+                renderInvoiceList(data);
+            },
+            error: function() {
+                alert("인보이스 목록 조회 중 오류가 발생했습니다.");
+                pendingAction = null;
+                setActiveBtn(null);
+                showPDAStatus('버튼 선택 후 바코드를 스캔하세요.', false);
             }
-        } catch (err) {
-            console.error("[scan fatal error]", err);
-            alert("스캔 중 오류가 발생했습니다.");
-        } finally {
-            hideLoading();
-        }
-    };
+        });
+    });
 
-    input.click();
-});
+    // 인보이스 선택 → 그때부터 스캔 대기
+    $(document).on('click', '.invoice-item', function() {
+        selectedInvoiceNo   = $(this).data("invoice-no");
+        selectedInvoiceName = $(this).data("invoice-name");
+        if (!selectedInvoiceNo) return;
 
-//===== 메인 디코딩 함수 =====
-async function decodeBarcodeOrQrFromFile(file) {
-    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-    const baseCanvas = drawBitmapToScaledCanvas(bitmap, MAX_LONG_EDGE);
-    const codeReader = createZxingReaderWithHints();
+        // fadeOut 콜백 제거 → 클릭 이벤트 안에서 바로 처리
+        $("#invoiceModal").hide();
+        pendingAction = 'print';
+        showPDAStatus(
+            '쉬핑마크 출력<br>' + selectedInvoiceName +
+            '<br>바코드를 스캔하거나 LOT번호를 입력 후 Enter',
+            true
+        );
+        // 클릭 이벤트 컨텍스트 안이라 포커스 허용됨
+        $('#pdaInputDisplay').on('focus', function() {
+            if ($(this).val() === '') {
+                $(this).val('D');
+            }
+        });
+        $('#pdaInputDisplay').focus();
+    });
 
-    // ✅ 1단계: 감마 보정 캔버스 생성 (반사광 억제 핵심)
-    const gammaCanvas = applyGammaCorrection(baseCanvas, 1.8);
+    // 모달 닫기
+    $(document).on('click', '.btn-close-modal', function() {
+        $("#invoiceModal").fadeOut(200, function() {
+            pendingAction = null;
+            setActiveBtn(null);
+            showPDAStatus('버튼 선택 후 바코드를 스캔하세요.', false);
+        });
+    });
 
-    // ✅ 2단계: 감마 보정 + Adaptive Threshold (테이프 불균일 밝기 대응 핵심)
-    const adaptiveCanvas = applyAdaptiveThreshold(gammaCanvas, 15, 10);
+    // -----------------------------------------------
+    // 입력 감지
+    // -----------------------------------------------
+    // 한글 → 영문 변환
+	$inputDisplay.on('input', function() {
+	    var val = $(this).val();
 
- // 1. 다양한 감마 값 준비 (반사광 강도에 대응)
-    const gammaValues = [1.5, 2.0, 2.5];
+	    // DD로 시작하면 앞의 D 하나 제거
+	    if (val.startsWith('DD')) {
+	        $(this).val(val.substring(1));
+	        return;
+	    }
+	    
+	    var korToEng = {
+	        'ㅂ':'Q','ㅈ':'W','ㄷ':'E','ㄱ':'R','ㅅ':'T','ㅛ':'Y','ㅕ':'U','ㅑ':'I','ㅐ':'O','ㅔ':'P',
+	        'ㅁ':'A','ㄴ':'S','ㅇ':'D','ㄹ':'F','ㅎ':'G','ㅗ':'H','ㅓ':'J','ㅏ':'K','ㅣ':'L',
+	        'ㅋ':'Z','ㅌ':'X','ㅊ':'C','ㅍ':'V','ㅠ':'B','ㅜ':'N','ㅡ':'M'
+	    };
+	    var converted = val.replace(/[\u3131-\u314E]/g, function(ch) {
+	        return korToEng[ch] || ch;
+	    });
+	    converted = converted.replace(/[\uAC00-\uD7A3]/g, '');
+	    if (converted !== val) {
+	        $(this).val(converted);
+	    }
+	});
     
-    for (const g of gammaValues) {
-        const gammaCanvas = applyGammaCorrection(baseCanvas, g);
-        
-        // 2. 파이프라인 다양화
-        const pipelines = [
-            // A: 감마 + 적응형 임계 (가장 강력)
-            applyAdaptiveThreshold(gammaCanvas, 15, 10), 
-            
-            // B: 감마 + 노이즈 제거 + 적응형 임계 (테이프 기포/먼지 대응)
-            applyAdaptiveThreshold(applyBlur(gammaCanvas), 21, 7), 
-            
-            // C: 기존 필터 조합
-            ...PREPROCESS_FILTER.map(f => applyPreprocessFilter(gammaCanvas, f))
-        ];
-
-        for (const pipeline of pipelines) {
-            for (const ratio of CROP_RATIOS) {
-                const c = ratio === 1.0 ? pipeline : cropCenter(pipeline, ratio);
-                const result = await tryDecodeReaderFromCanvasOrImage(codeReader, c);
-                if (result) return result;
-            }
-        }
-    }
-    return null;
-}
-
-//간단한 블러 함수 (노이즈 제거용)
-function applyBlur(srcCanvas) {
-    const canvas = document.createElement("canvas");
-    canvas.width = srcCanvas.width;
-    canvas.height = srcCanvas.height;
-    const ctx = canvas.getContext("2d");
-    // 브라우저 기본 블러 필터 활용 (성능 우수)
-    ctx.filter = "blur(1px)"; 
-    ctx.drawImage(srcCanvas, 0, 0);
-    return canvas;
-}
-
-//✅ 감마 보정 (LUT 방식, 반사광으로 날아간 밝은 영역 억제)
-function applyGammaCorrection(srcCanvas, gamma = 1.8) {
-    const canvas = document.createElement("canvas");
-    canvas.width = srcCanvas.width;
-    canvas.height = srcCanvas.height;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(srcCanvas, 0, 0);
-
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imgData.data;
-
-    const lut = new Uint8Array(256);
-    for (let i = 0; i < 256; i++) {
-        lut[i] = Math.round(255 * Math.pow(i / 255, gamma));
-    }
-
-    for (let i = 0; i < data.length; i += 4) {
-        data[i]   = lut[data[i]];
-        data[i+1] = lut[data[i+1]];
-        data[i+2] = lut[data[i+2]];
-        // alpha는 건드리지 않음
-    }
-
-    ctx.putImageData(imgData, 0, 0);
-    return canvas;
-}
-
-// ✅ Adaptive Threshold (테이프 기포/불균일 밝기 대응)
-// blockSize: 주변 참조 범위 (클수록 넓은 영역 기준), C: 임계값 오프셋
-function applyAdaptiveThreshold(srcCanvas, blockSize = 15, C = 10) {
-    const canvas = document.createElement("canvas");
-    canvas.width = srcCanvas.width;
-    canvas.height = srcCanvas.height;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(srcCanvas, 0, 0);
-
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imgData.data;
-    const w = canvas.width, h = canvas.height;
-    const half = Math.floor(blockSize / 2);
-
-    // 그레이스케일 추출
-    const gray = new Uint8Array(w * h);
-    for (let i = 0; i < w * h; i++) {
-        gray[i] = 0.299 * data[i*4] + 0.587 * data[i*4+1] + 0.114 * data[i*4+2];
-    }
-
-    // ✅ 적분 이미지(Summed Area Table)로 블록 평균을 O(1)에 계산 → 성능 최적화
-    const integral = new Float64Array((w + 1) * (h + 1));
-    for (let y = 1; y <= h; y++) {
-        for (let x = 1; x <= w; x++) {
-            integral[y * (w+1) + x] =
-                gray[(y-1) * w + (x-1)]
-                + integral[(y-1) * (w+1) + x]
-                + integral[y * (w+1) + (x-1)]
-                - integral[(y-1) * (w+1) + (x-1)];
-        }
-    }
-
-    for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-            const x1 = Math.max(0, x - half);
-            const y1 = Math.max(0, y - half);
-            const x2 = Math.min(w - 1, x + half);
-            const y2 = Math.min(h - 1, y + half);
-            const count = (x2 - x1 + 1) * (y2 - y1 + 1);
-            const sum =
-                integral[(y2+1) * (w+1) + (x2+1)]
-                - integral[y1 * (w+1) + (x2+1)]
-                - integral[(y2+1) * (w+1) + x1]
-                + integral[y1 * (w+1) + x1];
-
-            const threshold = (sum / count) - C;
-            const val = gray[y * w + x] < threshold ? 0 : 255;
-            const idx = (y * w + x) * 4;
-            data[idx] = data[idx+1] = data[idx+2] = val;
-            data[idx+3] = 255;
-        }
-    }
-
-    ctx.putImageData(imgData, 0, 0);
-    return canvas;
-}
-
-// ===== ZXing 리더 생성 =====
-function createZxingReaderWithHints() {
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, ZXING_FORMATS);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-
-    // 번들에 따라 생성자 hints 지원 여부가 다를 수 있음
-    let reader = null;
-
-    try {
-        reader = new ZXing.BrowserMultiFormatReader(hints);
-    } catch (e) {
-        console.warn("[ZXing] BrowserMultiFormatReader(hints) 실패, 기본 생성자 사용", e);
-        reader = new ZXing.BrowserMultiFormatReader();
-    }
-
-    return reader;
-}
-
-// ===== 호환형 디코딩: 캔버스 디코딩이 없으면 ImageElement로 디코딩 =====
-async function tryDecodeReaderFromCanvasOrImage(codeReader, canvas) {
-    // 1) decodeFromCanvas가 있는 환경이면 캔버스로 디코딩 시도
-    if (codeReader && typeof codeReader.decodeFromCanvas === "function") {
-        try {
-            const result = await codeReader.decodeFromCanvas(canvas);
-            return normalizeZxingResult(result);
-        } catch (e) {
-            if (e && e.name === "NotFoundException") {
-                return null;
-            }
-            console.error("[ZXing decodeFromCanvas error]", e);
-            return null;
-        }
-    }
-
-    // 2) decodeFromImageElement가 있는 환경이면 캔버스를 이미지로 변환 후 디코딩
-    if (codeReader && typeof codeReader.decodeFromImageElement === "function") {
-        try {
-            const img = await canvasToImageElement(canvas);
-            const result = await codeReader.decodeFromImageElement(img);
-            return normalizeZxingResult(result);
-        } catch (e) {
-            if (e && e.name === "NotFoundException") {
-                return null;
-            }
-            console.error("[ZXing decodeFromImageElement error]", e);
-            return null;
-        }
-    }
-
-    // 3) 최후 수단: decodeFromImageUrl이 있으면 dataURL로 디코딩
-    if (codeReader && typeof codeReader.decodeFromImageUrl === "function") {
-        try {
-            const dataUrl = canvas.toDataURL("image/png");
-            const result = await codeReader.decodeFromImageUrl(dataUrl);
-            return normalizeZxingResult(result);
-        } catch (e) {
-            if (e && e.name === "NotFoundException") {
-                return null;
-            }
-            console.error("[ZXing decodeFromImageUrl error]", e);
-            return null;
-        }
-    }
-
-    console.error("[ZXing] 사용 가능한 decode 메서드가 없는 상태", codeReader);
-    return null;
-}
-
-// ===== ZXing 결과 정규화 =====
-function normalizeZxingResult(result) {
-    if (!result) {
-        return null;
-    }
-
-    const text = result.text || (result.getText ? result.getText() : null);
-    const format = result.getBarcodeFormat ? result.getBarcodeFormat() : null;
-
-    if (!text) {
-        return null;
-    }
-
-    return { text: text, format: format };
-}
-
-// ===== 캔버스를 ImageElement로 변환 =====
-function canvasToImageElement(canvas) {
-    return new Promise(function (resolve, reject) {
-        try {
-            const img = new Image();
-            img.onload = function () {
-                resolve(img);
-            };
-            img.onerror = function (e) {
-                reject(e);
-            };
-            img.src = canvas.toDataURL("image/png");
-        } catch (e) {
-            reject(e);
+    $inputDisplay.on('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            var value = $inputDisplay.val().trim();
+            $inputDisplay.val('');
+            if (!value) return;
+            handlePDAScan(value);
         }
     });
-}
 
-// ===== bitmap을 스케일하여 canvas에 그림 =====
-function drawBitmapToScaledCanvas(bitmap, maxLongEdge) {
-    const w = bitmap.width;
-    const h = bitmap.height;
+    // -----------------------------------------------
+    // 스캔 처리 → URL 이동
+    // -----------------------------------------------
+    function handlePDAScan(value) {
+        if (!pendingAction) {
+            alert('버튼을 먼저 선택해주세요.');
+            return;
+        }
 
-    const longEdge = Math.max(w, h);
-    const scale = Math.min(maxLongEdge / longEdge, 1);
+        var action = pendingAction;
+        pendingAction = null;
 
-    const cw = Math.max(1, Math.round(w * scale));
-    const ch = Math.max(1, Math.round(h * scale));
+        switch (action) {
+            case 'cancel':
+                window.location.href =
+                    "/yulchon/management/mobile/shippingCancel?lbl_lot_no=" +
+                    encodeURIComponent(value) + "?mode=pda";
+                break;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = cw;
-    canvas.height = ch;
+            case 'check':
+                window.location.href =
+                    "/yulchon/management/mobile/productConfirm?lbl_lot_no=" +
+                    encodeURIComponent(value) + "?mode=pda";
+                break;
 
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            case 'print':
+                window.location.href =
+                    "/yulchon/management/mobile/shippingMarkPrint" +
+                    "?lbl_lot_no="          + encodeURIComponent(value) +
+                    "&selectedInvoiceNo="   + encodeURIComponent(selectedInvoiceNo) +
+                    "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName) +
+                    "&mode=pda";
+                break;
 
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, cw, ch);
-
-    ctx.drawImage(bitmap, 0, 0, cw, ch);
-
-    return canvas;
-}
-
-// ===== 전처리 필터 적용 =====
-function applyPreprocessFilter(srcCanvas, filterStr) {
-    const canvas = document.createElement("canvas");
-    canvas.width = srcCanvas.width;
-    canvas.height = srcCanvas.height;
-
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-    if (ctx.filter !== undefined) {
-        ctx.filter = filterStr;
+            default:
+                alert('알 수 없는 동작입니다.');
+        }
     }
 
-    ctx.drawImage(srcCanvas, 0, 0);
+    // postMessage 수신 (pdaTest.jsp 시뮬레이터 연동용)
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'PDA_SCAN' && e.data.lotValue) {
+            handlePDAScan(e.data.lotValue);
+        }
+    });
 
-    if (ctx.filter !== undefined) {
-        ctx.filter = "none";
-    }
+    // 복귀 시 인보이스 자동 복원
+    var params = new URLSearchParams(window.location.search);
+    var returnInvoiceNo   = params.get("invoiceNo");
+    var returnInvoiceName = params.get("invoiceName");
 
-    return canvas;
-}
-
-// ===== 중앙 크롭 =====
-function cropCenter(srcCanvas, ratio) {
-    const sw = srcCanvas.width;
-    const sh = srcCanvas.height;
-
-    const cw = Math.max(1, Math.round(sw * ratio));
-    const ch = Math.max(1, Math.round(sh * ratio));
-
-    const sx = Math.max(0, Math.round((sw - cw) / 2));
-    const sy = Math.max(0, Math.round((sh - ch) / 2));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = cw;
-    canvas.height = ch;
-
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, cw, ch);
-
-    ctx.drawImage(srcCanvas, sx, sy, cw, ch, 0, 0, cw, ch);
-
-    return canvas;
-}
-
-// ===== URL 유효성 검사 =====
-function isValidUrl(str) {
-    try {
-        const url = new URL(str);
-        return (url.protocol === "http:" || url.protocol === "https:");
-    } catch (e) {
-        return false;
+    if (returnInvoiceNo && returnInvoiceName) {
+        selectedInvoiceNo   = returnInvoiceNo;
+        selectedInvoiceName = decodeURIComponent(returnInvoiceName);
+        pendingAction = 'print';
+        setActiveBtn('btn-print');
+        showPDAStatus(
+            '쉬핑마크 출력 &nbsp;|&nbsp; ' + selectedInvoiceName +
+            '<br>바코드를 스캔하거나 LOT번호를 입력 후 Enter',
+            true
+        );
+        $('#pdaInputDisplay').on('focus', function() {
+            if ($(this).val() === '') {
+                $(this).val('D');
+            }
+        });
+        $('#pdaInputDisplay').focus();
     }
 }
 
-// ===== 로그 =====
-function log(msg, obj) {
-    const line = obj ? (msg + " " + JSON.stringify(obj)) : msg;
-    console.log(line);
 
-    const el = document.getElementById("scanLog");
-    if (el) {
-        el.textContent += line + "\n";
+// #####################################################
+// 웹모바일 모드 (기존 로직 그대로)
+// #####################################################
+function initWebMode() {
+
+    $(document).on("click", ".btn-print", function() {
+        $.ajax({
+            url:      "/yulchon/management/mobile/getNoUpdatedInvoiceList",
+            method:   "POST",
+            dataType: "json",
+            success: function(data) {
+                hideLoading();
+                renderInvoiceList(data);
+            },
+            error: function() {
+                hideLoading();
+                alert("에러 발생");
+            }
+        });
+    });
+
+    $(document).on("click", ".invoice-item", function() {
+        selectedInvoiceNo   = $(this).data("invoice-no");
+        selectedInvoiceName = $(this).data("invoice-name");
+        if (!selectedInvoiceNo) return;
+        $("#invoiceModal").fadeOut(200);
+        openCameraForPrint();
+    });
+
+    $(document).on("click", ".btn-close-modal", function() {
+        $("#invoiceModal").fadeOut(200);
+    });
+
+    function openCameraForPrint() {
+        var input     = document.createElement("input");
+        input.type    = "file";
+        input.accept  = "image/*";
+        input.capture = "environment";
+
+        input.onchange = async function(e) {
+            var file = e.target.files && e.target.files[0];
+            if (!file) return;
+            showLoading();
+            try {
+                var decoded = await decodeBarcodeOrQrFromFile(file);
+                if (decoded) {
+                    window.location.href =
+                        "/yulchon/management/mobile/shippingMarkPrint" +
+                        "?lbl_lot_no="          + encodeURIComponent(decoded.text) +
+                        "&selectedInvoiceNo="   + encodeURIComponent(selectedInvoiceNo) +
+                        "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
+                } else {
+                    hideLoading();
+                    var userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.", "D");
+                    if (userInput === null) return;
+                    if (userInput.trim() === "") { alert("번호를 입력해야 합니다."); return; }
+                    window.location.href =
+                        "/yulchon/management/mobile/shippingMarkPrint" +
+                        "?lbl_lot_no="          + encodeURIComponent(userInput.trim()) +
+                        "&selectedInvoiceNo="   + encodeURIComponent(selectedInvoiceNo) +
+                        "&selectedInvoiceName=" + encodeURIComponent(selectedInvoiceName);
+                }
+            } catch(err) {
+                alert("스캔 중 오류 발생");
+            } finally {
+                hideLoading();
+            }
+        };
+        input.click();
+    }
+
+    $(document).on('click', '.btn-cancel', function() {
+        var input     = document.createElement("input");
+        input.type    = "file";
+        input.accept  = "image/*";
+        input.capture = "environment";
+
+        input.onchange = async function(e) {
+            var file = e.target.files && e.target.files[0];
+            if (!file) return;
+            showLoading();
+            try {
+                var decoded = await decodeBarcodeOrQrFromFile(file);
+                if (decoded) {
+                    window.location.href =
+                        "/yulchon/management/mobile/shippingCancel?lbl_lot_no=" +
+                        encodeURIComponent(decoded.text);
+                } else {
+                    hideLoading();
+                    var userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.");
+                    if (userInput === null) return;
+                    if (userInput.trim() === "") { alert("번호를 입력해야 합니다."); return; }
+                    window.location.href =
+                        "/yulchon/management/mobile/shippingCancel?lbl_lot_no=" +
+                        encodeURIComponent(userInput.trim());
+                }
+            } catch(err) {
+                alert("스캔 중 오류가 발생했습니다.");
+            } finally {
+                hideLoading();
+            }
+        };
+        input.click();
+    });
+
+    $(document).on('click', '.btn-check', function() {
+        var input     = document.createElement("input");
+        input.type    = "file";
+        input.accept  = "image/*";
+        input.capture = "environment";
+
+        input.onchange = async function(e) {
+            var file = e.target.files && e.target.files[0];
+            if (!file) return;
+            showLoading();
+            try {
+                var decoded = await decodeBarcodeOrQrFromFile(file);
+                if (decoded) {
+                    window.location.href =
+                        "/yulchon/management/mobile/productConfirm?lbl_lot_no=" +
+                        encodeURIComponent(decoded.text);
+                } else {
+                    hideLoading();
+                    var userInput = prompt("바코드나 QR을 인식하지 못했습니다.\nLOT 번호를 직접 입력해주세요.");
+                    if (userInput === null) return;
+                    if (userInput.trim() === "") { alert("번호를 입력해야 합니다."); return; }
+                    window.location.href =
+                        "/yulchon/management/mobile/productConfirm?lbl_lot_no=" +
+                        encodeURIComponent(userInput.trim());
+                }
+            } catch(err) {
+                alert("스캔 중 오류가 발생했습니다.");
+            } finally {
+                hideLoading();
+            }
+        };
+        input.click();
+    });
+
+    // -----------------------------------------------
+    // 디코딩 함수들 (기존 그대로)
+    // -----------------------------------------------
+
+    async function decodeBarcodeOrQrFromFile(file) {
+        var bitmap     = await createImageBitmap(file, { imageOrientation: "from-image" });
+        var baseCanvas = drawBitmapToScaledCanvas(bitmap, MAX_LONG_EDGE);
+        var codeReader = createZxingReaderWithHints();
+        var gammaValues = [1.5, 2.0, 2.5];
+
+        for (var gi = 0; gi < gammaValues.length; gi++) {
+            var g           = gammaValues[gi];
+            var gammaCanvas = applyGammaCorrection(baseCanvas, g);
+            var pipelines   = [
+                applyAdaptiveThreshold(gammaCanvas, 15, 10),
+                applyAdaptiveThreshold(applyBlur(gammaCanvas), 21, 7)
+            ];
+            for (var fi = 0; fi < PREPROCESS_FILTER.length; fi++) {
+                pipelines.push(applyPreprocessFilter(gammaCanvas, PREPROCESS_FILTER[fi]));
+            }
+            for (var pi = 0; pi < pipelines.length; pi++) {
+                for (var ci = 0; ci < CROP_RATIOS.length; ci++) {
+                    var ratio  = CROP_RATIOS[ci];
+                    var c      = (ratio === 1.0) ? pipelines[pi] : cropCenter(pipelines[pi], ratio);
+                    var result = await tryDecodeReaderFromCanvasOrImage(codeReader, c);
+                    if (result) return result;
+                }
+            }
+        }
+        return null;
+    }
+
+    function applyBlur(srcCanvas) {
+        var canvas = document.createElement("canvas");
+        canvas.width  = srcCanvas.width;
+        canvas.height = srcCanvas.height;
+        var ctx = canvas.getContext("2d");
+        ctx.filter = "blur(1px)";
+        ctx.drawImage(srcCanvas, 0, 0);
+        return canvas;
+    }
+
+    function applyGammaCorrection(srcCanvas, gamma) {
+        gamma = gamma || 1.8;
+        var canvas = document.createElement("canvas");
+        canvas.width  = srcCanvas.width;
+        canvas.height = srcCanvas.height;
+        var ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(srcCanvas, 0, 0);
+        var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var data    = imgData.data;
+        var lut     = new Uint8Array(256);
+        for (var i = 0; i < 256; i++) {
+            lut[i] = Math.round(255 * Math.pow(i / 255, gamma));
+        }
+        for (var j = 0; j < data.length; j += 4) {
+            data[j]   = lut[data[j]];
+            data[j+1] = lut[data[j+1]];
+            data[j+2] = lut[data[j+2]];
+        }
+        ctx.putImageData(imgData, 0, 0);
+        return canvas;
+    }
+
+    function applyAdaptiveThreshold(srcCanvas, blockSize, C) {
+        blockSize = blockSize || 15;
+        C         = C         || 10;
+        var canvas = document.createElement("canvas");
+        canvas.width  = srcCanvas.width;
+        canvas.height = srcCanvas.height;
+        var ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(srcCanvas, 0, 0);
+        var imgData  = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var data     = imgData.data;
+        var w        = canvas.width;
+        var h        = canvas.height;
+        var half     = Math.floor(blockSize / 2);
+        var gray     = new Uint8Array(w * h);
+        for (var i = 0; i < w * h; i++) {
+            gray[i] = 0.299 * data[i*4] + 0.587 * data[i*4+1] + 0.114 * data[i*4+2];
+        }
+        var integral = new Float64Array((w+1) * (h+1));
+        for (var y = 1; y <= h; y++) {
+            for (var x = 1; x <= w; x++) {
+                integral[y*(w+1)+x] =
+                    gray[(y-1)*w+(x-1)]
+                    + integral[(y-1)*(w+1)+x]
+                    + integral[y*(w+1)+(x-1)]
+                    - integral[(y-1)*(w+1)+(x-1)];
+            }
+        }
+        for (var ry = 0; ry < h; ry++) {
+            for (var rx = 0; rx < w; rx++) {
+                var x1    = Math.max(0, rx - half);
+                var y1    = Math.max(0, ry - half);
+                var x2    = Math.min(w-1, rx + half);
+                var y2    = Math.min(h-1, ry + half);
+                var count = (x2-x1+1) * (y2-y1+1);
+                var sum   =
+                    integral[(y2+1)*(w+1)+(x2+1)]
+                    - integral[y1*(w+1)+(x2+1)]
+                    - integral[(y2+1)*(w+1)+x1]
+                    + integral[y1*(w+1)+x1];
+                var threshold = (sum / count) - C;
+                var val       = gray[ry*w+rx] < threshold ? 0 : 255;
+                var idx       = (ry*w+rx)*4;
+                data[idx] = data[idx+1] = data[idx+2] = val;
+                data[idx+3] = 255;
+            }
+        }
+        ctx.putImageData(imgData, 0, 0);
+        return canvas;
+    }
+
+    function createZxingReaderWithHints() {
+        var hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, ZXING_FORMATS);
+        hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+        var reader;
+        try      { reader = new ZXing.BrowserMultiFormatReader(hints); }
+        catch(e) { reader = new ZXing.BrowserMultiFormatReader(); }
+        return reader;
+    }
+
+    async function tryDecodeReaderFromCanvasOrImage(codeReader, canvas) {
+        if (codeReader && typeof codeReader.decodeFromCanvas === "function") {
+            try {
+                var result = await codeReader.decodeFromCanvas(canvas);
+                return normalizeZxingResult(result);
+            } catch(e) { return null; }
+        }
+        if (codeReader && typeof codeReader.decodeFromImageElement === "function") {
+            try {
+                var img    = await canvasToImageElement(canvas);
+                var result = await codeReader.decodeFromImageElement(img);
+                return normalizeZxingResult(result);
+            } catch(e) { return null; }
+        }
+        if (codeReader && typeof codeReader.decodeFromImageUrl === "function") {
+            try {
+                var dataUrl = canvas.toDataURL("image/png");
+                var result  = await codeReader.decodeFromImageUrl(dataUrl);
+                return normalizeZxingResult(result);
+            } catch(e) { return null; }
+        }
+        return null;
+    }
+
+    function normalizeZxingResult(result) {
+        if (!result) return null;
+        var text = result.text || (result.getText ? result.getText() : null);
+        if (!text) return null;
+        return { text: text, format: result.getBarcodeFormat ? result.getBarcodeFormat() : null };
+    }
+
+    function canvasToImageElement(canvas) {
+        return new Promise(function(resolve, reject) {
+            var img     = new Image();
+            img.onload  = function() { resolve(img); };
+            img.onerror = function(e) { reject(e); };
+            img.src     = canvas.toDataURL("image/png");
+        });
+    }
+
+    function drawBitmapToScaledCanvas(bitmap, maxLongEdge) {
+        var w     = bitmap.width;
+        var h     = bitmap.height;
+        var scale = Math.min(maxLongEdge / Math.max(w, h), 1);
+        var cw    = Math.max(1, Math.round(w * scale));
+        var ch    = Math.max(1, Math.round(h * scale));
+        var canvas = document.createElement("canvas");
+        canvas.width  = cw;
+        canvas.height = ch;
+        var ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.drawImage(bitmap, 0, 0, cw, ch);
+        return canvas;
+    }
+
+    function applyPreprocessFilter(srcCanvas, filterStr) {
+        var canvas = document.createElement("canvas");
+        canvas.width  = srcCanvas.width;
+        canvas.height = srcCanvas.height;
+        var ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (ctx.filter !== undefined) ctx.filter = filterStr;
+        ctx.drawImage(srcCanvas, 0, 0);
+        if (ctx.filter !== undefined) ctx.filter = "none";
+        return canvas;
+    }
+
+    function cropCenter(srcCanvas, ratio) {
+        var sw = srcCanvas.width;
+        var sh = srcCanvas.height;
+        var cw = Math.max(1, Math.round(sw * ratio));
+        var ch = Math.max(1, Math.round(sh * ratio));
+        var sx = Math.max(0, Math.round((sw - cw) / 2));
+        var sy = Math.max(0, Math.round((sh - ch) / 2));
+        var canvas = document.createElement("canvas");
+        canvas.width  = cw;
+        canvas.height = ch;
+        var ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.drawImage(srcCanvas, sx, sy, cw, ch, 0, 0, cw, ch);
+        return canvas;
     }
 }
-
-// ===== 결과 처리 =====
-function processResult(text, format) {
-    if (isValidUrl(text)) {
-        log("[스캔 결과]", { text: text, format: format });
-        alert("스캔 결과: " + text);
-    } else {
-        log("[처리] 바코드 데이터", { text: text, format: format });
-        alert("바코드 데이터: " + text);
-    }
-}
-});
-
-
 </script>
 </body>
 </html>
