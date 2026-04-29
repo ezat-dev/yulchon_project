@@ -593,8 +593,45 @@ display: none;
         	  	  },
     	  	  success: function(result) {
     	  	    if(result.result === true || result.result === "true") {
-    	  	        alert(result.message);
-    	  	        handleBack();
+    	  	      $('<style>').text(`
+    	  	            @keyframes blink {
+    	  	                0%, 100% { opacity: 1; }
+    	  	                50% { opacity: 0; }
+    	  	            }
+    	  	            .blink-modal { animation: blink 0.4s step-end 4; }
+    	  	        `).appendTo('head');
+    	  	        const $overlay = $('<div>').css({
+    	  	            position: 'fixed', top: 0, left: 0,
+    	  	            width: '100%', height: '100%',
+    	  	            background: 'rgba(0,0,0,0.4)',
+    	  	            zIndex: 9998
+    	  	        });
+    	  	        const $modal = $('<div>').css({
+    	  	            position: 'fixed', top: '55%', left: '50%',  // top 올려서 아래로 내림
+    	  	            transform: 'translate(-50%, -50%)',
+    	  	            background: '#fff', padding: '20px 30px',
+    	  	            border: '1px solid #ccc', borderRadius: '4px',
+    	  	            zIndex: 9999, textAlign: 'center',
+    	  	            boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+    	  	            minWidth: '350px',
+    	  	            fontSize: '18px'
+    	  	        }).append(
+    	  	            $('<p>').text(result.message),
+    	  	            $('<div>').css({ textAlign: 'center' }).append(  // 'left' or 'center'
+    	  	                $('<button>').text('확인').css({
+    	  	                    marginTop: '10px',
+    	  	                    padding: '10px 40px',
+    	  	                    fontSize: '16px',
+    	  	                    cursor: 'pointer'
+    	  	                }).on('click', function() {
+    	  	                    $overlay.remove();
+    	  	                    $modal.remove();
+    	  	                    handleBack();
+    	  	                })
+    	  	            )
+    	  	        );
+    	  	        $overlay.appendTo('body');
+    	  	        $modal.appendTo('body');
     	  	    }else {
     	  	      $('<style>').text(`
     	  	            @keyframes blink {

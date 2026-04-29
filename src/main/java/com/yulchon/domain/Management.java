@@ -107,8 +107,14 @@ public class Management {
 	private String new_lot_no;
 	private String lot_no;
 	private String bundle_no;
+	private String customer_key;
 	
-	
+	public String getCustomer_key() {
+		return customer_key;
+	}
+	public void setCustomer_key(String customer_key) {
+		this.customer_key = customer_key;
+	}
 	public String getBundle_no() {
 		return bundle_no;
 	}

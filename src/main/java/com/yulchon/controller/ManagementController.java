@@ -336,7 +336,9 @@ public class ManagementController {
 		    printResult.put("result", true);
 		    printResult.put("noForm", true);
 		}else {
-			printResult = printExcel.printKth(data, KTH_FILE_PATH);
+			resultMap.put("result", false);
+			resultMap.put("message", "등록되지 않은 고객사의 품목입니다.");
+			return resultMap;
 		}
 
 		if ((boolean) printResult.get("result")) {
@@ -737,9 +739,9 @@ public class ManagementController {
 		}else if(customerName.contains("ROCS") || customerName.contains("ASTEMO") 
 				|| customerName.contains("SCHIAVELLO")) {
 			System.out.println("양식 없는 고객사 미리보기");
-		    return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
 		}else {
-			imageBytes = previewExcel.previewKth(data, KTH_FILE_PATH);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
 		}
 
 	    if (imageBytes == null) {

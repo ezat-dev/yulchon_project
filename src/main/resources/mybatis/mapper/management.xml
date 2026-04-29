@@ -752,7 +752,8 @@ customer_name,
 customer_shippingmark_file_name,
 CONVERT(VARCHAR(19), regtime, 120) AS regtime,
 update_user_id,
-remark
+remark,
+customer_key
 FROM ez_customer
 </select>
 

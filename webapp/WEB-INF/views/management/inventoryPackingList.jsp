@@ -1673,8 +1673,12 @@ function openPreviewModal(lbl_lot_no, invoice_no) {
         error: function(xhr) {
             document.getElementById('previewLoading').style.display = 'none';
             document.getElementById('previewError').style.display = 'block';
-            document.getElementById('previewError').innerText =
-                '❌ 미리보기 생성 실패 (status: ' + xhr.status + ')';
+            if (xhr.status === 400) {
+                document.getElementById('previewError').innerText = '📋 양식이 없는 고객사입니다.';
+            } else {
+                document.getElementById('previewError').innerText =
+                    '❌ 미리보기 생성 실패 (status: ' + xhr.status + ')';
+            }
         }
     });
 }
