@@ -713,11 +713,12 @@ display: none;
         input.click();
     }
 
-    //고객사 ROCS면 버튼 텍스트 바꿈
+    //고객사 ROCS, ASTEMO, SCHIAVELLO면 버튼 텍스트 바꿈
     function updateButtonLabel() {
     const customerName = $('#nm_customer').text().trim();
     console.log("고객사: ", customerName);
-    if (customerName.includes('ROCS')) {
+    if (customerName.includes('ROCS') || customerName.includes('ASTEMO') 
+    	    || customerName.includes('SCHIAVELLO')) {
         $('.btn-print').text('출하 등록');
     } else {
         $('.btn-print').text('출력');

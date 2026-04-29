@@ -993,7 +993,7 @@ public class PrintExcel {
 			putCellValue(sheet, "C5", "OD " + data.getOut_diameter() + " x ID " + data.getIn_daimeter()  + " x WT " +data.getThickness());
 			putCellValue(sheet, "C6", data.getLbl_real_length() + "mm");
 			putCellValue(sheet, "E6", data.getNo_mfg_order_serial());
-			putCellValue(sheet, "C7", data.getQty_inventory());
+			putCellValue(sheet, "C7", data.getQty_inventory() + " PCS");
 			putCellValue(sheet, "E7", formattedDate);
 			putCellValue(sheet, "C8", data.getWgt_inventory() + " kg");
 			//putCellValue(sheet, "E8", data.getLbl_real_length());
@@ -1288,9 +1288,9 @@ public class PrintExcel {
 			putCellValue(sheet, "D4", data.getInvoice_name());
 			putCellValue(sheet, "B5", data.getCustomer_product_code_number());
 			putCellValue(sheet, "B6", data.getCd_materail() + ": " + data.getOut_diameter() + " OD X  " + data.getIn_daimeter() + " ID");
-			putCellValue(sheet, "B7", data.getLbl_real_length());
-			putCellValue(sheet, "B8", data.getQty_inventory());
-			putCellValue(sheet, "B9", data.getWgt_inventory());
+			putCellValue(sheet, "B7", data.getLbl_real_length() + " L");
+			putCellValue(sheet, "B8", data.getQty_inventory() + " PCS");
+			putCellValue(sheet, "B9", data.getWgt_inventory() + " KG");
 			putCellValue(sheet, "B11", data.getExtra_bundle_no());
 			putCellValue(sheet, "D2", "* " + lot_no_5);
 

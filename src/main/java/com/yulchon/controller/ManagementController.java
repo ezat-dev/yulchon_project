@@ -329,23 +329,25 @@ public class ManagementController {
 			printResult = printExcel.printPioneer(data, PIONEER_FILE_PATH);
 		}else if(customerName.contains("Profender")) {
 			printResult = printExcel.printProfenderPct(data, PCT_FILE_PATH);
-		} else if(customerName.contains("ROCS")) {
+		} else if(customerName.contains("ROCS") || customerName.contains("ASTEMO") 
+				|| customerName.contains("SCHIAVELLO")) {
 		    // 출력 없이 출하목록만 추가
-			System.out.println("ROCS: 출력 안함");
+			System.out.println("양식 없는 고객사 출력요청");
 		    printResult.put("result", true);
+		    printResult.put("noForm", true);
 		}else {
 			printResult = printExcel.printKth(data, KTH_FILE_PATH);
 		}
 
 		if ((boolean) printResult.get("result")) {
 			boolean isInserted = managementService.insertShippingList(data);
-
+			boolean noForm = printResult.get("noForm") != null && (boolean) printResult.get("noForm");
 			if(isInserted) {
 				resultMap.put("result", true);
-				resultMap.put("message", "출력 요청 및 출하목록 추가 완료");
+				resultMap.put("message", noForm ? "출하목록 추가 완료" : "출력 요청 및 출하목록 추가 완료");
 			} else {
 				resultMap.put("result", false);
-				resultMap.put("message", "이미 출력된 품목입니다.\n재출력 요청이 완료되었습니다.");
+				resultMap.put("message", noForm ? "출하목록에 이미 추가된 품목입니다." : "이미 출력된 품목입니다.\n재출력 요청이 완료되었습니다.");
 			}
 		} else {
 			// 인쇄 자체가 실패한 경우
@@ -732,8 +734,9 @@ public class ManagementController {
 			imageBytes = previewExcel.previewPioneer(data, PIONEER_FILE_PATH);
 		}else if(customerName.contains("Profender")) {
 			imageBytes = previewExcel.previewProfenderPct(data, PCT_FILE_PATH);
-		}else if(customerName.contains("ROCS")) {
-			System.out.println("ROCS: 미리보기 없음");
+		}else if(customerName.contains("ROCS") || customerName.contains("ASTEMO") 
+				|| customerName.contains("SCHIAVELLO")) {
+			System.out.println("양식 없는 고객사 미리보기");
 		    return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
 		}else {
 			imageBytes = previewExcel.previewKth(data, KTH_FILE_PATH);
