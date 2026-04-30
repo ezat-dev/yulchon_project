@@ -9,7 +9,9 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -74,7 +76,105 @@ public class ManagementController {
 		}
 		return "";
 	}
+	
+	//고객사 db조회하려고 추가
+	private static final String BASE_FILE_PATH = "D:/율촌_쉬핑마크_양식/";
 
+	private final PrintExcel printExcel = new PrintExcel();
+	private final PreviewExcel previewExcel = new PreviewExcel();
+
+	// customer_key와 다른 키워드로 매칭해야 하는 예외 케이스만 관리
+	private static final Map<String, String> KEYWORD_OVERRIDE_MAP = new HashMap<>();
+	static {
+	    KEYWORD_OVERRIDE_MAP.put("아이엠에스", "NST");
+	    KEYWORD_OVERRIDE_MAP.put("PROFENDER CORPORATION", "PCT");
+	}
+
+	private Map<String, BiFunction<Management, String, Map<String, Object>>> PRINT_METHOD_MAP;
+	private Map<String, BiFunction<Management, String, byte[]>> PREVIEW_METHOD_MAP;
+
+	@PostConstruct
+	public void initMethodMaps() {
+	    PRINT_METHOD_MAP = new HashMap<>();
+	    PRINT_METHOD_MAP.put("KAB",       (data, path) -> printExcel.printKoideKab(data, path));
+	    PRINT_METHOD_MAP.put("KCB",       (data, path) -> printExcel.printKoideKcb(data, path));
+	    PRINT_METHOD_MAP.put("KKB",       (data, path) -> printExcel.printKoideKkb(data, path));
+	    PRINT_METHOD_MAP.put("SANKIN",    (data, path) -> printExcel.printKoideSankin(data, path));
+	    PRINT_METHOD_MAP.put("KKM",       (data, path) -> printExcel.printKkm(data, path));
+	    PRINT_METHOD_MAP.put("KOB",       (data, path) -> printExcel.printKob(data, path));
+	    PRINT_METHOD_MAP.put("CASH",      (data, path) -> printExcel.printCash(data, path));
+	    PRINT_METHOD_MAP.put("ELM2",      (data, path) -> printExcel.printElm2(data, path));
+	    PRINT_METHOD_MAP.put("KEEPRO",    (data, path) -> printExcel.printKeepro(data, path));
+	    PRINT_METHOD_MAP.put("MBI",       (data, path) -> printExcel.printMbi(data, path));
+	    PRINT_METHOD_MAP.put("MMP",       (data, path) -> printExcel.printMmp(data, path));
+	    PRINT_METHOD_MAP.put("NOK",       (data, path) -> printExcel.printNok(data, path));
+	    PRINT_METHOD_MAP.put("NST",       (data, path) -> printExcel.printNst(data, path));
+	    PRINT_METHOD_MAP.put("PROFENDER", (data, path) -> printExcel.printProfender(data, path));
+	    PRINT_METHOD_MAP.put("DKK",       (data, path) -> printExcel.printDkk(data, path));
+	    PRINT_METHOD_MAP.put("KTH",       (data, path) -> printExcel.printKth(data, path));
+	    PRINT_METHOD_MAP.put("KPS",       (data, path) -> printExcel.printKps(data, path));
+	    PRINT_METHOD_MAP.put("KMEX",      (data, path) -> printExcel.printKmex(data, path));
+	    PRINT_METHOD_MAP.put("타이오토",  (data, path) -> printExcel.printThaiAuto(data, path));
+	    PRINT_METHOD_MAP.put("PIONEER",   (data, path) -> printExcel.printPioneer(data, path));
+	    PRINT_METHOD_MAP.put("PCT",       (data, path) -> printExcel.printProfenderPct(data, path));
+	    
+	    // PREVIEW_METHOD_MAP 초기화
+	    PREVIEW_METHOD_MAP = new HashMap<>();
+	    PREVIEW_METHOD_MAP.put("KAB",       (data, path) -> previewExcel.previewKoideKab(data, path));
+	    PREVIEW_METHOD_MAP.put("KCB",       (data, path) -> previewExcel.previewKoideKcb(data, path));
+	    PREVIEW_METHOD_MAP.put("KKB",       (data, path) -> previewExcel.previewKoideKkb(data, path));
+	    PREVIEW_METHOD_MAP.put("SANKIN",    (data, path) -> previewExcel.previewKoideSankin(data, path));
+	    PREVIEW_METHOD_MAP.put("KKM",       (data, path) -> previewExcel.previewKkm(data, path));
+	    PREVIEW_METHOD_MAP.put("KOB",       (data, path) -> previewExcel.previewKob(data, path));
+	    PREVIEW_METHOD_MAP.put("CASH",      (data, path) -> previewExcel.previewCash(data, path));
+	    PREVIEW_METHOD_MAP.put("ELM2",      (data, path) -> previewExcel.previewElm2(data, path));
+	    PREVIEW_METHOD_MAP.put("KEEPRO",    (data, path) -> previewExcel.previewKeepro(data, path));
+	    PREVIEW_METHOD_MAP.put("MBI",       (data, path) -> previewExcel.previewMbi(data, path));
+	    PREVIEW_METHOD_MAP.put("MMP",       (data, path) -> previewExcel.previewMmp(data, path));
+	    PREVIEW_METHOD_MAP.put("NOK",       (data, path) -> previewExcel.previewNok(data, path));
+	    PREVIEW_METHOD_MAP.put("NST",       (data, path) -> previewExcel.previewNst(data, path));
+	    PREVIEW_METHOD_MAP.put("PROFENDER", (data, path) -> previewExcel.previewProfender(data, path));
+	    PREVIEW_METHOD_MAP.put("DKK",       (data, path) -> previewExcel.previewDkk(data, path));
+	    PREVIEW_METHOD_MAP.put("KTH",       (data, path) -> previewExcel.previewKth(data, path));
+	    PREVIEW_METHOD_MAP.put("KPS",       (data, path) -> previewExcel.previewKps(data, path));
+	    PREVIEW_METHOD_MAP.put("KMEX",      (data, path) -> previewExcel.previewKmex(data, path));
+	    PREVIEW_METHOD_MAP.put("타이오토",  (data, path) -> previewExcel.previewThaiAuto(data, path));
+	    PREVIEW_METHOD_MAP.put("PIONEER",   (data, path) -> previewExcel.previewPioneer(data, path));
+	    PREVIEW_METHOD_MAP.put("PCT",       (data, path) -> previewExcel.previewProfenderPct(data, path));
+	    // 양식 없는 고객사는 넣지 않음 - null 체크로 400 반환
+	}
+
+	// 양식 없는 고객사 공통 결과
+	private Map<String, Object> noFormResult() {
+	    Map<String, Object> r = new HashMap<>();
+	    r.put("result", true);
+	    r.put("noForm", true);
+	    return r;
+	}
+	
+	private Management findMatchedCustomer(String customerName, List<Management> customerList) {
+	    String overrideKey = KEYWORD_OVERRIDE_MAP.entrySet().stream()
+	        .filter(entry -> customerName.contains(entry.getKey()))
+	        .map(Map.Entry::getValue)
+	        .findFirst()
+	        .orElse(null);
+
+	    if (overrideKey != null) {
+	        return customerList.stream()
+	            .filter(c -> overrideKey.equals(c.getCustomer_key()))
+	            .findFirst()
+	            .orElse(null);
+	    }
+
+	    return customerList.stream()
+	        .filter(c -> c.getCustomer_key() != null
+	                  && customerName.contains(c.getCustomer_key()))
+	        .findFirst()
+	        .orElse(null);
+	}
+
+	//-----------------------------------------------------------------------------------//
+	
 	// 패킹리스트/재고현황 페이지 이동
 	@RequestMapping(value = "/management/inventoryPackingList", method = RequestMethod.GET)
 	public String inventoryPackingListPage() {
@@ -263,7 +363,7 @@ public class ManagementController {
 		}
 		return managementService.deleteInvoiceInventory(management);
 	}
-
+/*
 	//쉬핑마크 출력
 	@RequestMapping(value="/management/mobile/printShippingMark", method=RequestMethod.POST)
 	@ResponseBody
@@ -362,7 +462,70 @@ public class ManagementController {
 
 		return resultMap;
 	}
+*/
+	@RequestMapping(value="/management/mobile/printShippingMark", method=RequestMethod.POST)
+	@ResponseBody
+	public Map<String, Object> autoPrint(@RequestBody Management management) {
+	    long start = System.nanoTime();
+	    Map<String, Object> resultMap = new HashMap<>();
 
+	    Management data = managementService.getShippingMarkPrintInventory(management);
+	    if (data == null) {
+	        resultMap.put("result", false);
+	        resultMap.put("message", "출력할 데이터를 찾을 수 없습니다.\n다시 스캔해주세요.");
+	        return resultMap;
+	    }
+
+	    String customerName = data.getNm_customer();
+	    //System.out.println("고객사명: " + customerName);
+	    List<Management> customerList = managementService.getCustomerList(management);
+	    Management matched = findMatchedCustomer(customerName, customerList);
+	    //System.out.println("matched: " + (matched != null ? matched.getCustomer_key() : "null"));
+
+	    if (matched == null) {
+	        resultMap.put("result", false);
+	        resultMap.put("message", "등록되지 않은 고객사의 품목입니다.");
+	        return resultMap;
+	    }
+
+	    // 파일명 없으면 자동으로 양식 없는 고객사 처리
+	    if (matched.getCustomer_shippingmark_file_name() == null || matched.getCustomer_shippingmark_file_name().trim().isEmpty()) {
+	        boolean isInserted = managementService.insertShippingList(data);
+	        resultMap.put("result", true);
+	        resultMap.put("message", isInserted ? "출하목록 추가 완료" : "출하목록에 이미 추가된 품목입니다.");
+	        return resultMap;
+	    }
+
+	    String customerKey = matched.getCustomer_key();
+	    String filePath = BASE_FILE_PATH + matched.getCustomer_shippingmark_file_name();
+
+	    BiFunction<Management, String, Map<String, Object>> printMethod = PRINT_METHOD_MAP.get(customerKey);
+	    if (printMethod == null) {
+	        resultMap.put("result", false);
+	        resultMap.put("message", "등록되지 않은 고객사의 품목입니다.");
+	        return resultMap;
+	    }
+
+	    Map<String, Object> printResult = printMethod.apply(data, filePath);
+
+	    if ((boolean) printResult.get("result")) {
+	        boolean isInserted = managementService.insertShippingList(data);
+	        boolean noForm = printResult.get("noForm") != null && (boolean) printResult.get("noForm");
+	        if (isInserted) {
+	            resultMap.put("result", true);
+	            resultMap.put("message", noForm ? "출하목록 추가 완료" : "출력 요청 및 출하목록 추가 완료");
+	        } else {
+	            resultMap.put("result", false);
+	            resultMap.put("message", noForm ? "출하목록에 이미 추가된 품목입니다." : "이미 출력된 품목입니다.\n재출력 요청이 완료되었습니다.");
+	        }
+	    } else {
+	        resultMap = printResult;
+	    }
+
+	    long end = System.nanoTime();
+	    System.out.println("⏱ 실행시간(ms): " + (end - start) / 1000000);
+	    return resultMap;
+	}
 
 	//쉬핑마크 출력 후 출하목록에 추가
 	@RequestMapping(value = "/management/mobile/insertShippingList", method = RequestMethod.POST) 
@@ -673,7 +836,7 @@ public class ManagementController {
 	public boolean updateInvoiceName(@RequestBody Management management) {
 		return managementService.updateInvoiceName(management);
 	}
-	
+	/*
 	//쉬핑마크 미리보기
 	@RequestMapping(value="/management/previewShippingMark", method=RequestMethod.POST)
 	@ResponseBody
@@ -751,6 +914,54 @@ public class ManagementController {
 		long end = System.nanoTime();   // 끝 시간
 		System.out.println("⏱ 실행시간(ms): " + (end - start)/1000000);
 		
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.IMAGE_PNG);
+	    return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
+	}
+	*/
+	
+	//쉬핑마크 미리보기
+	@RequestMapping(value="/management/previewShippingMark", method=RequestMethod.POST)
+	@ResponseBody
+	public ResponseEntity<byte[]> previewShippingMark(@RequestBody Management management) {
+	    System.out.println("미리보기 함수");
+	    long start = System.nanoTime();
+
+	    Management data = managementService.getShippingMarkPrintInventory(management);
+	    if (data == null) {
+	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+	    }
+
+	    String customerName = data.getNm_customer();
+	    List<Management> customerList = managementService.getCustomerList(management);
+	    Management matched = findMatchedCustomer(customerName, customerList);
+
+	    if (matched == null) {
+	        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(null);
+	    }
+
+	    // 파일명 없으면 자동으로 양식 없는 고객사 처리
+	    if (matched.getCustomer_shippingmark_file_name() == null || matched.getCustomer_shippingmark_file_name().trim().isEmpty()) {
+	        System.out.println("양식 없는 고객사 미리보기");
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+	    }
+
+	    String customerKey = matched.getCustomer_key();
+	    String filePath = BASE_FILE_PATH + matched.getCustomer_shippingmark_file_name();
+
+	    BiFunction<Management, String, byte[]> previewMethod = PREVIEW_METHOD_MAP.get(customerKey);
+	    if (previewMethod == null) {
+	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+	    }
+
+	    byte[] imageBytes = previewMethod.apply(data, filePath);
+	    if (imageBytes == null) {
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new byte[0]);
+	    }
+
+	    long end = System.nanoTime();
+	    System.out.println("⏱ 실행시간(ms): " + (end - start) / 1000000);
+
 	    HttpHeaders headers = new HttpHeaders();
 	    headers.setContentType(MediaType.IMAGE_PNG);
 	    return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);

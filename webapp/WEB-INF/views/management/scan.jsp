@@ -485,13 +485,13 @@ function initPDAMode() {
             case 'cancel':
                 window.location.href =
                     "/yulchon/management/mobile/shippingCancel?lbl_lot_no=" +
-                    encodeURIComponent(value) + "?mode=pda";
+                    encodeURIComponent(value) + "&mode=pda";
                 break;
 
             case 'check':
                 window.location.href =
                     "/yulchon/management/mobile/productConfirm?lbl_lot_no=" +
-                    encodeURIComponent(value) + "?mode=pda";
+                    encodeURIComponent(value) + "&mode=pda";
                 break;
 
             case 'print':

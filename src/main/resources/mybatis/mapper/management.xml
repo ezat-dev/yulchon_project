@@ -776,9 +776,9 @@ WHERE customer_id = #{customer_id}
 <!-- 고객사 추가 -->
 <insert id="insertCustomer">
 INSERT INTO ez_customer
-(customer_name, customer_shippingmark_file_name, update_user_id)
+(customer_name, customer_shippingmark_file_name, update_user_id, customer_key)
 VALUES
-(#{customer_name}, #{customer_shippingmark_file_name}, #{update_user_id})
+(#{customer_name}, #{customer_shippingmark_file_name}, #{update_user_id}, #{customer_key})
 </insert>
 
 <!-- 출하목록에 있는거 조회 -->

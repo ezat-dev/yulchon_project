@@ -1675,6 +1675,8 @@ function openPreviewModal(lbl_lot_no, invoice_no) {
             document.getElementById('previewError').style.display = 'block';
             if (xhr.status === 400) {
                 document.getElementById('previewError').innerText = '📋 양식이 없는 고객사입니다.';
+            }else if (xhr.status === 422) {
+                document.getElementById('previewError').innerText = '❌ 등록되지 않은 고객사입니다.';
             } else {
                 document.getElementById('previewError').innerText =
                     '❌ 미리보기 생성 실패 (status: ' + xhr.status + ')';

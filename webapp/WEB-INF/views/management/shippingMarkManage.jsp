@@ -215,6 +215,11 @@ margin-top: 6px;
                 <input type="text" id="new_customer_name" placeholder="고객사명을 입력하세요">
             </div>
             <div class="input-group">
+    <label for="customer_key">고객사 구분자:</label>
+    <small>해당 고객사명에만 들어있는 구분자를 입력하세요.</small>
+    <input type="text" id="customer_key" placeholder="예) KEEPRO JAPAN CO.,LTD(키프로) : KEEPRO">
+            </div>
+            <div class="input-group">
                 <label for="modal_file_input">양식 파일:</label>
                 <input type="file" id="modal_file_input" accept=".xlsx, .xls">
             </div>
@@ -260,7 +265,7 @@ dataTable = new Tabulator('#dataTable', {
             	return "<a href='javascript:void(0);' onclick='downloadFile(\"" + fileName + "\")' " +
                 "style='color: #1890ff; text-decoration: underline;'>" + fileName + "</a>";
             } else {
-                return "<span style='color: #ccc;'>양식 없음</span>";
+                return "<span style='color: #000000;'>양식 없음</span>";
             }
         }
     },
@@ -321,6 +326,7 @@ dataTable = new Tabulator('#dataTable', {
     },
     { title: "최종수정일", field: "regtime", sorter: "string", width: 160, hozAlign: "center" },
     { title: "최종수정자", field: "update_user_id", sorter: "string", width: 160, hozAlign: "center" },
+    { title: "고객사 구분자", field: "customer_key", sorter: "string", width: 150, hozAlign: "center", editor: "input" },
     { title: "비고", field: "remark", sorter: "string", width: 150, hozAlign: "center", editor: "input" }
   ],
   cellEdited: function(cell) {
@@ -402,6 +408,7 @@ $(function() {
   //저장 버튼 클릭시
   $("#btnSaveCustomer").click(function() {
       const name = $("#new_customer_name").val();
+      const customer_key = $("#customer_key").val();
       const file = $("#modal_file_input")[0].files[0];
 
       if(!name) {
@@ -409,8 +416,14 @@ $(function() {
           return;
       }
 
+      if(!customer_key) {
+          alert("고객사 구분자를 입력해주세요.");
+          return;
+      }
+
       const formData = new FormData();
       formData.append("customer_name", name);
+      formData.append("customer_key", customer_key);
       if(file) formData.append("file", file);
 
       $.ajax({
