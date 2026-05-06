@@ -2978,6 +2978,12 @@ public class PreviewExcel {
 			//로트번호 뒤 5자리
 			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
 			
+			//출력용 중량 있으면 출력용. 아니면 재고중량
+	        String weight = data.getWgt_inventory();
+	        if(data.getExtra_weight() != null && !data.getExtra_weight().isEmpty()) {
+	        	weight = data.getExtra_weight();
+	        }
+			
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "C4", data.getSteel_grade_item_010() + " " + data.getCd_materail());
 			putCellValue(sheet, "C5", "OD " + data.getOut_diameter() + " x ID " + data.getIn_daimeter()  + " x WT " +data.getThickness());
@@ -2985,7 +2991,7 @@ public class PreviewExcel {
 			putCellValue(sheet, "E6", data.getNo_mfg_order_serial());
 			putCellValue(sheet, "C7", data.getQty_inventory());
 			putCellValue(sheet, "E7", formattedDate);
-			putCellValue(sheet, "C8", data.getWgt_inventory() + " kg");
+			putCellValue(sheet, "C8", weight + " kg");
 			//putCellValue(sheet, "E8", data.getLbl_real_length());
 			putCellValue(sheet, "E10", data.getExtra_bundle_no());
 			putCellValue(sheet, "E13", "* " + lot_no_5);

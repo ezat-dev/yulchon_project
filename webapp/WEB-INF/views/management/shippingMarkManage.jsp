@@ -277,7 +277,10 @@ dataTable = new Tabulator('#dataTable', {
         formatter: function(cell) {
             const fileName = cell.getData().customer_shippingmark_file_name;
             const upBtn = `<button class='up-btn' style='border-radius:4px; cursor:pointer; margin-left:5px;'>업로드</button>`;
-            return upBtn;
+            //const delBtn = fileName
+            //? `<button class='del-btn' style='border-radius:4px; cursor:pointer; margin-left:5px; color:red; border:1px solid red;'>삭제</button>`
+            //: `<button class='del-btn' disabled style='border-radius:4px; margin-left:5px; color:#ccc; border:1px solid #ccc; cursor:not-allowed;'>삭제</button>`;
+        return upBtn;
         },
         cellClick: function(e, cell) {
             const data = cell.getData();

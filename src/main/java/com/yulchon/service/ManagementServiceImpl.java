@@ -194,7 +194,7 @@ public class ManagementServiceImpl implements ManagementService{
 		try {
 			System.out.println(">>> 출하 완료 프로세스 시작 (사용자: " + loginUserID + ")");
 			String invoice_no = management.getInvoiceList().get(0);
-			System.out.println("인보이스 번호: " + invoice_no);
+			//System.out.println("인보이스 번호: " + invoice_no);
 			management.setInvoice_no(invoice_no);
 
 			//기초데이터(뒤쪽에서 하면 조회 안되서 insert 안됨. 먼저 실행해야함)
