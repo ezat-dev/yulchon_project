@@ -1709,7 +1709,11 @@ public class PrintExcel {
 			
 			//로트번호 뒤 5자리
 			String lot_no_5 = data.getLbl_lot_no().substring(data.getLbl_lot_no().length() - 5);
-			
+			//비고
+			String remarks = "";
+			if(data.getRemarks() != null && !data.getRemarks().isEmpty()) {
+				remarks = data.getRemarks();
+			}
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B3", data.getExtra_invoice_no());
 			putCellValue(sheet, "B4", data.getCd_materail());
@@ -1718,6 +1722,7 @@ public class PrintExcel {
 			putCellValue(sheet, "B7", data.getQty_inventory() + " PCS");
 			putCellValue(sheet, "B8", totalLength + " MTR");
 			putCellValue(sheet, "B9", data.getWgt_inventory() + " KG");
+			putCellValue(sheet, "B10", remarks);
 			putCellValue(sheet, "B12", data.getExtra_bundle_no());
 			putCellValue(sheet, "B13", "* " + lot_no_5);
 
