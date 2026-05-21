@@ -1413,7 +1413,7 @@ public class PreviewExcel {
 
 			// [2] 값 넣기 (Null 방어 로직 추가)
 			putCellValue(sheet, "B4", data.getExtra_packing_inspection());
-			putCellValue(sheet, "D4", data.getInvoice_name());
+			putCellValue(sheet, "D4", data.getExtra_packing_inspection());
 			putCellValue(sheet, "B5", data.getCustomer_product_code_number());
 			putCellValue(sheet, "B6", data.getCd_materail() + ": " + data.getOut_diameter() + " OD X  " + data.getIn_daimeter() + " ID");
 			putCellValue(sheet, "B7", data.getLbl_real_length() + " L");
@@ -1582,9 +1582,9 @@ public class PreviewExcel {
 			putCellValue(sheet, "E5", data.getExtra_order_no());
 			putCellValue(sheet, "C6", data.getLbl_real_length() + " mm");
 			putCellValue(sheet, "E6", data.getNo_mfg_order_serial());
-			putCellValue(sheet, "C7", data.getQty_inventory());
+			putCellValue(sheet, "C7", data.getQty_inventory() + " pcs");
 			putCellValue(sheet, "E7", getTodayDate(lblDate));
-			putCellValue(sheet, "C8", data.getWgt_inventory());
+			putCellValue(sheet, "C8", data.getWgt_inventory() + " kg");
 			putCellValue(sheet, "E8", totalLength + " m");
 			putCellValue(sheet, "E10", data.getExtra_bundle_no());
 			putCellValue(sheet, "E13", "* " + lot_no_5);
@@ -2045,7 +2045,7 @@ public class PreviewExcel {
 			putCellValue(sheet, "B9", data.getOut_diameter() + " OD X " + data.getIn_daimeter() + " ID X " + data.getLbl_real_length() + "mm");
 			putCellValue(sheet, "B10", data.getWgt_inventory() + " KG");
 			putCellValue(sheet, "B11", data.getQty_inventory() + " PCS");
-			putCellValue(sheet, "B2", data.getExtra_invoice_no());
+			putCellValue(sheet, "B12", data.getExtra_invoice_no());
 			putCellValue(sheet, "B13", "* " + lot_no_5);
 
 			int currentShapeCount = Dispatch.get(shapes, "Count").toInt();

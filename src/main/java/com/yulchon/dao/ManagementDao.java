@@ -73,4 +73,5 @@ public interface ManagementDao {
 	boolean swapLotNo(Management datas);
 	boolean updateLotNo(Management management);
 	Management getIsShippingList(Management management);
+	List<Management> getNoShippingMarkCustomerList(Management management);
 }

@@ -514,5 +514,10 @@ public class ManagementDaoImpl implements ManagementDao {
 	public Management getIsShippingList(Management management) {
 		return sqlSession.selectOne("management.getIsShippingList", management);
 	}
+	
+	@Override
+	public List<Management> getNoShippingMarkCustomerList(Management management) {
+		return sqlSession.selectList("management.getNoShippingMarkCustomerList", management);
+	}
 }
 

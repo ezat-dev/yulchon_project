@@ -495,6 +495,10 @@ button:hover {
   border: 1px solid var(--border);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
 }
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
     </style>
 </head>
 
@@ -637,7 +641,10 @@ button:hover {
     </div>
   </div>
 </div>
-
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; color: white;">
+    <div class="spinner" style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <p style="margin-top: 15px;">처리중입니다. 잠시만 기다려주세요.</p>
+</div>
 
 <script>
 let now_page_code = "h03";
@@ -1465,6 +1472,7 @@ $('#insertArrow').click(function() {
     }))
   };
 	    console.log("전송 데이타: ", payload);
+	    $('#loadingOverlay').css('display', 'flex');
 	    $.ajax({
 		      url: "/yulchon/management/insertInvoiceInventory",
 		      type: "POST",
@@ -1487,7 +1495,11 @@ $('#insertArrow').click(function() {
 		        },
 		      error: function() {
 		    	  alert("저장 중 서버 오류 발생");
-		      }
+		      },
+		        complete: function() {
+		            // 로딩 종료 (성공/실패 둘 다)
+		            $('#loadingOverlay').hide();
+		        }
 		    });
 });
 
@@ -1508,6 +1520,7 @@ $('#deleteArrow').click(function() {
   lotList: selectedLeftRows.map(row => row.lbl_lot_no)
 };
 	    console.log("전송 데이터: ", payload);
+	    $('#loadingOverlay').css('display', 'flex');
 	    $.ajax({
 		      url: "/yulchon/management/deleteInvoiceInventory",
 		      type: "POST",
@@ -1531,7 +1544,11 @@ $('#deleteArrow').click(function() {
 		        },
 		      error: function() {
 		    	  alert("삭제 중 서버 오류 발생");
-		      }
+		      },
+		        complete: function() {
+		            // 로딩 종료 (성공/실패 둘 다)
+		            $('#loadingOverlay').hide();
+		        }
 		    });
 });
 

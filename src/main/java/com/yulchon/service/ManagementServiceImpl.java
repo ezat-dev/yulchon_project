@@ -423,4 +423,9 @@ public class ManagementServiceImpl implements ManagementService{
 	public Management getIsShippingList(Management management) {
 		return managementDao.getIsShippingList(management);
 	}
+	
+	@Override
+	public List<Management> getNoShippingMarkCustomerList(Management management) {
+		return managementDao.getNoShippingMarkCustomerList(management);
+	}
 }

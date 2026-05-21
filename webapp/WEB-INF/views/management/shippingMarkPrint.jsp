@@ -751,15 +751,24 @@ display: none;
     }
 
     //고객사 ROCS, ASTEMO, SCHIAVELLO면 버튼 텍스트 바꿈
-    function updateButtonLabel() {
+function updateButtonLabel() {
     const customerName = $('#nm_customer').text().trim();
-    console.log("고객사: ", customerName);
-    if (customerName.includes('ROCS') || customerName.includes('ASTEMO') 
-    	    || customerName.includes('SCHIAVELLO')) {
-        $('.btn-print').text('출하 등록');
-    } else {
-        $('.btn-print').text('출력');
-    }
+    $.ajax({
+        url: "/yulchon/management/mobile/getNoShippingMarkCustomerList",
+        type: "GET",
+        success: function(customerList) {
+            const isNoMark = customerList.some(function(item) {
+                const name = item.customer_name;
+                if (!name) return false;
+                const matched = customerName.includes(name) || name.includes(customerName);
+                return matched;
+            });
+            $('.btn-print').text(isNoMark ? '출하 등록' : '출력');
+        },
+        error: function() {
+            $('.btn-print').text('출력');
+        }
+    });
 }
     
   //===== 메인 디코딩 함수 =====

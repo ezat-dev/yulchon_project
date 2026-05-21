@@ -249,7 +249,8 @@ FROM (
 
 <!-- Lot No별로 인보이스 부여되고 제품창고인 품목 하나 조회 -->
 <select id="getShippingMarkPrintInventory" parameterType="management" resultType="management">
-SELECT 'N' AS YN_CHECK --선택
+SELECT TOP 1
+	'N' AS YN_CHECK --선택
      , A.CD_ITEM --품목코드
      , C.NM_ITEM --품목명
      , C.SPEC_ITEM --규격
@@ -558,7 +559,8 @@ WHERE invoice_no = #{invoice_no}
 
 <!-- 쉬핑마크 출력 시 해당 인보이스 하나 조회(인보이스 부여 안된건 자바로 처리) -->
 <select id="mobileGetShippingMarkPrintInventory" parameterType="management" resultType="management">
-SELECT 'N' AS YN_CHECK --선택
+SELECT TOP 1
+	'N' AS YN_CHECK --선택
      , A.CD_ITEM --품목코드
      , C.NM_ITEM --품목명
      , C.SPEC_ITEM --규격
@@ -1514,5 +1516,11 @@ ORDER BY SD.DT_UPDATE DESC
     FROM ez_shipping_list 
     WHERE invoice_no = #{invoice_no} 
       AND lbl_lot_no = #{lot_no}
+</select>
+
+<select id="getNoShippingMarkCustomerList" parameterType="management" resultType="management">
+SELECT * FROM ez_customer
+WHERE customer_shippingmark_file_name IS NULL
+OR TRIM(customer_shippingmark_file_name) = ''
 </select>
 </mapper>

@@ -1030,6 +1030,13 @@ public class ManagementController {
 	public Management getIsShippingList(@RequestBody Management management) {
 	    return managementService.getIsShippingList(management);
 	}
+	
+	//양식 없는 고객사 조회
+	@RequestMapping(value = "/management/mobile/getNoShippingMarkCustomerList", method = RequestMethod.GET) 
+	@ResponseBody
+	public List<Management> getNoShippingMarkCustomerList(Management management) {
+	    return managementService.getNoShippingMarkCustomerList(management);
+	}
 
 }
 
