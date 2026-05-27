@@ -86,7 +86,7 @@ public class UserController {
 		
 		//로그인한 대상의 page정보 세션저장
 		session.setAttribute("loginUserId",loginUser.getID_LOGIN());
-		session.setAttribute("loginUserPassword",loginUser.getNO_PASSWORD());
+		//session.setAttribute("loginUserPassword",loginUser.getNO_PASSWORD());
 		session.setAttribute("loginUserName", loginUser.getNM_LOGIN());
 		
 		rtnMap.put("data", loginUser);
