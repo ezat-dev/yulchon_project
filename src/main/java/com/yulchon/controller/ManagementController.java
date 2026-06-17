@@ -1054,6 +1054,26 @@ public class ManagementController {
 	        return false;
 	    }
 	}
+	
+	//쉬핑마크 삭제(db, 경로의 실제 파일 둘 다)
+	@RequestMapping(value = "/management/deleteShippingMark", method = RequestMethod.POST)
+	@ResponseBody
+	public boolean deleteShippingMark(Management management, HttpSession session) {
+	    String basePath = "D:/율촌_쉬핑마크_양식/";
+	    String oldFileName = management.getOld_file_name();
+	    try {
+	        if (oldFileName != null && !oldFileName.isEmpty()) {
+	            File oldFile = new File(basePath + oldFileName);
+	            if (oldFile.exists()) oldFile.delete();
+	        }
+	        management.setCustomer_shippingmark_file_name(null); // DB도 null로
+	        management.setUpdate_user_id((String)session.getAttribute("loginUserId"));
+	        return managementService.updateShippingMarkFile(management);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return false;
+	    }
+	}
 
 }
 

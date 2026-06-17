@@ -277,9 +277,9 @@ dataTable = new Tabulator('#dataTable', {
         formatter: function(cell) {
             const fileName = cell.getData().customer_shippingmark_file_name;
             const upBtn = `<button class='up-btn' style='border-radius:4px; cursor:pointer; margin-left:5px;'>업로드</button>`;
-            //const delBtn = fileName
-            //? `<button class='del-btn' style='border-radius:4px; cursor:pointer; margin-left:5px; color:red; border:1px solid red;'>삭제</button>`
-            //: `<button class='del-btn' disabled style='border-radius:4px; margin-left:5px; color:#ccc; border:1px solid #ccc; cursor:not-allowed;'>삭제</button>`;
+/*             const delBtn = fileName
+            ? `<button class='del-btn' style='border-radius:4px; cursor:pointer; margin-left:5px; color:red; border:1px solid red;'>삭제</button>`
+            : `<button class='del-btn' disabled style='border-radius:4px; margin-left:5px; color:#ccc; border:1px solid #ccc; cursor:not-allowed;'>삭제</button>`; */
         return upBtn;
         },
         cellClick: function(e, cell) {
@@ -325,6 +325,24 @@ dataTable = new Tabulator('#dataTable', {
                 };
                 fileInput.click(); // 파일 탐색기 열기
             }
+
+            //삭제 버튼 클릭 시
+/*             if (e.target.classList.contains("del-btn")) {
+                if (!confirm("양식 파일을 삭제하시겠습니까?")) return;
+                $.ajax({
+                    url: "/yulchon/management/deleteShippingMark",
+                    type: "POST",
+                    data: { old_file_name: data.customer_shippingmark_file_name, customer_id: data.customer_id },
+                    success: function(res) {
+                        if (res) {
+                            alert("삭제되었습니다.");
+                            dataTable.setData("/yulchon/management/getCustomerList", {});
+                        } else {
+                            alert("삭제 실패");
+                        }
+                    }
+                });
+            } */
         }
     },
     { title: "최종수정일", field: "regtime", sorter: "string", width: 160, hozAlign: "center" },
