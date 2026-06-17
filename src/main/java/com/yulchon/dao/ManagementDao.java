@@ -74,4 +74,19 @@ public interface ManagementDao {
 	boolean updateLotNo(Management management);
 	Management getIsShippingList(Management management);
 	List<Management> getNoShippingMarkCustomerList(Management management);
+	
+	//출하취소
+	List<Management> getCancelShippingList(Management management);
+	boolean cancelS_SALES_REQUEST_PROCESS(List<Management> datas);
+	boolean cancelS_SALES_REQUEST_LOT(List<Management> datas);
+	boolean cancelI_ONHAND_INVENTORY(Management management);
+	boolean cancelI_WH_ONHAND_INVENTORY(Management management);
+	boolean cancelI_MONTHLY_INVENTORY(Management management);
+	boolean cancelI_WH_MONTHLY_INVENTORY(Management management);
+	boolean deleteI_TRANSACTION_SALES(Management management);
+	boolean deleteI_TRANSACTION_DETAIL(Management management);
+	boolean deleteI_TRANSACTION(Management management);
+	boolean cancelCompleteInvoiceList(Management management);
+	boolean deleteShippingResult(Management management);
+	
 }

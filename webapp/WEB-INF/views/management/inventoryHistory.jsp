@@ -472,6 +472,16 @@ select {
         width: 100%;
     }
 }
+/* 취소 버튼(출하 취소) */
+#shipping-cancle-button{
+  background:#fff;
+  border-color:rgba(220,38,38,.35);
+  color:#b91c1c;
+}
+#shipping-cancle-button:hover{
+  background:#fff5f5;
+  border-color:rgba(220,38,38,.55);
+}
     </style>
 </head>
 
@@ -523,6 +533,11 @@ select {
 				        <span class="legend-text">대기</span>
 				</div>
 				</div>
+				<!-- [[[[[[[[[[[[[[[[[[출하취소버튼]]]]]]]]]]]]]]]]]]]]] -->
+				<button class="insert-button" id="shipping-cancle-button">
+                    <img src="/yulchon/css/image/delete-icon.png" alt="insert" class="button-image">출하 취소
+                </button>
+                <!-- [[[[[[[[[[[[[[[[[[출하취소버튼]]]]]]]]]]]]]]]]]]]]] -->
             </div>
         </div>
 
@@ -552,7 +567,7 @@ dataTable = new Tabulator('#dataTable', {
     return response;
   },
   columns: [
-		{ title: "No", formatter: "rownum", hozAlign: "center", width: 60, headerSort: false, frozen: true },
+	{ title: "No", formatter: "rownum", hozAlign: "center", width: 60, headerSort: false, frozen: true },
 	{ title: "인보이스", field: "invoice_name", hozAlign: "center", width: 120 },
     { title: "품목코드", field: "cd_item", hozAlign: "center", width: 120 },
     { title: "품목명", field: "nm_item", sorter: "string", width: 120, hozAlign: "center"},
@@ -696,7 +711,44 @@ $(function() {
 	        invoice_is_shipped: category
 	    });
   });
-	
+
+  //출하취소 버튼 
+  $('#shipping-cancle-button').on('click', function() {
+	    if (!selectedRowData) {
+	        alert("취소할 인보이스를 선택해주세요.");
+	        return;
+	    }
+
+	    if (!confirm("'" + selectedRowData.invoice_name + "' 인보이스를 출하 취소 하시겠습니까?")) {
+	        return;
+	    }
+
+	    $.ajax({
+	        url: "/yulchon/management/processShippingCancel",
+	        type: "POST",
+	        contentType: "application/json",
+	        data: JSON.stringify({ invoice_no: selectedRowData.invoice_no }),
+	        success: function(res) {
+	            if (res) {
+	                alert("출하 취소가 완료되었습니다.");
+	                dataTable.setData("/yulchon/management/getCompleteInventoryList", {
+	                    invoice_no: selectedRowData.invoice_no,
+	                    invoice_is_shipped: (selectedRowData.invoice_is_shipped || "").trim()
+	                });
+	                invoiceTable.setData("/yulchon/management/getInvoiceList", {
+	                    startDate: $('#startDate').val(),
+	                    endDate: $('#endDate').val(),
+	                    invoice_is_shipped: $('#category').val()
+	                });
+	            } else {
+	                alert("출하 취소 처리 중 오류가 발생했습니다.");
+	            }
+	        },
+	        error: function(xhr) {
+	            alert("출하 취소 처리 중 오류가 발생했습니다.\n" + (xhr.responseText || ""));
+	        }
+	    });
+	});
 });
 </script>
 

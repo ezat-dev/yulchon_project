@@ -1037,6 +1037,23 @@ public class ManagementController {
 	public List<Management> getNoShippingMarkCustomerList(Management management) {
 	    return managementService.getNoShippingMarkCustomerList(management);
 	}
+	
+	//출하취소!!!!!!!!!!!!!!!!
+	@RequestMapping(value = "/management/processShippingCancel", method = RequestMethod.POST) 
+	@ResponseBody 
+	public boolean processShippingCancel(@RequestBody Management management, HttpSession session) {
+		String loginUserID = (String)session.getAttribute("loginUserId");
+	    
+	    try {
+	        // 모든 로직이 묶인 서비스 호출
+	        return managementService.processShippingCancel(management, loginUserID);
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        // 에러 발생 시 서비스에서 롤백을 수행하므로 데이터는 안전함
+	        logger.error("[출하완료 컨트롤러 에러]: " + e.getMessage(), e);
+	        return false;
+	    }
+	}
 
 }
 

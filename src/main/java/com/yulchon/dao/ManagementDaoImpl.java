@@ -519,5 +519,109 @@ public class ManagementDaoImpl implements ManagementDao {
 	public List<Management> getNoShippingMarkCustomerList(Management management) {
 		return sqlSession.selectList("management.getNoShippingMarkCustomerList", management);
 	}
+	
+	@Override
+	public List<Management> getCancelShippingList(Management management) {
+		return sqlSession.selectList("management.getCancelShippingList", management);
+	}
+	
+	@Override
+	public boolean cancelS_SALES_REQUEST_PROCESS(List<Management> datas) {
+		int result =  sqlSession.update("management.cancelS_SALES_REQUEST_PROCESS", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean cancelS_SALES_REQUEST_LOT(List<Management> datas) {
+		int result =  sqlSession.update("management.cancelS_SALES_REQUEST_LOT", datas);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean cancelI_ONHAND_INVENTORY(Management management) {
+		int result =  sqlSession.update("management.cancelI_ONHAND_INVENTORY", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean cancelI_WH_ONHAND_INVENTORY(Management management) {
+		int result =  sqlSession.update("management.cancelI_WH_ONHAND_INVENTORY", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean cancelI_MONTHLY_INVENTORY(Management management) {
+		int result =  sqlSession.update("management.cancelI_MONTHLY_INVENTORY", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean cancelI_WH_MONTHLY_INVENTORY(Management management) {
+		int result =  sqlSession.update("management.cancelI_WH_MONTHLY_INVENTORY", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean deleteI_TRANSACTION_SALES(Management management) {
+		int result =  sqlSession.delete("management.deleteI_TRANSACTION_SALES", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean deleteI_TRANSACTION_DETAIL(Management management) {
+		int result =  sqlSession.delete("management.deleteI_TRANSACTION_DETAIL", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean deleteI_TRANSACTION(Management management) {
+		int result =  sqlSession.delete("management.deleteI_TRANSACTION", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean cancelCompleteInvoiceList(Management management) {
+		int result =  sqlSession.update("management.cancelCompleteInvoiceList", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean deleteShippingResult(Management management) {
+		int result =  sqlSession.delete("management.deleteShippingResult", management);
+		if(result <= 0) {
+			return false;
+		}
+		return true;
+	}
 }
 

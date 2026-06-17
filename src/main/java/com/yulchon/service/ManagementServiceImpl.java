@@ -428,4 +428,105 @@ public class ManagementServiceImpl implements ManagementService{
 	public List<Management> getNoShippingMarkCustomerList(Management management) {
 		return managementDao.getNoShippingMarkCustomerList(management);
 	}
+	
+	//출하취소------------------------------------------------!!!!!!!!!!!!!!!!!!!!!!!!
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public boolean processShippingCancel(Management management, String loginUserID) {
+	    try {
+	        System.out.println(">>> 출하 취소 프로세스 시작 (사용자: " + loginUserID + ")");
+	        
+	        String invoice_no = management.getInvoice_no();
+	        System.out.println(">>> [1] invoice_no: " + invoice_no);
+	        management.setInvoice_no(invoice_no);
+
+	        List<Management> datas = managementDao.getCancelShippingList(management);
+	        System.out.println(">>> [2] 복구할 데이터 개수: " + (datas != null ? datas.size() : "null"));
+
+	        if (datas == null || datas.isEmpty()) {
+	            throw new RuntimeException("복구할 데이터가 존재하지 않아 출하 취소를 중단합니다.");
+	        }
+
+	        String no_sales_request_serial = datas.get(0).getNo_sales_request_serial();
+	        System.out.println(">>> [3] no_sales_request_serial: " + no_sales_request_serial);
+
+	        for (Management v : datas) { v.setUser_id(loginUserID); }
+
+	        System.out.println(">>> [4] cancelS_SALES_REQUEST_PROCESS 시작");
+	        managementDao.cancelS_SALES_REQUEST_PROCESS(datas);
+	        System.out.println(">>> [4] cancelS_SALES_REQUEST_PROCESS 완료");
+
+	        System.out.println(">>> [5] S_SALES_REQUEST_DETAIL 상태 재계산 시작 (총 " + datas.size() + "건)");
+	        for (Management v : datas) {
+	            Integer seq_sales_request = v.getSeq_sales_request();
+	            System.out.println("    [5] seq_sales_request: " + seq_sales_request + ", lot_no: " + v.getLbl_lot_no());
+	            Management data = managementDao.getSeqSalesRequestInventoryList(v);
+	            System.out.println("    [5] getSeqSalesRequestInventoryList 결과: " + (data != null ? "있음" : "null"));
+	            if (data != null) {
+	                data.setUser_id(loginUserID);
+	                data.setNo_sales_request_serial(no_sales_request_serial);
+	                data.setSeq_sales_request(seq_sales_request);
+	                managementDao.updateS_SALES_REQUEST_DETAIL(data);
+	                System.out.println("    [5] updateS_SALES_REQUEST_DETAIL 완료");
+	            }
+	        }
+	        System.out.println(">>> [5] S_SALES_REQUEST_DETAIL 재계산 완료");
+
+	        System.out.println(">>> [6] cancelS_SALES_REQUEST_LOT 시작");
+	        managementDao.cancelS_SALES_REQUEST_LOT(datas);
+	        System.out.println(">>> [6] cancelS_SALES_REQUEST_LOT 완료");
+
+	        System.out.println(">>> [7] 재고 복구 루프 시작 (총 " + datas.size() + "건)");
+	        for (Management v : datas) {
+	            String lbl_lot_no = v.getLbl_lot_no();
+	            String inventoryCount = v.getQty_inventory();
+	            System.out.println("    [7] lot_no: " + lbl_lot_no + ", qty: " + inventoryCount);
+
+	            Management data = managementDao.getI_ONHAND_INVENTORY(v);
+	            System.out.println("    [7] getI_ONHAND_INVENTORY 결과: " + (data != null ? "있음" : "null"));
+
+	            if (data != null) {
+	                data.setUser_id(loginUserID);
+	                data.setNo_lot(lbl_lot_no);
+	                data.setQty_inventory(inventoryCount);
+
+	                managementDao.cancelI_ONHAND_INVENTORY(data);
+	                System.out.println("    [7] cancelI_ONHAND_INVENTORY 완료");
+	                managementDao.cancelI_WH_ONHAND_INVENTORY(data);
+	                System.out.println("    [7] cancelI_WH_ONHAND_INVENTORY 완료");
+	                managementDao.cancelI_MONTHLY_INVENTORY(data);
+	                System.out.println("    [7] cancelI_MONTHLY_INVENTORY 완료");
+	                managementDao.cancelI_WH_MONTHLY_INVENTORY(data);
+	                System.out.println("    [7] cancelI_WH_MONTHLY_INVENTORY 완료");
+	            }
+
+	            managementDao.deleteI_TRANSACTION_SALES(v);
+	            System.out.println("    [7] deleteI_TRANSACTION_SALES 완료");
+	            managementDao.deleteI_TRANSACTION_DETAIL(v);
+	            System.out.println("    [7] deleteI_TRANSACTION_DETAIL 완료");
+	            managementDao.deleteI_TRANSACTION(v);
+	            System.out.println("    [7] deleteI_TRANSACTION 완료");
+	        }
+	        System.out.println(">>> [7] 재고 복구 및 트랜잭션 삭제 완료");
+
+	        System.out.println(">>> [8] cancelCompleteInvoiceList 시작");
+	        managementDao.cancelCompleteInvoiceList(management);
+	        System.out.println(">>> [8] cancelCompleteInvoiceList 완료");
+
+	        System.out.println(">>> [9] deleteShippingResult 시작");
+	        managementDao.deleteShippingResult(management);
+	        System.out.println(">>> [9] deleteShippingResult 완료");
+
+	        System.out.println(">>> 출하 취소 프로세스 완료");
+	        //System.out.println("일부러 롤백 시작");
+	        //if(true) throw new RuntimeException("테스트를 위한 강제 롤백!");
+	        return true;
+
+	    } catch (Exception e) {
+	        System.err.println("!!! 출하 취소 프로세스 중 에러 발생 (ROLLBACK) !!!");
+	        System.err.println("에러 메시지: " + e.getMessage());
+	        e.printStackTrace();
+	        throw e;
+	    }
+	}
 }

@@ -51,4 +51,5 @@ public interface ManagementService {
 	boolean updateLotNo(Management management);
 	Management getIsShippingList(Management management);
 	List<Management> getNoShippingMarkCustomerList(Management management);
+	boolean processShippingCancel(Management management, String loginUserId);
 }
