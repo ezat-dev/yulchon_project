@@ -535,7 +535,7 @@ select {
 				</div>
 				<!-- [[[[[[[[[[[[[[[[[[출하취소버튼]]]]]]]]]]]]]]]]]]]]] -->
 				<button class="insert-button" id="shipping-cancle-button">
-                    <img src="/yulchon/css/image/delete-icon.png" alt="insert" class="button-image">출하 취소
+                    <img src="/yulchon/css/image/delete-icon.png" alt="insert" class="button-image">출하완료 취소
                 </button>
                 <!-- [[[[[[[[[[[[[[[[[[출하취소버튼]]]]]]]]]]]]]]]]]]]]] -->
             </div>
@@ -719,7 +719,7 @@ $(function() {
 	        return;
 	    }
 
-	    if (!confirm("'" + selectedRowData.invoice_name + "' 인보이스를 출하 취소 하시겠습니까?")) {
+	    if (!confirm("'" + selectedRowData.invoice_name + "' 인보이스를 출하완료 취소 하시겠습니까?")) {
 	        return;
 	    }
 
@@ -730,7 +730,7 @@ $(function() {
 	        data: JSON.stringify({ invoice_no: selectedRowData.invoice_no }),
 	        success: function(res) {
 	            if (res) {
-	                alert("출하 취소가 완료되었습니다.");
+	                alert("출하완료 취소가 완료되었습니다.");
 	                dataTable.setData("/yulchon/management/getCompleteInventoryList", {
 	                    invoice_no: selectedRowData.invoice_no,
 	                    invoice_is_shipped: (selectedRowData.invoice_is_shipped || "").trim()
@@ -741,11 +741,11 @@ $(function() {
 	                    invoice_is_shipped: $('#category').val()
 	                });
 	            } else {
-	                alert("출하 취소 처리 중 오류가 발생했습니다.");
+	                alert("출하완료 취소 처리 중 오류가 발생했습니다.");
 	            }
 	        },
 	        error: function(xhr) {
-	            alert("출하 취소 처리 중 오류가 발생했습니다.\n" + (xhr.responseText || ""));
+	            alert("출하완료 취소 처리 중 오류가 발생했습니다.\n" + (xhr.responseText || ""));
 	        }
 	    });
 	});
