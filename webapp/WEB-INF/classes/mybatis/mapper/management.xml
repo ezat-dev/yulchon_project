@@ -618,13 +618,27 @@ SELECT TOP 1
 </select>
 
 <!-- 출하완료 시 스캔 안한 품목 삭제 -->
-<delete id="deleteNoScanInventory">
+<!-- 이게 기존 쿼리 -->
+<!-- <delete id="deleteNoScanInventory">
     DELETE FROM ez_invoice_inventory_mapping 
     WHERE 1=1
       AND invoice_no IN
       <foreach collection="invoiceList" item="invoice" open="(" separator="," close=")">
           #{invoice}
       </foreach>
+</delete> -->
+<!-- 이건 수정한 쿼리(테스트 중) -->
+<delete id="deleteNoScanInventory">
+    DELETE FROM ez_invoice_inventory_mapping 
+    WHERE invoice_no IN
+    <foreach collection="invoiceList" item="invoice" open="(" separator="," close=")">
+        #{invoice}
+    </foreach>
+    AND NOT EXISTS (
+        SELECT 1 FROM ez_shipping_list esl
+        WHERE esl.invoice_no = ez_invoice_inventory_mapping.invoice_no
+          AND esl.lbl_lot_no = ez_invoice_inventory_mapping.lot_no
+    )
 </delete>
 
 <!-- 초기화 되었거나 처리 안된 인보이스 조회(리셋된 인보이스는 품목 있는것만) -->
@@ -1522,5 +1536,178 @@ ORDER BY SD.DT_UPDATE DESC
 SELECT * FROM ez_customer
 WHERE customer_shippingmark_file_name IS NULL
 OR TRIM(customer_shippingmark_file_name) = ''
+</select>
+
+<!-- [[[[[[[[[[[[[[[[[[[[[[출하취소]]]]]]]]]]]]]]]]]]]]]] -->
+<!-- 출하취소용 조회 - ez_shipping_result 기준 -->
+<select id="getCancelShippingList" parameterType="management" resultType="management">
+    SELECT 
+        sr.cd_item
+       ,sr.nm_item
+       ,sr.spec_item
+       ,sr.kgm_weight
+       ,sr.lbl_real_length
+       ,sr.lbl_lot_no
+       ,sr.no_mfg_order_serial
+       ,sr.qty_inventory
+       ,sr.wgt_inventory
+       ,sr.cd_wh
+       ,sr.nm_wh
+       ,sr.invoice_no
+       ,sr.invoice_name
+       ,0 AS qty_bad_process
+       ,L.NO_SALES_REQUEST_SERIAL
+       ,L.SEQ_SALES_REQUEST
+       ,S_REQ.CD_PARTNER
+       ,S_REQ.NO_SALES_ORDER_SERIAL
+       ,S_REQ.NO_SALES_ORDER
+       ,S_REQ.NO_SALES_REQUEST
+      FROM ez_shipping_result sr
+      LEFT JOIN (
+          SELECT *,
+                 ROW_NUMBER() OVER (PARTITION BY LOT_NO ORDER BY DT_UPDATE DESC) AS RN
+          FROM S_SALES_REQUEST_LOT WITH (NOLOCK)
+      ) L ON sr.lbl_lot_no = L.LOT_NO AND L.RN = 1
+      LEFT JOIN (
+          SELECT 
+              SD.NO_SALES_REQUEST_SERIAL
+             ,SD.SEQ_SALES_REQUEST
+             ,SD.NO_SALES_ORDER_SERIAL
+             ,SD.NO_SALES_ORDER
+             ,SR2.NO_SALES_REQUEST
+             ,P.CD_PARTNER
+            FROM S_SALES_REQUEST_DETAIL SD WITH (NOLOCK)
+            INNER JOIN S_SALES_REQUEST SR2 WITH (NOLOCK)
+                    ON SR2.NO_SALES_REQUEST_SERIAL = SD.NO_SALES_REQUEST_SERIAL
+            LEFT JOIN B_PARTNER P WITH (NOLOCK)
+                   ON P.CD_PARTNER = SD.CD_TRANS_PARTNER
+      ) S_REQ ON L.NO_SALES_REQUEST_SERIAL = S_REQ.NO_SALES_REQUEST_SERIAL
+             AND L.SEQ_SALES_REQUEST = S_REQ.SEQ_SALES_REQUEST
+     WHERE sr.invoice_no = #{invoice_no}
+</select>
+
+<!-- S_SALES_REQUEST_PROCESS 수량 역산 -->
+<update id="cancelS_SALES_REQUEST_PROCESS">
+    <foreach collection="list" item="item" separator=";">
+        UPDATE S_SALES_REQUEST_PROCESS
+           SET QTY_PROCESS      = QTY_PROCESS - #{item.qty_inventory}
+              ,QTY_GOOD_PROCESS = QTY_GOOD_PROCESS - #{item.qty_inventory}
+              ,ID_UPDATE        = #{item.user_id}
+              ,DT_UPDATE        = GETDATE()
+         WHERE NO_SALES_REQUEST_SERIAL = #{item.no_sales_request_serial}
+           AND SEQ_SALES_REQUEST       = #{item.seq_sales_request}
+           AND FG_PROCESS = 'P'
+           AND TP_PROCESS = 'INSAI'
+           AND FG_MODULE  = 'IN'
+    </foreach>
+</update>
+
+<!-- S_SALES_REQUEST_LOT 상태 'R'로 되돌리기 -->
+<update id="cancelS_SALES_REQUEST_LOT">
+    <foreach collection="list" item="item" separator=";">
+        UPDATE S_SALES_REQUEST_LOT
+           SET STS_PROGRESS = 'R'
+              ,ID_UPDATE    = #{item.user_id}
+              ,DT_UPDATE    = GETDATE()
+         WHERE NO_SALES_REQUEST_SERIAL = #{item.no_sales_request_serial}
+           AND SEQ_SALES_REQUEST       = #{item.seq_sales_request}
+           AND LOT_NO                  = #{item.lbl_lot_no}
+    </foreach>
+</update>
+
+<!-- I_ONHAND_INVENTORY 복구 -->
+<update id="cancelI_ONHAND_INVENTORY">
+    UPDATE I_ONHAND_INVENTORY
+       SET QTY_INVENTORY = QTY_INVENTORY + #{qty_inventory}
+          ,AMT_INVENTORY = AMT_INVENTORY + #{amt_inventory}
+          ,ID_UPDATE     = #{user_id}
+          ,DT_UPDATE     = GETDATE()
+     WHERE CD_ITEM  = #{cd_item}
+       AND STS_ITEM = 'G'
+       AND NO_LOT   = #{no_lot}
+</update>
+
+<!-- I_WH_ONHAND_INVENTORY 복구 -->
+<update id="cancelI_WH_ONHAND_INVENTORY">
+    UPDATE I_WH_ONHAND_INVENTORY
+       SET QTY_INVENTORY = QTY_INVENTORY + #{qty_inventory}
+          ,AMT_INVENTORY = AMT_INVENTORY + #{amt_inventory}
+          ,ID_UPDATE     = #{user_id}
+          ,DT_UPDATE     = GETDATE()
+     WHERE CD_WH    = 'YC_FG3'
+       AND CD_ITEM  = #{cd_item}
+       AND STS_ITEM = 'G'
+       AND NO_LOT   = #{no_lot}
+</update>
+
+<!-- I_MONTHLY_INVENTORY 복구 -->
+<update id="cancelI_MONTHLY_INVENTORY">
+    UPDATE I_MONTHLY_INVENTORY
+       SET QTY_INVENTORY = QTY_INVENTORY - #{qty_inventory}
+          ,AMT_INVENTORY = AMT_INVENTORY - #{amt_inventory}
+          ,ID_UPDATE     = #{user_id}
+          ,DT_UPDATE     = GETDATE()
+     WHERE YM_MONTH      = CONVERT(VARCHAR(6), GETDATE(), 112)
+       AND CD_ITEM        = #{cd_item}
+       AND STS_ITEM       = 'G'
+       AND NO_LOT         = #{no_lot}
+       AND FG_INVENTORY   = 'D'
+       AND FG_TRANSACTION = 'SD'
+       AND TP_TRANSACTION = 'SIN01'
+</update>
+
+<!-- I_WH_MONTHLY_INVENTORY 복구 -->
+<update id="cancelI_WH_MONTHLY_INVENTORY">
+    UPDATE I_WH_MONTHLY_INVENTORY
+       SET QTY_INVENTORY = QTY_INVENTORY - #{qty_inventory}
+          ,AMT_INVENTORY = AMT_INVENTORY - #{amt_inventory}
+          ,ID_UPDATE     = #{user_id}
+          ,DT_UPDATE     = GETDATE()
+     WHERE YM_MONTH      = CONVERT(VARCHAR(6), GETDATE(), 112)
+       AND CD_WH         = 'YC_FG3'
+       AND CD_ITEM       = #{cd_item}
+       AND STS_ITEM      = 'G'
+       AND NO_LOT        = #{no_lot}
+       AND FG_INVENTORY  = 'D'
+       AND FG_TRANSACTION = 'SD'
+       AND TP_TRANSACTION = 'SIN01'
+</update>
+
+<!-- I_TRANSACTION_SALES DELETE -->
+<delete id="deleteI_TRANSACTION_SALES" parameterType="management">
+    DELETE FROM I_TRANSACTION_SALES
+     WHERE NO_TRANSACTION_SERIAL = #{invoice_name}
+</delete>
+
+<!-- I_TRANSACTION_DETAIL DELETE -->
+<delete id="deleteI_TRANSACTION_DETAIL" parameterType="management">
+    DELETE FROM I_TRANSACTION_DETAIL
+     WHERE NO_TRANSACTION_SERIAL = #{invoice_name}
+</delete>
+
+<!-- I_TRANSACTION DELETE -->
+<delete id="deleteI_TRANSACTION" parameterType="management">
+    DELETE FROM I_TRANSACTION
+     WHERE NO_TRANSACTION_SERIAL = #{invoice_name}
+</delete>
+
+<!-- ez_invoice_name 출하완료 상태 NULL로 -->
+<update id="cancelCompleteInvoiceList">
+    UPDATE ez_invoice_name
+       SET invoice_is_shipped = NULL
+     WHERE invoice_no = #{invoice_no}
+</update>
+
+<!-- ez_shipping_result DELETE -->
+<delete id="deleteShippingResult" parameterType="management">
+    DELETE FROM ez_shipping_result
+     WHERE invoice_no = #{invoice_no}
+</delete>
+
+<!-- 출하완료 취소할 때 인보이스 매핑되는거 있는지(예전꺼 취소 못하게) -->
+<select id="getMappingInvoiceCount" parameterType="management" resultType="management">
+    SELECT COUNT(*) AS mapping_count
+    FROM ez_invoice_inventory_mapping
+    WHERE invoice_no = #{invoice_no}
 </select>
 </mapper>

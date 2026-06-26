@@ -52,4 +52,5 @@ public interface ManagementService {
 	Management getIsShippingList(Management management);
 	List<Management> getNoShippingMarkCustomerList(Management management);
 	boolean processShippingCancel(Management management, String loginUserId);
+	Management getMappingInvoiceCount(Management management);
 }

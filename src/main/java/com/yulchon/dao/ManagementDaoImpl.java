@@ -623,5 +623,10 @@ public class ManagementDaoImpl implements ManagementDao {
 		}
 		return true;
 	}
+	
+	@Override
+	public Management getMappingInvoiceCount(Management management) {
+		return sqlSession.selectOne("management.getMappingInvoiceCount", management);
+	}
 }
 

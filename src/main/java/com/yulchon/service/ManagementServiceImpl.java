@@ -529,4 +529,9 @@ public class ManagementServiceImpl implements ManagementService{
 	        throw e;
 	    }
 	}
+	
+	@Override
+	public Management getMappingInvoiceCount(Management management) {
+		return managementDao.getMappingInvoiceCount(management);
+	}
 }

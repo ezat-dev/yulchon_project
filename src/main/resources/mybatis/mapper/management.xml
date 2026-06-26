@@ -1703,4 +1703,11 @@ OR TRIM(customer_shippingmark_file_name) = ''
     DELETE FROM ez_shipping_result
      WHERE invoice_no = #{invoice_no}
 </delete>
+
+<!-- 출하완료 취소할 때 인보이스 매핑되는거 있는지(예전꺼 취소 못하게) -->
+<select id="getMappingInvoiceCount" parameterType="management" resultType="management">
+    SELECT COUNT(*) AS mapping_count
+    FROM ez_invoice_inventory_mapping
+    WHERE invoice_no = #{invoice_no}
+</select>
 </mapper>

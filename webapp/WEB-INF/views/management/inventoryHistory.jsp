@@ -719,6 +719,11 @@ $(function() {
 	        return;
 	    }
 
+	    if (selectedRowData.invoice_is_shipped !== 'Y') {
+	        alert("출하 완료 상태의 인보이스만 취소할 수 있습니다.");
+	        return;
+	    }
+
 	    if (!confirm("'" + selectedRowData.invoice_name + "' 인보이스를 출하완료 취소 하시겠습니까?")) {
 	        return;
 	    }
@@ -741,11 +746,11 @@ $(function() {
 	                    invoice_is_shipped: $('#category').val()
 	                });
 	            } else {
-	                alert("출하완료 취소 처리 중 오류가 발생했습니다.");
+	                alert("출하완료 취소를 할 수 없는 인보이스입니다.");
 	            }
 	        },
 	        error: function(xhr) {
-	            alert("출하완료 취소 처리 중 오류가 발생했습니다.\n" + (xhr.responseText || ""));
+	            alert("출하완료 취소 처리 중 오류가 발생했습니다.");
 	        }
 	    });
 	});

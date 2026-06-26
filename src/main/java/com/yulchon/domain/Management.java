@@ -108,7 +108,15 @@ public class Management {
 	private String lot_no;
 	private String bundle_no;
 	private String customer_key;
+	private Integer mapping_count;
 	
+	
+	public Integer getMapping_count() {
+		return mapping_count;
+	}
+	public void setMapping_count(Integer mapping_count) {
+		this.mapping_count = mapping_count;
+	}
 	public String getCustomer_key() {
 		return customer_key;
 	}

@@ -88,5 +88,6 @@ public interface ManagementDao {
 	boolean deleteI_TRANSACTION(Management management);
 	boolean cancelCompleteInvoiceList(Management management);
 	boolean deleteShippingResult(Management management);
+	Management getMappingInvoiceCount(Management management);
 	
 }

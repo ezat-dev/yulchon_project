@@ -929,6 +929,7 @@ public class ManagementController {
 
 	    Management data = managementService.getShippingMarkPrintInventory(management);
 	    if (data == null) {
+	    	System.out.println("인보이스 품목 못찾음");
 	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
 	    }
 
@@ -937,6 +938,7 @@ public class ManagementController {
 	    Management matched = findMatchedCustomer(customerName, customerList);
 
 	    if (matched == null) {
+	    	System.out.println("맞는 양식 없음");
 	        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(null);
 	    }
 
@@ -951,11 +953,13 @@ public class ManagementController {
 
 	    BiFunction<Management, String, byte[]> previewMethod = PREVIEW_METHOD_MAP.get(customerKey);
 	    if (previewMethod == null) {
+	    	System.out.println("양식에 데이터 넣는 함수 없음");
 	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
 	    }
 
 	    byte[] imageBytes = previewMethod.apply(data, filePath);
 	    if (imageBytes == null) {
+	    	System.out.println("imageBytes null - previewMethod 실패: " + customerKey);
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new byte[0]);
 	    }
 
@@ -1043,6 +1047,12 @@ public class ManagementController {
 	@ResponseBody 
 	public boolean processShippingCancel(@RequestBody Management management, HttpSession session) {
 		String loginUserID = (String)session.getAttribute("loginUserId");
+		
+		//출하완료 취소 개발 이전 인보이스는 출하취소 불가(ez_invoice_inventory_mapping에서 삭제하고 있었음)
+		Management mappingCount = managementService.getMappingInvoiceCount(management);
+		if(mappingCount.getMapping_count() == 0) {
+			return false;
+		}
 	    
 	    try {
 	        // 모든 로직이 묶인 서비스 호출
@@ -1051,7 +1061,7 @@ public class ManagementController {
 	        e.printStackTrace();
 	        // 에러 발생 시 서비스에서 롤백을 수행하므로 데이터는 안전함
 	        logger.error("[출하완료 컨트롤러 에러]: " + e.getMessage(), e);
-	        return false;
+	        throw e;
 	    }
 	}
 	
