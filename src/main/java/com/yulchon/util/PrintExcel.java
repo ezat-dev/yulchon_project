@@ -715,6 +715,8 @@ public class PrintExcel {
 			putCellValue(sheet, "B12", data.getExtra_bundle_no());	
 			if(data.getOut_diameter().contains("48.6")) {
 				putCellValue(sheet, "E11", "yellow");	
+			} else {
+			    putCellValue(sheet, "E11", "");  // 이전 값 지우기
 			}
 			putCellValue(sheet, "F13", "* " + lot_no_5);	
 

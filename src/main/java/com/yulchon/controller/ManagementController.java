@@ -88,6 +88,7 @@ public class ManagementController {
 	static {
 	    KEYWORD_OVERRIDE_MAP.put("아이엠에스", "NST");
 	    KEYWORD_OVERRIDE_MAP.put("PROFENDER CORPORATION", "PCT");
+	    KEYWORD_OVERRIDE_MAP.put("Y-TEC (IMS)", "NST");
 	}
 
 	private Map<String, BiFunction<Management, String, Map<String, Object>>> PRINT_METHOD_MAP;
